@@ -6,7 +6,89 @@ This guide provides instructions to run each organization in standalone/single-n
 > **Operating System & Terminal Requirements**
 > - **Windows Users:** You **MUST** use an Ubuntu WSL (Windows Subsystem for Linux) terminal. Do not use standard Command Prompt or PowerShell, as the Fabric bash scripts will fail.
 > - **macOS / Linux Users:** You can use your standard native Terminal.
-> - **Docker:** Ensure Docker Desktop is open and running in the background before executing any scripts. For Windows, ensure Docker's WSL Integration is enabled for your Ubuntu distribution.
+> - **Docker:** Ensure a Docker runtime is open and running before executing any scripts. On Windows, enable Docker's WSL Integration for your Ubuntu distribution. **On macOS, use Colima** (see the [macOS (Colima)](#macos-running-with-colima) section below) instead of Docker Desktop.
+
+## macOS: Running with Colima
+
+macOS has no native Linux container runtime, so the Fabric network (orderer, peers, CAs) runs inside a Linux VM. [Colima](https://github.com/abiosoft/colima) is the lightweight Docker runtime used for this — a drop-in replacement for Docker Desktop.
+
+### 1. Install prerequisites
+
+```bash
+# Colima + Docker CLI (skip if already installed)
+brew install colima docker
+```
+
+**Fabric binaries** — the network scripts resolve these automatically via `scripts/fabric-bin.sh`:
+
+- **macOS** — the committed `bin/` holds Linux ELF binaries that can't run on Apple Silicon, so the scripts use the host's **darwin/arm64** binaries instead (found under `~/go/src/github.com/*/fabric-samples/bin`, `~/fabric-samples/bin`, or a `peer` already on `PATH`).
+- **Linux** — the scripts use the committed `bin/`.
+
+To point at a specific location, export `FABRIC_BIN_DIR` before running any script:
+
+```bash
+export FABRIC_BIN_DIR="$HOME/go/src/github.com/PrinceHerenj/fabric-samples/bin"
+```
+
+### 2. Start the Docker runtime
+
+```bash
+colima start --cpu 4 --memory 8 --disk 60
+docker context use colima
+docker ps                         # verify the daemon is reachable
+```
+
+> `colima start` boots a Linux VM and points Docker at it. It persists across reboots — use `colima status` to check, `colima stop` / `colima delete` to tear down.
+
+### 3. Bring up the hospital network
+
+> **First-time / clean-slate:** if any partial or previous setup exists, tear it down before bringing it up:
+> ```bash
+> cd orgs/hospital/EHR_hospitalOrg-main/ehr-network
+> bash scripts/network-down.sh      # full teardown — containers + crypto + channel artifacts
+> ```
+
+Then bring the network up — this runs CA start → enroll → peers/orderer/IPFS → channel → anchor peers in one go:
+
+```bash
+cd orgs/hospital/EHR_hospitalOrg-main/ehr-network/scripts
+bash network-up.sh
+```
+
+### 4. Deploy the chaincode (with the FHIR contract)
+
+First-time deploy uses **sequence 1**:
+
+```bash
+bash scripts/deployChaincode.sh \
+  --channel ehrchannel \
+  --chaincode-name ehr \
+  --chaincode-path ../ehr-chaincode-v3 \
+  --version 2.1 \
+  --sequence 1
+```
+
+> On a **re-deploy** (upgrade) of an already-committed chaincode, bump `--sequence` past the
+> committed value instead — check it with:
+> `peer lifecycle chaincode querycommitted -C ehrchannel -n ehr`.
+> Every org on the channel (HospitalMSP, DiagnosticsMSP, ProviderMSP) approves automatically.
+
+### 5. Start the backends + frontends
+
+```bash
+cd ../../ehr-backend-v3
+# for each service: cp .env.example .env (edit PORT/keys as needed), then npm install && npm start
+#   peer0-api :4001  peer1-api :4002  peer2-api :4003  extorg-api :4004  patient-api :4005  ipfs-service :4006
+
+cd ../../ehr-frontend-v2/hospital-portal && npm install && npm run dev   # :5173
+cd ../../ehr-frontend-v2/patient-portal && npm install && npm run dev    # :5174
+```
+
+### macOS gotchas
+
+- **No `sudo` is needed** for the `chown` steps — the network scripts fall back gracefully on macOS.
+- **`FABRIC_BASE_PATH` is auto-resolved** — leave it empty in `.env` (the hardcoded `/home/avi/...` path has been removed).
+- **`KNET` must be identical** on every machine that writes FHIR anchors (Mac and Linux alike), otherwise the same patient yields different hashes. Set it in each backend `.env`.
 
 ## Hospital Organization
 
@@ -16,25 +98,26 @@ To bring up the Hospital organization on a single node:
    ```bash
    cd orgs/hospital/EHR_hospitalOrg-main/ehr-network
    ```
-2. Download Fabric binaries (if not already cached):
+2. Fabric binaries are resolved automatically by `scripts/fabric-bin.sh` (Linux → committed `bin/`; macOS → host darwin binaries — see the [macOS section](#macos-running-with-colima)). No manual download is needed; export `FABRIC_BIN_DIR` to override.
+3. Tear down any previous setup, then boot up the network:
    ```bash
-   mkdir -p .generated && cd .generated
-   curl -sSLO https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh
-   chmod +x install-fabric.sh
-   ./install-fabric.sh --fabric-version 2.5.15 --ca-version 1.5.17 binary docker samples
-   export PATH=$PWD/fabric-samples/bin:$PATH
-   cd ..
+   bash scripts/network-down.sh      # (first-time clean-slate — skip if nothing exists yet)
+   bash scripts/network-up.sh        # CA → enroll → peers/orderer/IPFS → channel → anchor peers
    ```
-3. Boot up the network:
+4. Deploy the chaincode (includes `FhirContract` — sequence 1 on first deploy):
    ```bash
-   bash scripts/network-up.sh
+   bash scripts/deployChaincode.sh \
+     --channel ehrchannel \
+     --chaincode-name ehr \
+     --chaincode-path ../ehr-chaincode-v3 \
+     --version 2.1 --sequence 1
    ```
-4. Start the backend API:
+5. Start the backend API:
    ```bash
    cd ../ehr-backend-v3/peer0-api
    npm install && npm start
    ```
-5. Start the frontend UI:
+6. Start the frontend UI:
    ```bash
    cd ../../ehr-frontend-v2
    npm install && npm run dev

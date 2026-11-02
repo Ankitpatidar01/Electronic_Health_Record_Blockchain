@@ -58,10 +58,7 @@ BASE_DIR=$(cd "$(dirname "$0")/.." && pwd)
 DOCKER_DIR="$BASE_DIR/docker"
 SCRIPTS_DIR="$BASE_DIR/scripts"
 ORGANIZATIONS="$BASE_DIR/organizations"
-REPO_ROOT="$(cd "$BASE_DIR/../../../.." && pwd)"
-if [ -d "$REPO_ROOT/bin" ]; then
-  export PATH="$REPO_ROOT/bin:$PATH"
-fi
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fabric-bin.sh"
 
 # ============================================================
 # PARSE ARGUMENTS

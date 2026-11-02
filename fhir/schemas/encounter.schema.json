@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "encounter.schema.json",
+  "title": "FHIR R4 Encounter (profile)",
+  "type": "object",
+  "required": ["resourceType", "id", "status", "subject"],
+  "properties": {
+    "resourceType": { "const": "Encounter" },
+    "id": { "type": "string" },
+    "status": {
+      "enum": ["planned", "arrived", "triaged", "in-progress", "onleave", "finished", "cancelled", "entered-in-error", "unknown"]
+    },
+    "class": {
+      "type": "object",
+      "properties": {
+        "system": { "type": "string" },
+        "code": { "type": "string" },
+        "display": { "type": "string" }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "required": ["reference"],
+      "properties": { "reference": { "type": "string" } }
+    },
+    "participant": { "type": "array" },
+    "period": {
+      "type": "object",
+      "properties": {
+        "start": { "type": "string" },
+        "end": { "type": "string" }
+      }
+    },
+    "reasonCode": { "type": "array" },
+    "reasonReference": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": { "reference": { "type": "string" } }
+      }
+    }
+  },
+  "additionalProperties": true
+}

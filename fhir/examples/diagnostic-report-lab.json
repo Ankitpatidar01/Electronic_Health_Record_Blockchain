@@ -1,0 +1,18 @@
+{
+  "resourceType": "DiagnosticReport",
+  "id": "DR-LAB-001",
+  "status": "final",
+  "subject": { "reference": "Patient/PAT-001" },
+  "result": [{ "reference": "#OBS-LAB-001-Hemoglobin" }],
+  "issued": "2026-09-16T10:30:00Z",
+  "performer": [{ "reference": "Organization/DiagnosticsOrg" }],
+  "contained": [
+    {
+      "resourceType": "Observation",
+      "id": "OBS-LAB-001-Hemoglobin",
+      "status": "final",
+      "code": { "coding": [{ "system": "http://loinc.org", "code": "718-7" }] },
+      "valueQuantity": { "value": 8.5, "unit": "g/dL", "system": "http://unitsofmeasure.org", "code": "g/dL" }
+    }
+  ]
+}

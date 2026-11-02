@@ -1,0 +1,19 @@
+{
+  "name": "ehr-fhir",
+  "version": "1.0.0",
+  "description": "Standard EHR / HL7 FHIR R4 interoperability layer (Team D) — adapter, validator, RFC 8785 canonicalizer, hasher, and IPFS bundler",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test",
+    "demo": "node demo/cli.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "canonicalize": "^1.0.1"
+  },
+  "license": "UNLICENSED"
+}

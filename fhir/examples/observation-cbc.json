@@ -1,0 +1,17 @@
+{
+  "resourceType": "Observation",
+  "id": "OBS-CBC-HB-0001",
+  "status": "final",
+  "subject": { "reference": "Patient/PAT-001" },
+  "code": {
+    "coding": [
+      { "system": "http://loinc.org", "code": "718-7", "display": "Hemoglobin" }
+    ]
+  },
+  "valueQuantity": {
+    "value": 8.5,
+    "unit": "g/dL",
+    "system": "http://unitsofmeasure.org",
+    "code": "g/dL"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "visitId": "PAT-001-V1",
+  "patientId": "PAT-001",
+  "status": "WITH_DOCTOR",
+  "chiefComplaint": "Fatigue and dizziness for two weeks",
+  "assignedDoctor": "doctor",
+  "assignedNurse": "nurse",
+  "createdAt": "2026-09-16T09:15:00Z"
+}

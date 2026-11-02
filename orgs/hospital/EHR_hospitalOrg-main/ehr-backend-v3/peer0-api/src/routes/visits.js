@@ -6,6 +6,7 @@ const { authenticate, requireRole, requireAnyKnownRole } = require('../middlewar
 const { peerContext }  = require('../middleware/peerContext');
 const { wrap, parseResult } = require('../middleware/errorHandler');
 const { initVisit, fetchByCID, pinJSON } = require('../fabric/ipfsClient');
+const { anchorFHIRRecord } = require('../../../shared/fhir-anchor');
 const logger = require('../config/logger');
 
 const canManage    = [authenticate, requireRole('receptionist', 'admin'), peerContext];
@@ -53,7 +54,25 @@ router.post('/',
     const result = await req.contract.submitTransaction(
       'VisitContract:OpenVisit', patientId, chiefComplaint, visitCID
     );
-    return res.status(201).json({ success: true, data: parseResult(result) });
+
+    // Step 4 — anchor the FHIR Encounter resource (best-effort, zero-PHI on-chain)
+    let fhirAnchor = null;
+    try {
+      fhirAnchor = await anchorFHIRRecord(req.contract, { pinJSON }, {
+        sourceType: 'visit',
+        legacyJson: {
+          patientId, visitId, status: 'OPEN', chiefComplaint,
+          createdAt: new Date().toISOString(),
+        },
+        recordId: visitId,
+        filename: `fhir-encounter-${visitId}.json`,
+      });
+      logger.info('FHIR anchor created', { visitId, resourceType: fhirAnchor.anchor.resourceType });
+    } catch (err) {
+      logger.error('FHIR anchor failed (non-fatal)', { visitId, error: err.message });
+    }
+
+    return res.status(201).json({ success: true, data: { ...parseResult(result), fhirAnchor } });
   })
 );
 

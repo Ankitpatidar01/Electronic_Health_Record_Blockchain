@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "consent.schema.json",
+  "title": "FHIR R4 Consent (profile)",
+  "type": "object",
+  "required": ["resourceType", "id", "status", "patient"],
+  "properties": {
+    "resourceType": { "const": "Consent" },
+    "id": { "type": "string" },
+    "status": { "enum": ["draft", "proposed", "active", "rejected", "inactive", "entered-in-error"] },
+    "patient": {
+      "type": "object",
+      "required": ["reference"],
+      "properties": { "reference": { "type": "string" } }
+    },
+    "category": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "coding": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "system": { "type": "string" },
+                "code": { "type": "string" },
+                "display": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "dateTime": { "type": "string" },
+    "provision": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["deny", "permit"] },
+        "period": {
+          "type": "object",
+          "properties": {
+            "start": { "type": "string" },
+            "end": { "type": "string" }
+          }
+        },
+        "actor": { "type": "array" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

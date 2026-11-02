@@ -157,7 +157,7 @@ done
 pkill -f "node app.js" 2>/dev/null || true
 pkill -f "vite"         2>/dev/null || true
 pkill -f "ipfs"         2>/dev/null || true
-rm -f /home/ankit/.ipfs/repo.lock 2>/dev/null || true
+rm -f "${HOME}/.ipfs/repo.lock" 2>/dev/null || true
 
 docker stack rm ehrswarm-ca ehrswarm-orderer ehrswarm-peer0 ehrswarm-peer1 ehrswarm-peer2 2>/dev/null || true
 echo "  Waiting for stacks to remove (15s)..."

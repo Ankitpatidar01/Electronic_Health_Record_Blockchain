@@ -50,10 +50,11 @@ In Hyperledger Fabric, the network is divided into **Organizations**. Each Organ
 * Basic Smart Contracts (Chaincode) for creating records.
 * Basic Frontend UIs (React) and Backend APIs (Express.js) for Hospital, Pharmacy, and Lab.
 * IPFS Kubo node integration for off-chain file pinning.
+* **HL7 FHIR R4 interoperability layer** (`/fhir`): legacy records are converted to FHIR R4 and a **zero-PHI anchor** (hash + CID + resource type) is written on-chain via `FhirContract` under `RECORD~<patientIdHash>~<recordId>`. See [`fhir-integration.md`](fhir-integration.md).
 
 **🚧 What is NOT Implemented (Your Tasks!):**
 * **Digilocker:** Files are currently uploaded to IPFS in plaintext. Encryption needs to be built.
-* **FHIR Standards:** The current JSON data structures are custom. They need to be refactored to meet standard HL7 FHIR structures.
+* **FHIR on-chain enrichment (Phase D):** the anchor stores the *hash* of each record, but legacy plaintext JSON is still the source of truth in IPFS — retiring it (storing only the FHIR resource) is a follow-up.
 * **Advanced ABAC:** The consent mechanism is rudimentary. A full Patient Consent Portal needs to be finalized so patients can revoke access.
 * **Agentic AI Expansion:** The Gemini LLM integration needs to be expanded to analyze historical patient trends, not just single lab reports.
 
@@ -72,9 +73,16 @@ EHR_blockchain/
 │
 ├── docs/                        # Documentation Folder
 │   ├── architecture.md          # Contains Mermaid.js visual flowcharts of the system
+│   ├── fhir-integration.md      # How the FHIR R4 layer is wired into the chaincode
 │   ├── roadmap.md               # The task list and gap analysis of what needs to be built
 │   ├── setup-guide.md           # Instructions for running organizations individually
 │   └── system-overview.md       # (You are reading this file!)
+│
+├── fhir/                        # HL7 FHIR R4 interoperability layer (Team D module)
+│   ├── src/                     # adapter, validator, canonicalizer, hasher, anchor builder
+│   ├── schemas/                 # FHIR R4 JSON schemas (Patient, Observation, …)
+│   ├── terminology/             # LOINC / SNOMED / ICD-10 / UCUM subsets
+│   └── test/                    # 18 offline unit tests (node --test)
 │
 └── orgs/                        # The Codebase (Divided by Organization)
     │

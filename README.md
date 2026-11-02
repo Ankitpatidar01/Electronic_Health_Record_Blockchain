@@ -136,7 +136,7 @@ We have recently upgraded the core infrastructure to support robust distributed 
 * **4 Distinct Agentic Peer Roles**: Granular ABAC enforcement is now mapped to specific peers: **Doctor** (diagnostics/prescriptions), **Nurse** (vital signs), **Pharmacy** (inventory/dispensing), and **Lab** (test execution and AI-assisted result uploads).
 * **Asynchronous IPFS & OCR Processing**: The `POST /api/records/ipfs` routes have been refactored. Heavy PDF OCR extraction (Tesseract.js) and IPFS pinning are now executed in background threads, returning `202 Accepted` immediately to prevent frontend HTTP timeouts on large medical files.
 * **Dynamic Environment Variables in Docker Swarm**: Swarm cluster networking is fully dynamic. Files like `hosts.final` rely on environment variable substitution (`${MACHINE1_IP}`, etc.) instead of hardcoded IPs, allowing seamless deployment across dynamic distributed servers.
-* **Roadmap: VCAP and FHIR R4 Interoperability**: Upcoming milestones include native FHIR R4 standard conversions for all on-chain payloads and Verifiable Clinical AI Provenance (VCAP) to cryptographically trace and audit Gemini AI-generated diagnostic recommendations.
+* **FHIR R4 Interoperability (implemented)**: Legacy clinical records are converted to HL7 FHIR R4 and a zero-PHI anchor (hash + CID + resource type) is committed on-chain via `FhirContract` under `RECORD~<patientIdHash>~<recordId>`. See [`docs/fhir-integration.md`](docs/fhir-integration.md). Verifiable Clinical AI Provenance (VCAP) remains a roadmap item.
 
 ---
 
@@ -309,7 +309,7 @@ Before running the system, ensure your machine meets the following environment a
 | :--- | :--- | :--- |
 | **Ubuntu Linux** (22.04 / 24.04 / 26.04 LTS) | 🌟 **Recommended (Native)** | Best performance. Native support for Docker daemon and Fabric ELF binaries. |
 | **Windows 10 / 11** | 🌟 **Supported via WSL2** | **Must run inside WSL2 (Ubuntu 22.04+)**. Do **not** run via Windows CMD or PowerShell (Fabric requires Linux container volume mounts and ELF binaries). |
-| **macOS** (Intel / Apple Silicon) | ⚡ Supported via Docker | Ensure Docker Desktop is installed with Rosetta 2 / x86_64 emulation enabled. |
+| **macOS** (Intel / Apple Silicon) | ⚡ Supported via Colima | Use **Colima** as the Docker runtime. Fabric binaries are resolved by `ehr-network/scripts/fabric-bin.sh` (darwin/arm64 binaries, not the committed Linux `bin/`). See [`docs/setup-guide.md`](docs/setup-guide.md). |
 
 ### 2. Hardware Recommendations
 * **RAM:** 8 GB minimum (16 GB recommended to run all 5 peers, orderer, IPFS, and 8 microservices smoothly).
