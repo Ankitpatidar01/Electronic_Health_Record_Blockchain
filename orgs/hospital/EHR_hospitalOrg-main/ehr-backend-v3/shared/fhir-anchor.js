@@ -36,7 +36,7 @@ async function anchorFHIRRecord(contract, ipfsClient, { sourceType, legacyJson, 
     filename || `fhir-${recordId}.json`,
   );
 
-  const result = await contract.submitTransaction(
+  const resultBytes = await contract.submitTransaction(
     'FhirContract:AnchorFHIRRecord',
     anchor.patientIdHash,
     recordId,
@@ -45,6 +45,20 @@ async function anchorFHIRRecord(contract, ipfsClient, { sourceType, legacyJson, 
     dataCID,
     anchor.status || 'FINAL',
   );
+
+  // submitTransaction returns the chaincode's return value as bytes; parse it
+  // back to the anchor record JSON (mirrors middleware/errorHandler.parseResult).
+  let result = null;
+  if (resultBytes && resultBytes.length) {
+    const str = Buffer.from(resultBytes).toString('utf8').replace(/^\0+/, '').trim();
+    if (str && str !== 'null') {
+      try { result = JSON.parse(str); } catch (_) { result = { value: str }; }
+    }
+  }
+
+  // convert() leaves anchor.dataCID empty (it ran with pin:false); reflect the
+  // CID we actually pinned here so the returned anchor is self-consistent.
+  anchor.dataCID = dataCID;
 
   return { anchor, patientRecordHash, dataCID, result };
 }

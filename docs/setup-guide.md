@@ -73,15 +73,64 @@ bash scripts/deployChaincode.sh \
 > `peer lifecycle chaincode querycommitted -C ehrchannel -n ehr`.
 > Every org on the channel (HospitalMSP, DiagnosticsMSP, ProviderMSP) approves automatically.
 
-### 5. Start the backends + frontends
+### 5. Start the backends
 
 ```bash
 cd ../../ehr-backend-v3
-# for each service: cp .env.example .env (edit PORT/keys as needed), then npm install && npm start
-#   peer0-api :4001  peer1-api :4002  peer2-api :4003  extorg-api :4004  patient-api :4005  ipfs-service :4006
 
-cd ../../ehr-frontend-v2/hospital-portal && npm install && npm run dev   # :5173
-cd ../../ehr-frontend-v2/patient-portal && npm install && npm run dev    # :5174
+# 1) create a .env for each service (one-time) and set a JWT_SECRET
+for s in peer0-api peer1-api peer2-api extorg-api patient-api ipfs-service; do
+  cp "$s/.env.example" "$s/.env"
+done
+# edit each .env: set JWT_SECRET (e.g. `openssl rand -hex 32`); leave FABRIC_BASE_PATH empty
+
+# 2) install + start (ipfs-service first, then the APIs — each in its own terminal
+#    or background it). Ports:
+#   ipfs-service :4006   peer0-api :4001   peer1-api :4002
+#   peer2-api    :4003   extorg-api :4004  patient-api :4005
+cd ipfs-service && npm install && npm start
+```
+
+> **Note:** `patient-api` uses `better-sqlite3` (pinned to `^13.0.3`, which has Node 22/26
+> prebuilds — an older `^11.x` would fail to compile on Node ≥ 23).
+
+### 6. Start the frontends
+
+```bash
+cd ../../ehr-frontend-v2/hospital-portal && npm install && npm run dev   # :5173 → receptionist/doctor/nurse UI
+cd ../../ehr-frontend-v2/patient-portal  && npm install && npm run dev   # :5174 → patient self-service
+```
+
+Open `http://localhost:5173` in a browser. Log in as `receptionist` to register patients.
+
+### 7. Verify the FHIR anchor end-to-end
+
+Default login (all roles share one password in the current `shared/users.json`):
+
+| role | username | password |
+|---|---|---|
+| receptionist | `receptionist` | `password123` |
+
+1. Login and register a patient — the response now carries a `fhirAnchor`:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:4001/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"receptionist","password":"password123"}' | jq -r '.data.token')
+
+curl -s -X POST http://localhost:4001/patients \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"patientId":"PAT-100","name":"Aisha Khan","age":34,"gender":"female","bloodGroup":"B+","contact":"+91-90000-11111","address":"Mumbai"}' \
+  | jq '.data.fhirAnchor'
+```
+
+2. `fhirAnchor` contains the zero-PHI anchor (`resourceType`, `patientIdHash`, `patientRecordHash`, `dataCID`). The FHIR `Patient` resource is pinned to IPFS at `dataCID`; only its digest + CID are written on-chain.
+
+3. Read the anchor back from the ledger:
+
+```bash
+peer chaincode query -C ehrchannel -n ehr \
+  -c '{"function":"FhirContract:GetFHIRAnchor","Args":["<patientIdHash>","PAT-100"]}'
 ```
 
 ### macOS gotchas

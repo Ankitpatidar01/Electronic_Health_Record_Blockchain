@@ -348,6 +348,35 @@ Use these three core shell scripts to setup, run, and terminate the entire EHR B
 
 ---
 
+### 🔗 FHIR R4 anchor — quick verification
+
+The FHIR interoperability layer is wired into the chaincode (`FhirContract`) and the
+backend write paths. After the stack is up (`./start.sh`), verify it end-to-end:
+
+1. Open the hospital portal at `http://localhost:5173` and log in as `receptionist` / `password123`.
+2. Register a patient — the `POST /patients` response now carries a **`fhirAnchor`** (a
+   zero-PHI `resourceType` + `patientRecordHash` + IPFS `dataCID`).
+3. The FHIR resource is pinned to IPFS; only its digest + CID go on-chain, under
+   `RECORD~<patientIdHash>~<recordId>`.
+
+```bash
+# login + register a patient, then inspect the FHIR anchor
+TOKEN=$(curl -s -X POST http://localhost:4001/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"receptionist","password":"password123"}' | jq -r '.data.token')
+
+curl -s -X POST http://localhost:4001/patients \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"patientId":"PAT-100","name":"Aisha Khan","age":34,"gender":"female","bloodGroup":"B+","contact":"+91-90000-11111","address":"Mumbai"}' \
+  | jq '.data.fhirAnchor'
+```
+
+Full run steps (macOS/Colima, binary resolution, per-org setup) are in
+[`docs/setup-guide.md`](docs/setup-guide.md); the integration design is in
+[`docs/fhir-integration.md`](docs/fhir-integration.md).
+
+---
+
 ### Step 1: Clone or Pull the Repository
 
 ```bash
