@@ -6,7 +6,7 @@ This guide provides instructions to run each organization in standalone/single-n
 > **Operating System & Terminal Requirements**
 > - **Windows Users:** You **MUST** use an Ubuntu WSL (Windows Subsystem for Linux) terminal. Do not use standard Command Prompt or PowerShell, as the Fabric bash scripts will fail.
 > - **macOS / Linux Users:** You can use your standard native Terminal.
-> - **Docker:** Ensure a Docker runtime is open and running before executing any scripts. On Windows, enable Docker's WSL Integration for your Ubuntu distribution. **On macOS, use Colima** (see the [macOS (Colima)](#macos-running-with-colima) section below) instead of Docker Desktop.
+> - **Docker:** Ensure a Docker runtime is open and running before executing any scripts. On Windows, enable Docker's WSL Integration for your Ubuntu distribution. On macOS, **Docker Desktop is recommended** — see [Running with Docker Desktop](setup-guide-docker-desktop.md). [Colima](#macos-running-with-colima) also works but proved less stable on limited-RAM machines.
 
 ## macOS: Running with Colima
 
@@ -75,20 +75,35 @@ bash scripts/deployChaincode.sh \
 
 ### 5. Start the backends
 
-```bash
-cd ../../ehr-backend-v3
+> **Ports already in use?** If a previous run is still up (or you hit `EADDRINUSE`), stop the
+> old processes first — from the repo root run `./stop.sh`, or free the ports manually:
 
-# 1) create a .env for each service (one-time) and set a JWT_SECRET
+```bash
+for p in 4001 4002 4003 4004 4005 4006 5173 5174; do
+  lsof -ti :$p | xargs kill 2>/dev/null || true
+done
+```
+
+```bash
+cd ../ehr-backend-v3
+
+# 1) create a .env for each service (one-time), auto-generating a JWT_SECRET
+JWT="$(openssl rand -hex 32)"
 for s in peer0-api peer1-api peer2-api extorg-api patient-api ipfs-service; do
   cp "$s/.env.example" "$s/.env"
+  sed -i '' "s|^JWT_SECRET=.*|JWT_SECRET=${JWT}|" "$s/.env"   # macOS
+  # sed -i    "s|^JWT_SECRET=.*|JWT_SECRET=${JWT}|" "$s/.env" # Linux (no empty arg)
 done
-# edit each .env: set JWT_SECRET (e.g. `openssl rand -hex 32`); leave FABRIC_BASE_PATH empty
+# (leave FABRIC_BASE_PATH empty in each .env — it auto-resolves)
 
-# 2) install + start (ipfs-service first, then the APIs — each in its own terminal
-#    or background it). Ports:
-#   ipfs-service :4006   peer0-api :4001   peer1-api :4002
-#   peer2-api    :4003   extorg-api :4004  patient-api :4005
-cd ipfs-service && npm install && npm start
+# 2) install + start ALL services (ipfs-service first, then the APIs).
+#    Run each in its own terminal, or background them with `nohup … &`:
+cd ipfs-service && npm install && npm start   # :4006
+cd ../peer0-api   && npm install && npm start # :4001
+cd ../peer1-api   && npm install && npm start # :4002
+cd ../peer2-api   && npm install && npm start # :4003
+cd ../extorg-api  && npm install && npm start # :4004
+cd ../patient-api && npm install && npm start # :4005
 ```
 
 > **Note:** `patient-api` uses `better-sqlite3` (pinned to `^13.0.3`, which has Node 22/26
@@ -111,7 +126,8 @@ Default login (all roles share one password in the current `shared/users.json`):
 |---|---|---|
 | receptionist | `receptionist` | `password123` |
 
-1. Login and register a patient — the response now carries a `fhirAnchor`:
+1. Login and register a patient — the response now carries a `fhirAnchor`.
+   Use a **fresh `patientId` each run** (a duplicate id fails with "already exists" and returns no `fhirAnchor`):
 
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:4001/auth/login \
@@ -126,11 +142,18 @@ curl -s -X POST http://localhost:4001/patients \
 
 2. `fhirAnchor` contains the zero-PHI anchor (`resourceType`, `patientIdHash`, `patientRecordHash`, `dataCID`). The FHIR `Patient` resource is pinned to IPFS at `dataCID`; only its digest + CID are written on-chain.
 
-3. Read the anchor back from the ledger:
+3. Read the anchor back from the ledger (run from the network dir, with the peer env sourced):
 
 ```bash
+cd orgs/hospital/EHR_hospitalOrg-main/ehr-network
+source scripts/fabric-bin.sh
+export CORE_PEER_TLS_ENABLED=true CORE_PEER_LOCALMSPID=HospitalMSP
+export CORE_PEER_MSPCONFIGPATH="$PWD/organizations/peerOrganizations/hospital.example.com/users/receptionist/msp"
+export CORE_PEER_ADDRESS=localhost:7051
+export CORE_PEER_TLS_ROOTCERT_FILE="$PWD/organizations/peerOrganizations/hospital.example.com/peers/peer0.hospital.example.com/tls/ca.crt"
+
 peer chaincode query -C ehrchannel -n ehr \
-  -c '{"function":"FhirContract:GetFHIRAnchor","Args":["<patientIdHash>","PAT-100"]}'
+  -c '{"function":"FhirContract:GetFHIRAnchor","Args":["<patientIdHash>","<patientId>"]}'
 ```
 
 ### macOS gotchas
