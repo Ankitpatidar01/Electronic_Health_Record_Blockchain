@@ -22,7 +22,12 @@ require_fabric_binaries
 set_peer_cli_env
 set_peer_context "${peer_name}"
 
-payload="$(jq -cn --arg fn "${function_name}" --args "$@" '{function: $fn, Args: $ARGS.positional}')"
+args=()
+for arg in "$@"; do
+  args+=("${arg%$'\r'}")
+done
+
+payload="$(jq -cn --arg fn "${function_name}" --args '{function: $fn, Args: $ARGS.positional}' "${args[@]}")"
 
 peer chaincode query \
   -C "${CHANNEL_NAME}" \
