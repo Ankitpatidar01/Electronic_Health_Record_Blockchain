@@ -11,6 +11,16 @@ const {
   getAiAgentConfig,
   runAgenticClinicalAnalysis,
 } = require('./ai-agent');
+
+const {
+  runPythonClinicalReview,
+} = require('./python-clinical-client');
+
+const {
+  runWorkflow,
+  approveWorkflowRun,
+  getWorkflowState,
+} = require('./orchestrator/orchestrator');
 const {
   createLabResult,
   getAllLabResults,
@@ -224,14 +234,24 @@ app.post('/api/ai/analyze', async (req, res, next) => {
       }
     }
 
-    const ai = await runAgenticClinicalAnalysis({
-      resultData: req.body.resultData,
-      testCode: req.body.testCode,
-      patientId: req.body.patientId,
-      patientHistory,
-      reportText: req.body.reportText,
-      reportTextSource: req.body.reportTextSource,
-    });
+    let ai;
+    try {
+      ai = await runPythonClinicalReview({
+        resultData: req.body.resultData,
+        patientId: req.body.patientId,
+        patientHistory,
+        reportText: req.body.reportText,
+      });
+    } catch (_err) {
+      ai = await runAgenticClinicalAnalysis({
+        resultData: req.body.resultData,
+        testCode: req.body.testCode,
+        patientId: req.body.patientId,
+        patientHistory,
+        reportText: req.body.reportText,
+        reportTextSource: req.body.reportTextSource,
+      });
+    }
 
     let aiIpfs = null;
     if (req.body.persistToIpfs !== false) {
@@ -402,16 +422,25 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
           : null,
       };
 
-      ai = await runAgenticClinicalAnalysis({
-        resultData: resultDataForAi,
-        testCode: req.body.testCode,
-        patientId: req.body.patientId,
-        patientHistory,
-        reportText: extractedReportText,
-        reportTextSource: reportFileIpfs
-          ? (req.file.originalname || reportFileIpfs.name)
-          : undefined,
-      });
+      try {
+        ai = await runPythonClinicalReview({
+          resultData: resultDataForAi,
+          patientId: req.body.patientId,
+          patientHistory,
+          reportText: extractedReportText,
+        });
+      } catch (_err) {
+        ai = await runAgenticClinicalAnalysis({
+          resultData: resultDataForAi,
+          testCode: req.body.testCode,
+          patientId: req.body.patientId,
+          patientHistory,
+          reportText: extractedReportText,
+          reportTextSource: reportFileIpfs
+            ? (req.file.originalname || reportFileIpfs.name)
+            : undefined,
+        });
+      }
 
       aiIpfs = await addJsonToIpfs(ai, {
         fileName: `${resultId || 'labresult'}-ai-summary.json`,
@@ -518,6 +547,45 @@ app.get('/api/records/:resultId/resolve-data', async (req, res, next) => {
       resolved: true,
       ipfs: ipfsPayload,
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/agents/run', async (req, res, next) => {
+  try {
+    const state = await runWorkflow(req.body);
+    res.status(202).json(state.toJSON());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/agents/run/:runId', (req, res, next) => {
+  try {
+    const state = getWorkflowState(req.params.runId);
+
+    if (!state) {
+      res.status(404).json({
+        error: `Workflow run ${req.params.runId} not found`
+      });
+      return;
+    }
+
+    res.json(state.toJSON());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/agents/run/:runId/approve', async (req, res, next) => {
+  try {
+    const state = await approveWorkflowRun(
+      req.params.runId,
+      req.body
+    );
+
+    res.json(state.toJSON());
   } catch (error) {
     next(error);
   }
