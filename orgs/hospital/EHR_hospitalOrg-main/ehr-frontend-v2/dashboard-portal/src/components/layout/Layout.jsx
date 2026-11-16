@@ -1,14 +1,19 @@
 import React from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, Network, Bot, ArrowRightLeft, Shield, Database, ScrollText, LogOut, Activity } from 'lucide-react'
+import { LayoutDashboard, Network, Bot, ArrowRightLeft, Shield, Database, ScrollText, LogOut, Activity, Bell } from 'lucide-react'
 import { useDashboardSocket } from '../../hooks/useDashboardSocket'
 import { allowedViews } from '../../config/roleViews'
 import ThemeToggle from '../ThemeToggle'
 
 const navItems = [
-  { path: '/overview', key: 'overview', label: 'Overview', icon: LayoutDashboard }, { path: '/network', key: 'network', label: 'Network', icon: Network },
-  { path: '/agents', key: 'agents', label: 'Agents', icon: Bot }, { path: '/transactions', key: 'transactions', label: 'Transactions', icon: ArrowRightLeft },
-  { path: '/security', key: 'security', label: 'Security', icon: Shield }, { path: '/ipfs', key: 'ipfs', label: 'IPFS', icon: Database }, { path: '/logs', key: 'logs', label: 'Logs', icon: ScrollText },
+  { path: '/overview', key: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { path: '/network', key: 'network', label: 'Network', icon: Network },
+  { path: '/agents', key: 'agents', label: 'Agents', icon: Bot },
+  { path: '/transactions', key: 'transactions', label: 'Transactions', icon: ArrowRightLeft },
+  { path: '/security', key: 'security', label: 'Security', icon: Shield },
+  { path: '/ipfs', key: 'ipfs', label: 'IPFS', icon: Database },
+  { path: '/logs', key: 'logs', label: 'Logs', icon: ScrollText },
+  { path: '/alerts', key: 'alerts', label: 'Alerts', icon: Bell },
 ]
 
 export function Layout({ user, onLogout }) {

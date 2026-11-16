@@ -8,6 +8,11 @@ import Security from './pages/Security'
 import IPFS from './pages/IPFS'
 import Logs from './pages/Logs'
 import Agents from './pages/Agents'
+import Alerts from './pages/Alerts'
+import DoctorAgent from './pages/DoctorAgent'
+import NurseAgent from './pages/NurseAgent'
+import PharmacyAgent from './pages/PharmacyAgent'
+import LabAgent from './pages/LabAgent'
 import { AgentDashboard } from './components/AgentDashboard'
 import { hasDashboardAuth, loginDashboard, logoutDashboard, readDashboardUser } from './services/api'
 import { allowedViews } from './config/roleViews'
@@ -24,7 +29,19 @@ function App() {
   const [user, setUser] = useState(() => hasDashboardAuth() ? readDashboardUser() : null)
   useEffect(() => { const unauthorized = () => { logoutDashboard(); setUser(null) }; window.addEventListener('dashboard:unauthorized', unauthorized); return () => window.removeEventListener('dashboard:unauthorized', unauthorized) }, [])
   const views = allowedViews(user?.role)
-  const home = views.includes('overview') ? '/overview' : views.includes('agents') ? '/agents' : '/denied'
+  const home = views.includes('overview')
+    ? '/overview'
+    : views.includes('agents')
+      ? '/agents'
+      : views.includes('agent-doctor')
+        ? '/agents/doctor'
+        : views.includes('agent-nurse')
+          ? '/agents/nurse'
+          : views.includes('agent-pharmacy')
+            ? '/agents/pharmacy'
+            : views.includes('agent-lab')
+              ? '/agents/lab'
+              : '/denied'
   const basename = window.location.pathname.startsWith('/dashboard') ? '/dashboard' : undefined
   return <BrowserRouter basename={basename} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><Routes>
     <Route path="/login" element={user ? <Navigate to={home} replace /> : <Login onLogin={setUser} />} />
@@ -34,11 +51,16 @@ function App() {
       <Route path="overview" element={views.includes('overview') ? <Overview /> : <Navigate to={home} replace />} />
       <Route path="network" element={views.includes('network') ? <Network /> : <Navigate to={home} replace />} />
       <Route path="agents" element={views.includes('agents') ? <Agents /> : <Navigate to={home} replace />} />
+      <Route path="agents/doctor" element={views.includes('agents') || views.includes('agent-doctor') ? <DoctorAgent /> : <Navigate to={home} replace />} />
+      <Route path="agents/nurse" element={views.includes('agents') || views.includes('agent-nurse') ? <NurseAgent /> : <Navigate to={home} replace />} />
+      <Route path="agents/pharmacy" element={views.includes('agents') || views.includes('agent-pharmacy') ? <PharmacyAgent /> : <Navigate to={home} replace />} />
+      <Route path="agents/lab" element={views.includes('agents') || views.includes('agent-lab') ? <LabAgent /> : <Navigate to={home} replace />} />
       <Route path="agents/:agentId" element={views.includes('agents') ? <AgentDashboard /> : <Navigate to={home} replace />} />
       <Route path="transactions" element={views.includes('transactions') ? <Transactions /> : <Navigate to={home} replace />} />
       <Route path="security" element={views.includes('security') ? <Security /> : <Navigate to={home} replace />} />
       <Route path="ipfs" element={views.includes('ipfs') ? <IPFS /> : <Navigate to={home} replace />} />
       <Route path="logs" element={views.includes('logs') ? <Logs /> : <Navigate to={home} replace />} />
+      <Route path="alerts" element={views.includes('alerts') ? <Alerts /> : <Navigate to={home} replace />} />
     </Route><Route path="*" element={<Navigate to={user ? home : '/login'} replace />} />
   </Routes></BrowserRouter>
 }

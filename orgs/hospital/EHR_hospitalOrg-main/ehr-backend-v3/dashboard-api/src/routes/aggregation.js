@@ -349,6 +349,7 @@ function buildNetwork(config) {
   const observedChaincodes = [...new Set(events.map((event) => event.payload?.chaincode).filter(Boolean))];
   const channels = [...new Set([config.topology.channel, ...observedChannels])].filter(Boolean).map((id) => ({
     id,
+    chaincode: id === config.topology.channel ? config.topology.chaincode : null,
     configured: id === config.topology.channel,
     observed: observedChannels.includes(id),
     ...(observedChannels.includes(id) && events.some((event) => event.channel === id && event.mock) ? { mock: true } : {}),

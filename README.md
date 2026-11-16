@@ -124,6 +124,7 @@ nginx/hub/                      Single-entry service hub
 ```
 
 ## Documentation
+- Bitcoin Novelty document: [docs/Group_1_Novelty/bitcoin.pdf](docs/Group_1_Novelty/bitcoin.pdf)
 
 - [Current architecture diagrams](docs/architecture.md)
 - [System overview](docs/system-overview.md)
