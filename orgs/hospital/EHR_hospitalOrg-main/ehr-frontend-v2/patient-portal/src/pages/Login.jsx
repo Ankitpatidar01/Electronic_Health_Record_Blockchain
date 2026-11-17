@@ -66,14 +66,17 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md">
         {/* Branding Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl mb-3">
-            <Activity size={26} className="text-teal-400 dark:text-teal-600" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 p-2 shadow-xl mb-3 border border-slate-200/80 dark:border-slate-800">
+            <img src="/logo.svg" alt="Vitalis" className="w-10 h-10 object-contain" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            CareGrid
+            Vitalis
           </h1>
           <p className="text-xs uppercase tracking-wider font-semibold text-teal-600 dark:text-teal-400 mt-1">
-            Patient EHR & Consent Portal
+            Patient EHR &amp; Consent Deck
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Secure Care, Verified on Chain
           </p>
         </div>
 

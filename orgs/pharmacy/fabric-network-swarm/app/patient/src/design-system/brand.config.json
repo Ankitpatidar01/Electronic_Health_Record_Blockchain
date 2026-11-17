@@ -1,0 +1,14 @@
+{
+  "name": "Vitalis",
+  "tagline": "Secure Care, Verified on Chain.",
+  "fullName": "Vitalis Health Network",
+  "description": "Enterprise Electronic Health Record System built on Hyperledger Fabric and Decentralized IPFS.",
+  "portals": {
+    "hub": { "title": "Vitalis Workspace", "subtitle": "Single secure starting point for the clinical ecosystem", "accent": "#0E9AA7" },
+    "hospital": { "title": "Vitalis Clinical", "subtitle": "Hospital Operations, Encounters & Medical Governance", "accent": "#1E4DFF" },
+    "patient": { "title": "Vitalis Patient", "subtitle": "Patient Health Portal & Consent Vault", "accent": "#0E9AA7" },
+    "dashboard": { "title": "Vitalis Observatory", "subtitle": "Real-Time Blockchain Observability & Agent Telemetry", "accent": "#5B8CFF" },
+    "pharmacy": { "title": "Vitalis Pharmacy", "subtitle": "Decentralized Medication Ledgers & Dispensing", "accent": "#10B981" },
+    "lab": { "title": "Vitalis Lab", "subtitle": "Diagnostic Control Deck & Pathological Telemetry", "accent": "#8B5CF6" }
+  }
+}

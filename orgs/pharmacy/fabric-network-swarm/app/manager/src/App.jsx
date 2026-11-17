@@ -97,8 +97,8 @@ export default function App() {
 
       <nav className="nav">
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div className="pulse-circle" style={{ width: '12px', height: '12px' }}></div>
-          <span>MedBlock <span style={{ fontWeight: 300, color: '#94a3b8' }}>Admin Hub</span></span>
+          <img src="/logo.svg" alt="Vitalis" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+          <span>Vitalis <span style={{ fontWeight: 300, color: '#0d9488' }}>Pharmacy Manager</span></span>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button className="btn" onClick={loadData} disabled={loading}>

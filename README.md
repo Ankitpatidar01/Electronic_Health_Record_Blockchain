@@ -153,6 +153,7 @@ nginx/hub/                      Single-entry service hub
 
 ## Documentation
 - [Author Contribution Guide](MY_CONTRIBUTION.md)
+- [Vitalis Redesign & Gateway Implementation Report](REDESIGN_REPORT.md)
 - [Database & Storage Architecture](DATABASE_README.md)
 - Bitcoin Novelty document: [docs/Group_1_Novelty/bitcoin.pdf](docs/Group_1_Novelty/bitcoin.pdf)
 - [Pharmacy Architecture & API Guide](orgs/pharmacy/fabric-network-swarm/README.md)

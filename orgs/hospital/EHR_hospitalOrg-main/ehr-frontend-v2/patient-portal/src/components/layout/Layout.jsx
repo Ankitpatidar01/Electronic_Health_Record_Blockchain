@@ -51,17 +51,17 @@ export default function Layout({ children }) {
         {/* Top Header Bar */}
         <header className="soft-glass-shell px-5 py-3.5 mb-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-md">
-              <Activity size={20} className="text-teal-400 dark:text-teal-600" />
+            <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center p-1.5 shadow-md">
+              <img src="/logo.svg" alt="Vitalis" className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-base tracking-tight text-slate-900 dark:text-white">CareGrid</span>
+                <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">Vitalis</span>
                 <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-md bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-                  Patient Panel
+                  Patient Health Vault
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Soft Glass Bento · Zero-Trust EHR</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Secure Care, Verified on Chain.</p>
             </div>
           </div>
 

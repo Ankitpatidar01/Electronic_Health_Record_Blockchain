@@ -113,6 +113,25 @@ When this project started, it was split into three separate, disconnected pieces
   * Rebuilt `Login.jsx` with split ambient layout, patient ID lookup, and account activation wizard.
 * **Hospital Staff Portal Overhaul (`:5173`):**
   * Modernized `Layout.jsx` with deep-teal clinical styling, role badges, and header status.
+
+---
+
+### F. Vitalis Unified Healthcare Redesign & Hospital Organization Gateway
+* **Elimination of Hospital Role Bypass Vulnerability:**
+  * Fixed the critical flaw where clicking the Hospital Workspace bypassed credential checks and immediately dropped users into the Receptionist view.
+  * Architected and implemented the **Vitalis Clinical Gateway & Role Access Portal** (`/gateway` and `/login`) with 6 distinct clinical roles (Doctor, Nurse, Receptionist, Pharmacist, Records Officer, Hospital Admin), interactive demo credential auto-fill, and target Fabric peer display.
+  * Added prominent "Hospital Gateway / Switch Role" controls in the hospital top bar and sidebar navigation.
+  * Added direct 1-click role pills in the central Workspace Hub leading directly to `/gateway`.
+* **Synthesis of 3 Reference Designs:**
+  * **Reference 1 (Healthcare Landing):** Bold headlines, navy hero panels, 4 pastel feature cards (mint `#e6f4ea`, yellow `#fef7e0`, pink `#fce8e6`, sky-blue), quantitative counters ("09 Navigations", "150k Happy Customers").
+  * **Reference 2 (Hospital UI):** Clean white/blue palette, pill buttons (`rounded-full`), floating glass info chips, 3D capsule accents.
+  * **Reference 3 (Doctor Dashboard):** Teal-to-deep-navy gradient shell (`#0d7a8e` $\rightarrow$ `#0a3d4f` $\rightarrow$ `#061c28`), pill sidebar navigation with white active tab, large rounded white canvas (`vitalis-canvas`), counter headers ("Available Doctors 22"), profile cards with avatar, rating, specialty, schedule, and availability badge.
+* **Canonical Design System (`design-system/`):**
+  * Created tokens (`tokens.css`), brand configs (`brand.config.js` / `.json`), vector assets (`logo.svg`, `favicon.svg`, `mesh-background.svg`), and sync automation (`sync.sh`).
+  * Engineered reusable components: `Avatar.jsx` (deterministic hash-gradient initials & local upload fallback), `DoctorCard.jsx` (Reference 3 card), `PatientCard.jsx`, `StaffCard.jsx`, and `PhotoUploadModal.jsx`.
+* **Universal 9-Portal Modernization & Build Verification:**
+  * Rebranded and modernized Hospital Portal (`:5173`), Patient Portal (`:5174`), Observatory Dashboard (`:5176`), all 6 Pharmacy Apps (`:3001` - `:3005`, `:5175`), Lab Deck (`/lab/`), and Workspace Hub (`/`).
+  * 100% build pass rate across all 9 frontends and 76/76 passing backend tests with zero regressions. Detailed in [REDESIGN_REPORT.md](REDESIGN_REPORT.md).
   * Rebuilt `Login.jsx` with role switching, hints, and MSP-authenticated session handling.
 * **Automated Sync Engine (`scripts/sync-ui.sh`):**
   * Built an automated sync script distributing the UI kit and assets across all 9 React apps and 2 vanilla JS apps (Lab console & Nginx hub) without breaking container volume boundaries.
