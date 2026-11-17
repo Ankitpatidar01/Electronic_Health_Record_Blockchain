@@ -197,6 +197,15 @@ export default function Layout({ children }) {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-teal-50 hover:bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:hover:bg-teal-900/60 dark:text-teal-300 border border-teal-200 dark:border-teal-800 transition-colors shadow-xs cursor-pointer"
+              title="Return to the Hospital Organization Main Gateway to choose another role"
+            >
+              <Users size={13} />
+              <span>Hospital Gateway / Switch Role</span>
+            </button>
             <VerifiedBadge verified={true} />
             <span className="hidden sm:inline-flex text-[11px] font-mono font-medium px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
               Org: HospitalMSP
