@@ -125,7 +125,7 @@ export default function App() {
           )}
           <div className={`badge ${ledgerAvailable ? 'badge-green' : 'badge-yellow'}`}>{ledgerAvailable ? 'LEDGER CONNECTED' : 'LEDGER NOT CONNECTED'}</div>
         </div>
-              <ThemeToggle />
+        <ThemeToggle />
       </nav>
 
       <main className="app-container">

@@ -18,10 +18,12 @@ function applyTheme(theme) {
   document.cookie = `ehr_appearance=${theme}; Path=/; Max-Age=31536000; SameSite=Lax`;
   try { localStorage.setItem('ehr_appearance', theme); } catch {}
   const toggle = document.getElementById('theme-toggle');
-  const next = theme === 'dark' ? 'light' : 'dark';
-  toggle.setAttribute('aria-label', `Switch to ${next} mode`);
-  toggle.setAttribute('aria-pressed', String(theme === 'dark'));
-  toggle.innerHTML = `<span aria-hidden="true">${theme === 'dark' ? '☀' : '☾'}</span><span>${theme === 'dark' ? 'Light' : 'Dark'}</span>`;
+  if (toggle) {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    toggle.setAttribute('aria-label', `Switch to ${next} mode`);
+    toggle.setAttribute('aria-pressed', String(theme === 'dark'));
+    toggle.innerHTML = `<span aria-hidden="true">${theme === 'dark' ? '☀' : '☾'}</span><span>${theme === 'dark' ? 'Light' : 'Dark'}</span>`;
+  }
 }
 
 function setStatus(key, state, text) {

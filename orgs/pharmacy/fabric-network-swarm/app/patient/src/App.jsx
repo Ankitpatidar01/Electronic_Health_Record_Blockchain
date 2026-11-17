@@ -77,7 +77,7 @@ export default function App() {
     fetch(`${API_BASE_URL}/api/network-status`, { signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setNetwork(data) })
-      .catch(() => {})
+      .catch(() => { })
 
     return () => controller.abort()
   }, [])

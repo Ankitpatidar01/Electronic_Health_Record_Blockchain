@@ -10,6 +10,17 @@
     <link rel="stylesheet" href="/vitalis-tokens.css" />
     <link rel="stylesheet" href="/caregrid-tokens.css" />
     <link rel="stylesheet" href="/hub.css?v=2" />
+    <script>
+      (function() {
+        try {
+          var cookie = document.cookie.match(/(?:^|; )ehr_appearance=(light|dark)/);
+          var theme = (cookie && cookie[1]) || localStorage.getItem('ehr_appearance') || 'light';
+          document.documentElement.dataset.theme = theme;
+          if (theme === 'dark') document.documentElement.classList.add('dark');
+          else document.documentElement.classList.remove('dark');
+        } catch (e) {}
+      })();
+    </script>
     <script defer src="/hub.js?v=3"></script>
   </head>
   <body>

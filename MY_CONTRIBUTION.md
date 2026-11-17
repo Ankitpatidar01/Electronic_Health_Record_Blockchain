@@ -131,6 +131,7 @@ When this project started, it was split into three separate, disconnected pieces
   * Engineered reusable components: `Avatar.jsx` (deterministic hash-gradient initials & local upload fallback), `DoctorCard.jsx` (Reference 3 card), `PatientCard.jsx`, `StaffCard.jsx`, and `PhotoUploadModal.jsx`.
 * **Universal 9-Portal Modernization & Build Verification:**
   * Rebranded and modernized Hospital Portal (`:5173`), Patient Portal (`:5174`), Observatory Dashboard (`:5176`), all 6 Pharmacy Apps (`:3001` - `:3005`, `:5175`), Lab Deck (`/lab/`), and Workspace Hub (`/`).
+  * **Complete Restructuring of the Vitalis Lab Deck (`/lab/`):** Redesigned into a high-throughput diagnostic workstation with Reference 1 pastel stat cards (Mint records counter, Sky channel, Yellow IPFS, Pink Gemini AI), tabbed action workstation ("New Record" & "Ledger Queries"), drag-and-drop report file dropzone with IPFS CID anchoring, real-time ledger search and status filter pills, click-to-copy hash chips, row inspection action, demo sample pre-fill, and syntax-highlighted terminal inspector.
   * 100% build pass rate across all 9 frontends and 76/76 passing backend tests with zero regressions. Detailed in [REDESIGN_REPORT.md](REDESIGN_REPORT.md).
   * Rebuilt `Login.jsx` with role switching, hints, and MSP-authenticated session handling.
 * **Automated Sync Engine (`scripts/sync-ui.sh`):**

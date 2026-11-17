@@ -99,7 +99,7 @@ A centralized, single-source-of-truth design system was created under [design-sy
 | **Vitalis Patient Portal** | `:5174` | `/overview`, `/profile` | Vitalis header & theme, profile page with Avatar and PhotoUploadModal, transaction hash verification chips, consent management. |
 | **Vitalis Observatory** | `:5176` | `/overview`, `/network`, `/agents` | Rebranded from CareOps to Vitalis Observatory, Zero-PHI network metrics, real-time WebSocket block stream preserved, role-scoped access matrix. |
 | **Vitalis Pharmacy Suite** | `:3001` - `:3005`, `:5175` | Standalone & Hub | Modernized all 6 apps (`frontend`, `inventory`, `billing`, `manager`, `employee`, `patient` on `:3004`), replaced legacy CarePoint/MedBlock branding with Vitalis Pharmacy Suite. |
-| **Vitalis Lab Deck** | `:80/lab/` | `/lab/` | Rebranded from Lab Results Control Deck to Vitalis Lab Deck Diagnostic Workstation, linked tokens and SVG assets. |
+| **Vitalis Lab Deck** | `:80/lab/` | `/lab/` | Complete architectural and UI restructuring: Reference 1 pastel stat cards (Mint records counter, Sky channel, Yellow IPFS, Pink Gemini AI), tabbed action workstation ("New Record" & "Ledger Queries"), drag-and-drop report file dropzone with IPFS CID anchoring, real-time ledger search and status filter pills, click-to-copy hash chips, row inspection action, demo sample pre-fill, and syntax-highlighted terminal inspector. Full dual-sync light and dark mode. |
 | **Vitalis Workspace Hub** | `:80/` | `/` | Rebranded from CareGrid to Vitalis Health Network, added gateway role pills, updated service availability checks and port 3004 link. |
 
 ---
