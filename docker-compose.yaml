@@ -1,178 +1,401 @@
-version: '3.8'
-
-x-node-service: &node-service
-  image: node:18-alpine
-  restart: unless-stopped
 
 services:
-  # ==========================================
-  # HOSPITAL BACKENDS (Ports 4001-4006)
-  # ==========================================
+
+
+  # ──────────────────────────────────────────────────────────
+  # NGINX — Single entry point (port 80)
+  # ──────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/hub:/usr/share/nginx/html/hub:ro
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────────────────
+  # HOSPITAL BACKENDS
+  # ──────────────────────────────────────────────────────────
   h-ipfs-service:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-h-ipfs-service:latest
+    build:
+      context: ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/ipfs-service
     working_dir: /app
     volumes:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/ipfs-service:/app
-      - /app/node_modules
+      - h-ipfs-service-modules:/app/node_modules
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
+    environment:
+      IPFS_API_URL: http://ipfs.ehr.local:5001
+      IPFS_GATEWAY_URL: http://ipfs.ehr.local:8080
     ports:
       - "4006:4006"
-    command: /bin/sh -c "npm install && npm start"
+    networks:
+      - default
+      - ehr_network
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
+    restart: unless-stopped
 
   h-peer0-api:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-h-peer0-api:latest
+    build:
+      context: ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/peer0-api
     working_dir: /app
     volumes:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/peer0-api:/app
-      - /app/node_modules
+      - h-peer0-api-modules:/app/node_modules
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+    environment:
+      FABRIC_BASE_PATH: /ehr-network
+      PEER_ADDRESS: peer0.hospital.example.com:7051
     ports:
       - "4001:4001"
-    command: /bin/sh -c "npm install && npm start"
+    networks:
+      - default
+      - ehr_network
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
+    restart: unless-stopped
 
   h-peer1-api:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-h-peer1-api:latest
+    build:
+      context: ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/peer1-api
     working_dir: /app
     volumes:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/peer1-api:/app
-      - /app/node_modules
+      - h-peer1-api-modules:/app/node_modules
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+    environment:
+      FABRIC_BASE_PATH: /ehr-network
+      PEER_ADDRESS: peer1.hospital.example.com:9051
     ports:
       - "4002:4002"
-    command: /bin/sh -c "npm install && npm start"
+    networks:
+      - default
+      - ehr_network
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
+    restart: unless-stopped
 
   h-peer2-api:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-h-peer2-api:latest
+    build:
+      context: ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/peer2-api
     working_dir: /app
     volumes:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/peer2-api:/app
-      - /app/node_modules
+      - h-peer2-api-modules:/app/node_modules
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+    environment:
+      FABRIC_BASE_PATH: /ehr-network
+      PEER_ADDRESS: peer2.hospital.example.com:10051
     ports:
       - "4003:4003"
-    command: /bin/sh -c "npm install && npm start"
+    networks:
+      - default
+      - ehr_network
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
+    restart: unless-stopped
 
   h-extorg-api:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-h-extorg-api:latest
+    build:
+      context: ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/extorg-api
     working_dir: /app
     volumes:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/extorg-api:/app
-      - /app/node_modules
+      - h-extorg-api-modules:/app/node_modules
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+    environment:
+      FABRIC_BASE_PATH: /ehr-network
+      DIAG_PEER_ADDRESS: peer0.diagnostic.example.com:8051
+      PROV_PEER_ADDRESS: peer0.provider.example.com:11051
     ports:
       - "4004:4004"
-    command: /bin/sh -c "npm install && npm start"
+    networks:
+      - default
+      - ehr_network
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
+    restart: unless-stopped
 
   h-patient-api:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-h-patient-api:latest
+    build:
+      context: ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/patient-api
     working_dir: /app
     volumes:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/patient-api:/app
-      - /app/node_modules
+      - h-patient-api-modules:/app/node_modules
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+    environment:
+      FABRIC_BASE_PATH: /ehr-network
+      PEER_ADDRESS: peer0.hospital.example.com:7051
     ports:
       - "4005:4005"
-    command: /bin/sh -c "npm install && npm start"
+    networks:
+      - default
+      - ehr_network
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
+    restart: unless-stopped
 
-  # ==========================================
+  h-dashboard-api:
+    profiles: ["dashboard"]
+    image: ehr-h-dashboard-api:local
+    build:
+      context: ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api
+    working_dir: /app
+    env_file:
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/.env
+    environment:
+      DASHBOARD_FABRIC_GATEWAY_ENDPOINT: peer0.hospital.example.com:7051
+      DASHBOARD_PEER_HOSPITAL_RECEPTION: peer0.hospital.example.com:7051
+      DASHBOARD_PEER_HOSPITAL_DOCTOR: peer1.hospital.example.com:9051
+      DASHBOARD_PEER_HOSPITAL_NURSE: peer2.hospital.example.com:10051
+      DASHBOARD_PEER_DIAGNOSTICS: peer0.diagnostic.example.com:8051
+      DASHBOARD_PEER_PROVIDER: peer0.provider.example.com:11051
+      DASHBOARD_ORDERER: orderer.example.com:7050
+      DASHBOARD_HEALTH_PEER0_API_URL: http://h-peer0-api:4001/health
+      DASHBOARD_HEALTH_PEER1_API_URL: http://h-peer1-api:4002/health
+      DASHBOARD_HEALTH_PEER2_API_URL: http://h-peer2-api:4003/health
+      DASHBOARD_HEALTH_PATIENT_API_URL: http://h-patient-api:4005/health
+      DASHBOARD_HEALTH_EXTORG_API_URL: http://h-extorg-api:4004/health
+      DASHBOARD_HEALTH_IPFS_URL: http://h-ipfs-service:4006/health
+      DASHBOARD_HEALTH_PHARMACY_URL: http://p-backend:3000/api/network-status
+      DASHBOARD_HEALTH_PEER0_OPERATIONS_URL: http://peer0.hospital.example.com:17051/healthz
+      DASHBOARD_HEALTH_PEER1_OPERATIONS_URL: http://peer1.hospital.example.com:19051/healthz
+      DASHBOARD_HEALTH_PEER2_OPERATIONS_URL: http://peer2.hospital.example.com:20051/healthz
+      DASHBOARD_HEALTH_DIAGNOSTICS_OPERATIONS_URL: http://peer0.diagnostic.example.com:18051/healthz
+      DASHBOARD_HEALTH_PROVIDER_OPERATIONS_URL: http://peer0.provider.example.com:21051/healthz
+      DASHBOARD_HEALTH_ORDERER_URL: http://orderer.example.com:17050/healthz
+    ports:
+      - "127.0.0.1:4010:4010"
+    volumes:
+      - h-dashboard-api-data:/app/orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/data
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/credentials:/app/orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/credentials:ro
+    networks:
+      - default
+      - ehr_network
+    restart: unless-stopped
+
+  h-dashboard-portal:
+    profiles: ["dashboard"]
+    image: node:20-slim
+    working_dir: /app
+    volumes:
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/dashboard-portal:/app
+      - h-dashboard-portal-modules:/app/node_modules
+    environment:
+      VITE_BASE_PATH: /dashboard/
+      VITE_ACCEPT_HOSPITAL_TOKEN: "true"
+    ports:
+      - "127.0.0.1:5176:5176"
+    command: /bin/sh -c "npm ci && npm run build && npm run preview -- --host 0.0.0.0 --port 5176 --strictPort"
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────────────────
   # HOSPITAL FRONTENDS
-  # ==========================================
+  # ──────────────────────────────────────────────────────────
   h-hospital-portal:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-h-hospital-portal:latest
+    build:
+      context: ./orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/hospital-portal
     working_dir: /app
     volumes:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/hospital-portal:/app
-      - /app/node_modules
+      - h-hospital-portal-modules:/app/node_modules
+    environment:
+      VITE_PEER0_API_TARGET: http://h-peer0-api:4001
+      VITE_PEER1_API_TARGET: http://h-peer1-api:4002
+      VITE_PEER2_API_TARGET: http://h-peer2-api:4003
+      VITE_EXTORG_API_TARGET: http://h-extorg-api:4004
+      VITE_IPFS_API_TARGET: http://h-ipfs-service:4006
     ports:
       - "5173:5173"
-    command: /bin/sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 5173"
+    restart: unless-stopped
 
   h-patient-portal:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-h-patient-portal:latest
+    build:
+      context: ./orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/patient-portal
     working_dir: /app
     volumes:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/patient-portal:/app
-      - /app/node_modules
+      - h-patient-portal-modules:/app/node_modules
     ports:
       - "5174:5174"
-    command: /bin/sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5174"
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 5174"
+    restart: unless-stopped
 
-  # ==========================================
+  # ──────────────────────────────────────────────────────────
   # PHARMACY ORG
-  # ==========================================
+  # ──────────────────────────────────────────────────────────
   p-backend:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-p-backend:latest
+    build:
+      context: ./orgs/pharmacy/fabric-network-swarm/app/backend
     working_dir: /app
     volumes:
       - ./orgs/pharmacy/fabric-network-swarm/app/backend:/app
-      - /app/node_modules
+      - p-backend-modules:/app/node_modules
     ports:
       - "3000:3000"
-    command: /bin/sh -c "npm install && npm start"
+    environment:
+      - IPFS_API=http://ipfs.ehr.local:5001/api/v0
+      - FABRIC_CHANNEL_NAME=ehrchannel
+      - FABRIC_CHAINCODE_NAME=ehr
+    networks:
+      - default
+      - ehr_network
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
+    restart: unless-stopped
 
   p-manager:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-p-manager:latest
+    build:
+      context: ./orgs/pharmacy/fabric-network-swarm/app/manager
     working_dir: /app
     volumes:
       - ./orgs/pharmacy/fabric-network-swarm/app/manager:/app
-      - /app/node_modules
+      - p-manager-modules:/app/node_modules
     ports:
       - "3001:3001"
-    command: /bin/sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3001"
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 3001"
+    restart: unless-stopped
 
   p-employee:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-p-employee:latest
+    build:
+      context: ./orgs/pharmacy/fabric-network-swarm/app/employee
     working_dir: /app
     volumes:
       - ./orgs/pharmacy/fabric-network-swarm/app/employee:/app
-      - /app/node_modules
+      - p-employee-modules:/app/node_modules
     ports:
       - "3002:3002"
-    command: /bin/sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3002"
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 3002"
+    restart: unless-stopped
 
   p-inventory:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-p-inventory:latest
+    build:
+      context: ./orgs/pharmacy/fabric-network-swarm/app/inventory
     working_dir: /app
     volumes:
       - ./orgs/pharmacy/fabric-network-swarm/app/inventory:/app
-      - /app/node_modules
+      - p-inventory-modules:/app/node_modules
     ports:
       - "3003:3003"
-    command: /bin/sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3003"
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 3003"
+    restart: unless-stopped
 
   p-patient:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-p-patient:latest
+    build:
+      context: ./orgs/pharmacy/fabric-network-swarm/app/patient
     working_dir: /app
     volumes:
       - ./orgs/pharmacy/fabric-network-swarm/app/patient:/app
-      - /app/node_modules
+      - p-patient-modules:/app/node_modules
     ports:
       - "3004:3004"
-    command: /bin/sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3004"
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 3004"
+    restart: unless-stopped
 
   p-billing:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-p-billing:latest
+    build:
+      context: ./orgs/pharmacy/fabric-network-swarm/app/billing
     working_dir: /app
     volumes:
       - ./orgs/pharmacy/fabric-network-swarm/app/billing:/app
-      - /app/node_modules
+      - p-billing-modules:/app/node_modules
     ports:
       - "3005:3005"
-    command: /bin/sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3005"
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 3005"
+    restart: unless-stopped
 
   p-frontend:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-p-frontend:latest
+    build:
+      context: ./orgs/pharmacy/fabric-network-swarm/app/frontend
     working_dir: /app
     volumes:
       - ./orgs/pharmacy/fabric-network-swarm/app/frontend:/app
-      - /app/node_modules
+      - p-frontend-modules:/app/node_modules
     ports:
       - "5175:5175"
-    command: /bin/sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5175"
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 5175"
+    restart: unless-stopped
 
-  # ==========================================
+  # ──────────────────────────────────────────────────────────
   # LAB ORG
-  # ==========================================
+  # ──────────────────────────────────────────────────────────
   l-node-gateway:
-    <<: *node-service
+    image: ghcr.io/devbyhimans/ehr-l-node-gateway:latest
+    build:
+      context: ./orgs/lab/EHR-LABORG-main/client/node-gateway
     working_dir: /app
     volumes:
       - ./orgs/lab/EHR-LABORG-main/client/node-gateway:/app
-      - /app/node_modules
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+      - ./orgs/lab/EHR-LABORG-main/connection-profiles:/connection-profiles:ro
+      - ./orgs/lab/EHR-LABORG-main/organizations:/organizations:ro
+      - l-node-gateway-modules:/app/node_modules
+    environment:
+      IPFS_API_URL: http://ipfs.ehr.local:5001
+      IPFS_GATEWAY_URL: http://ipfs.ehr.local:8080
+      # Lab joins the shared ehrchannel as the Diagnostics organization.
+      LAB_MSP_ID: DiagnosticsMSP
+      LAB_PEER_ENDPOINT: peer0.diagnostic.example.com:8051
+      LAB_PEER_TLS_CA: /ehr-network/organizations/peerOrganizations/diagnostic.example.com/peers/peer0.diagnostic.example.com/tls/ca.crt
+      LAB_IDENTITY_MSP_DIR: /ehr-network/organizations/peerOrganizations/diagnostic.example.com/users/labtechnician/msp
+      LAB_CHANNEL: ehrchannel
+      LAB_CHAINCODE: labresults
+      CONNECTION_PROFILE_PATH: /connection-profiles/lab-connection.json
+      USER_MSP_DIR: /organizations/peerOrganizations/lab.example.com/users/User1@lab.example.com/msp
     ports:
       - "3006:3000"
-    command: /bin/sh -c "npm install && npm run web"
+    networks:
+      - default
+      - ehr_network
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run web"
+    restart: unless-stopped
+
+# ──────────────────────────────────────────────────────────
+# Named volumes — node_modules live INSIDE Docker only
+# These are NEVER shared with the host, preventing the
+# Windows/Linux cross-platform npm binary crash
+# ──────────────────────────────────────────────────────────
+volumes:
+  h-dashboard-api-data:
+  h-dashboard-portal-modules:
+  h-ipfs-service-modules:
+  h-peer0-api-modules:
+  h-peer1-api-modules:
+  h-peer2-api-modules:
+  h-extorg-api-modules:
+  h-patient-api-modules:
+  h-hospital-portal-modules:
+  h-patient-portal-modules:
+  p-backend-modules:
+  p-manager-modules:
+  p-employee-modules:
+  p-inventory-modules:
+  p-patient-modules:
+  p-billing-modules:
+  p-frontend-modules:
+  l-node-gateway-modules:
+
+networks:
+  ehr_network:
+    external: true
+    name: ${FABRIC_DOCKER_NETWORK:-ehr_network}
+
+
+

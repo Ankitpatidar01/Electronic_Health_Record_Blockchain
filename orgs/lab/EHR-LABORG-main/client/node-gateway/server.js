@@ -14,9 +14,11 @@ const {
 const {
   createLabResult,
   getAllLabResults,
+  getLedgerConfig,
   getLabResultsByPatient,
   listGatewayPeers,
   readLabResult,
+  updateLabResult,
   updateLabStatus,
 } = require('./gateway');
 const {
@@ -29,6 +31,8 @@ const {
   getIpfsConfig,
   ipfsHealth,
   readJsonFromIpfs,
+  readRawFromIpfs,
+  sha256Hex,
 } = require('./ipfs');
 const {
   runWorkflow,
@@ -59,6 +63,14 @@ function resolveAdvertisedHost() {
     || 'localhost'
   );
 }
+
+const integrityChecker = createIntegrityChecker({
+  listRecords: async () => normalizeToArray((await getAllLabResults()).result),
+  fetchRaw: (cid) => readRawFromIpfs(cid),
+  hash: sha256Hex,
+  intervalMs: Number(process.env.INTEGRITY_INTERVAL_MS || (4 * 60 * 60 * 1000)),
+  logFile: process.env.INTEGRITY_LOG_FILE || path.join(__dirname, 'logs', 'integrity-recheck.log'),
+});
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(WEB_ROOT));
@@ -158,11 +170,13 @@ function normalizeError(error) {
 app.get('/api/meta', (_req, res) => {
   const ipfs = getIpfsConfig();
   const ai = getAiAgentConfig();
+  const ledger = getLedgerConfig();
   res.json({
     peers: listGatewayPeers(),
-    defaultPeer: process.env.GATEWAY_PEER || 'peer0.lab.example.com',
-    channel: 'ehrchannel',
-    chaincode: 'labresults',
+    defaultPeer: ledger.defaultPeer,
+    channel: ledger.channel,
+    chaincode: ledger.chaincode,
+    mspId: ledger.mspId,
     ipfs,
     ai: {
       provider: ai.provider,
@@ -171,6 +185,39 @@ app.get('/api/meta', (_req, res) => {
     },
   });
 });
+
+app.get('/api/integrity/status', (_req, res) => {
+  res.json(integrityChecker.status());
+});
+
+app.post('/api/integrity/run', async (_req, res, next) => {
+  try {
+    res.json(await integrityChecker.runOnce('manual'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Demo-only: overwrites a record's on-chain CID or digest so the re-check can be
+// shown detecting tampering. Disabled unless INTEGRITY_DEMO_ENDPOINTS=true.
+if (parseBooleanValue(process.env.INTEGRITY_DEMO_ENDPOINTS, false)) {
+  app.post('/api/integrity/demo/tamper', async (req, res, next) => {
+    try {
+      const { resultId, field, value } = req.body || {};
+      if (!['cid', 'digest'].includes(field) || !trimmedField(value)) {
+        throw new Error('field (cid or digest) and value are required');
+      }
+      const { result: record } = await readLabResult(trimmedField(resultId), { peerName: selectedPeer(req) });
+      if (!record.resultData || record.resultData.storage !== 'ipfs') {
+        throw new Error(`An IPFS-backed record is required; ${resultId} is stored on-chain`);
+      }
+      record.resultData[field] = trimmedField(value);
+      res.json(await updateLabResult(record, { peerName: selectedPeer(req) }));
+    } catch (error) {
+      next(error);
+    }
+  });
+}
 
 app.get('/api/ipfs/health', async (_req, res) => {
   const health = await ipfsHealth();
@@ -319,6 +366,17 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
     const parsedResultData = hasResultData ? parseJsonField(req.body.resultData, 'resultData') : null;
     const resultId = trimmedField(req.body.resultId);
     const peerName = selectedPeer(req);
+
+    // Respond early to prevent HTTP timeouts
+    res.status(202).json({
+      status: 'processing',
+      resultId,
+      message: 'Upload received and is processing in the background.'
+    });
+
+    // Run heavy IPFS/OCR processing in background
+    (async () => {
+      try {
     const runAiAgents = parseBooleanValue(req.body.runAiAgents, true);
 
     const warnings = [];
@@ -469,16 +527,11 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
       { peerName }
     );
 
-    res.status(201).json({
-      ...response,
-      ipfs: ipfsPayload,
-      reportFileIpfs,
-      extractedTextChars: extractedReportText.length,
-      extractedTextPreview: extractedReportText.slice(0, 500),
-      ai,
-      aiIpfs,
-      warnings,
-    });
+    console.log(`Background processing completed for resultId ${resultId}`);
+      } catch (bgError) {
+        console.error(`Background processing failed for resultId ${resultId}:`, bgError);
+      }
+    })();
   } catch (error) {
     next(error);
   }
@@ -582,6 +635,11 @@ app.use((error, _req, res, _next) => {
 app.listen(PORT, BIND_HOST, () => {
   const advertisedHost = resolveAdvertisedHost();
   console.log(`Lab dashboard is running at http://localhost:${PORT}`);
+
+  if (parseBooleanValue(process.env.INTEGRITY_RECHECK_ENABLED, true)) {
+    integrityChecker.start();
+    console.log(`Ledger-integrity re-check scheduled every ${integrityChecker.status().intervalMs / 60000} min`);
+  }
 
   if (advertisedHost !== 'localhost') {
     console.log(`Network access URL: http://${advertisedHost}:${PORT}`);

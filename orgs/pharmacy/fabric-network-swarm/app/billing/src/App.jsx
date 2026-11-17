@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Pill, Activity, FileText, Send, User, Package, CheckCircle, RefreshCw, ShieldCheck, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './styles.css';
+import ThemeToggle from './ThemeToggle.jsx';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://100.124.176.94:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/pharmacy';
 
 // Fixed prescription templates
 const PRESCRIPTION_TEMPLATES = {
@@ -53,12 +54,16 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [recentTx, setRecentTx] = useState(null);
   const [ipfsStatus, setIpfsStatus] = useState('CHECKING');
+  const [ledgerAvailable, setLedgerAvailable] = useState(false);
 
   // Fetch IPFS status on mount
   useEffect(() => {
     api('/api/ipfs-status')
       .then(data => setIpfsStatus(data.status))
       .catch(() => setIpfsStatus('DOWN'));
+    api('/api/network-status')
+      .then(status => setLedgerAvailable(Object.values(status.nodes || {}).some(height => typeof height === 'number')))
+      .catch(() => setLedgerAvailable(false));
   }, []);
 
   const applyTemplate = (templateId) => {
@@ -117,8 +122,8 @@ export default function App() {
     <div className="app">
       <nav className="nav">
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Pill size={24} color="#3b82f6" />
-          <span>MedBlock <span style={{ fontWeight: 300, color: '#94a3b8' }}>Billing</span></span>
+          <img src="/logo.svg" alt="Vitalis" style={{ width: 26, height: 26, objectFit: 'contain' }} />
+          <span>Vitalis <span style={{ fontWeight: 300, color: '#0d9488' }}>Pharmacy Billing</span></span>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div className="glass-card" style={{ padding: '0.4rem 1rem', borderRadius: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)' }}>
@@ -134,6 +139,7 @@ export default function App() {
             IPFS {ipfsStatus}
           </div>
         </div>
+              <ThemeToggle />
       </nav>
 
       <main className="app-container">
@@ -143,6 +149,7 @@ export default function App() {
             <h3><FileText size={20} color="#3b82f6" /> Issue New Prescription</h3>
             <p style={{ fontSize: '0.8rem', marginBottom: '2rem' }}>All issuances are immutable and stored with SHA-256 integrity checks on IPFS.</p>
 
+            {!ledgerAvailable && <p role="status" className="connection-note">Ledger unavailable · billing submissions are disabled. Prescription templates are examples only.</p>}
             <form onSubmit={submitPrescription}>
               <label>Recipient Patient ID</label>
               <input value={patientId} onChange={e => setPatientId(e.target.value)} placeholder="e.g. pat_001" required />
@@ -219,7 +226,7 @@ export default function App() {
                 style={{ marginBottom: '1.5rem' }}
               />
 
-              <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', gap: '0.75rem' }}>
+              <button type="submit" disabled={loading || !ledgerAvailable} className="btn btn-primary" style={{ width: '100%', gap: '0.75rem' }}>
                 {loading ? <RefreshCw size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
                 {loading ? 'Anchoring to Blockchain…' : 'Sign & Anchor Transaction'}
               </button>
@@ -242,8 +249,9 @@ export default function App() {
                   </div>
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#94a3b8', padding: '0 0.5rem' }}>
-                  ✓ Each prescription is uploaded to IPFS before the blockchain commit.<br />
-                  ✓ The IPFS CID is permanently stored on the Fabric ledger as proof.
+                  {ledgerAvailable && ipfsStatus === 'UP'
+                    ? 'IPFS and Fabric are responding. A submission will report its actual result after the transaction completes.'
+                    : 'Intended flow only · IPFS and Fabric are not connected, so no upload or ledger commit is being reported.'}
                 </div>
               </div>
             </div>

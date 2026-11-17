@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Package, Activity, Search, RefreshCw, Plus, Minus, AlertTriangle, ShieldCheck, User, Pill, ArrowRight, ExternalLink, Database, TrendingDown, ClipboardList } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './styles.css';
+import ThemeToggle from './ThemeToggle.jsx';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://100.124.176.94:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/pharmacy';
 
 const api = async (path, opts = {}) => {
   const res = await fetch(`${API_BASE_URL}${path}`, opts);
@@ -16,6 +17,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('stock');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [currentUser, setCurrentUser] = useState('inventory_mgr_01');
   const [toast, setToast] = useState(null);
 
@@ -32,9 +34,12 @@ export default function App() {
     try {
       const data = await api(`/api/inventory?user=${currentUser}`);
       setItems(Array.isArray(data) ? data : []);
+      setLoadError(false);
     } catch (e) {
       console.error(e);
-      showToast('Failed to load inventory: ' + e.message, 'error');
+      setItems([]);
+      setLoadError(true);
+      showToast('Pharmacy ledger unavailable. Inventory writes are disabled.', 'error');
     } finally {
       setLoading(false);
     }
@@ -66,10 +71,12 @@ export default function App() {
       <AnimatePresence>
         {toast && (
           <motion.div initial={{ opacity: 0, y: -40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 999,
+            style={{
+              position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 999,
               background: toast.type === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)',
               border: `1px solid ${toast.type === 'error' ? '#ef4444' : '#10b981'}`,
-              borderRadius: '1rem', padding: '1rem 1.5rem', backdropFilter: 'blur(16px)', color: 'white', fontWeight: 600 }}>
+              borderRadius: '1rem', padding: '1rem 1.5rem', backdropFilter: 'blur(16px)', color: 'white', fontWeight: 600
+            }}>
             {toast.msg}
           </motion.div>
         )}
@@ -77,8 +84,8 @@ export default function App() {
 
       <nav className="nav">
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Package size={28} color="#eab308" />
-          <span>MedBlock <span style={{ fontWeight: 300, color: '#94a3b8' }}>Inventory</span></span>
+          <img src="/logo.svg" alt="Vitalis" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+          <span>Vitalis <span style={{ fontWeight: 300, color: '#0d9488' }}>Pharmacy Inventory</span></span>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div className="glass-card" style={{ padding: '0.4rem 1rem', borderRadius: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)' }}>
@@ -93,6 +100,7 @@ export default function App() {
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
+        <ThemeToggle />
       </nav>
 
       <main className="app-container">
@@ -108,12 +116,14 @@ export default function App() {
                 <div className="glass-card" style={{ gridColumn: 'span 2' }}>
                   <h3><Database size={20} color="#eab308" /> Pharmacy Real-Time Stock</h3>
                   <p>Global inventory state distributed across the blockchain swarm.</p>
-                  
+
                   <div style={{ marginTop: '2.5rem' }}>
                     {items.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.4 }}>
+                      <div role="status" style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary)' }}>
                         <Database size={48} style={{ margin: '0 auto 1.5rem' }} />
-                        <p>No inventory records found on the ledger.</p>
+                        <p>{loadError
+                          ? 'Inventory service unavailable. No sample stock is displayed.'
+                          : 'No inventory records were returned by the connected service.'}</p>
                       </div>
                     ) : (
                       <table>
@@ -129,7 +139,7 @@ export default function App() {
                               <td style={{ color: '#10b981' }}>${item.price}</td>
                               <td style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(item.lastRestocked || item.createdAt).toLocaleString()}</td>
                               <td>
-                                {item.quantity <= (item.lowStockThreshold || 50) 
+                                {item.quantity <= (item.lowStockThreshold || 50)
                                   ? <span className="badge badge-red">Low Stock</span>
                                   : <span className="badge badge-green">Healthy</span>
                                 }
@@ -146,8 +156,10 @@ export default function App() {
                   <h3><TrendingDown size={20} color="#ef4444" /> Low Stock Alerts</h3>
                   <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {lowStockItems.length === 0 ? (
-                      <div style={{ padding: '1rem', textAlign: 'center', opacity: 0.5, fontSize: '0.85rem' }}>
-                        All stock levels are optimal.
+                      <div role="status" style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                        {loadError || items.length === 0
+                          ? 'Stock status unavailable until live inventory data is returned.'
+                          : 'No low-stock items were reported.'}
                       </div>
                     ) : (
                       lowStockItems.map((item, i) => (
@@ -172,34 +184,34 @@ export default function App() {
                 <div className="glass-card">
                   <h3><Plus size={20} color="#10b981" /> Add / Restock Medicine</h3>
                   <p style={{ fontSize: '0.8rem', marginBottom: '2rem' }}>Updates are anchored to the blockchain and visible to pharmacists instantly.</p>
-                  
+
                   <form onSubmit={handleAddStock}>
                     <label>Item SKU / ID</label>
-                    <input value={newItem.itemId} onChange={e => setNewItem({...newItem, itemId: e.target.value})} placeholder="med_001" required />
-                    
+                    <input value={newItem.itemId} onChange={e => setNewItem({ ...newItem, itemId: e.target.value })} placeholder="med_001" required />
+
                     <label>Medicine Name</label>
-                    <input value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} placeholder="Paracetamol 500mg" required />
-                    
+                    <input value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} placeholder="Paracetamol 500mg" required />
+
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
                         <label>Quantity</label>
-                        <input type="number" value={newItem.quantity} onChange={e => setNewItem({...newItem, quantity: e.target.value})} placeholder="500" required />
+                        <input type="number" value={newItem.quantity} onChange={e => setNewItem({ ...newItem, quantity: e.target.value })} placeholder="500" required />
                       </div>
                       <div>
                         <label>Base Price ($)</label>
-                        <input type="number" step="0.01" value={newItem.price} onChange={e => setNewItem({...newItem, price: e.target.value})} placeholder="10.00" />
+                        <input type="number" step="0.01" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} placeholder="10.00" />
                       </div>
                     </div>
 
                     <label>Unit</label>
-                    <select value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value})}>
+                    <select value={newItem.unit} onChange={e => setNewItem({ ...newItem, unit: e.target.value })}>
                       <option value="tablets">Tablets</option>
                       <option value="vials">Vials</option>
                       <option value="bottles">Bottles</option>
                       <option value="patches">Patches</option>
                     </select>
 
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
+                    <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={loadError}>
                       <ShieldCheck size={18} /> Update Stock Ledger
                     </button>
                   </form>

@@ -1,163 +1,459 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="A premium interface for managing lab records securely on the ehrchannel using Hyperledger Fabric LabMSP." />
-    <title>Lab Results Control Deck</title>
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <main class="shell">
-      <header class="hero reveal" style="--delay: 50ms">
-        <p class="eyebrow">Hyperledger Fabric &middot; LabMSP</p>
-        <h1>Lab Results Control Deck</h1>
-        <p class="subtitle">
-          Securely create, track, and inspect patient laboratory records directly on the ehrchannel with your gateway identity.
-        </p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Vitalis Lab Deck - Precision Diagnostic Workstation & Hyperledger Fabric Ledger backed by Kubo IPFS." />
+  <title>Vitalis Lab Deck | Diagnostic Workstation &amp; Ledger</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="stylesheet" href="./vitalis-tokens.css" />
+  <link rel="stylesheet" href="./caregrid-tokens.css" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script>
+    (function() {
+      try {
+        var cookie = document.cookie.match(/(?:^|; )ehr_appearance=(light|dark)/);
+        var theme = (cookie && cookie[1]) || localStorage.getItem('ehr_appearance') || 'light';
+        document.documentElement.dataset.theme = theme;
+        if (theme === 'dark') document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
+      } catch (e) {}
+    })();
+  </script>
+</head>
 
-        <div class="hero-controls">
-          <label for="peerSelect">Gateway Peer</label>
-          <select id="peerSelect" aria-label="Select Gateway Peer"></select>
-          <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh Ledger</button>
+<body>
+  <!-- Topbar Header -->
+  <header class="lab-topbar">
+    <div class="lab-topbar-inner">
+      <div class="brand-area">
+        <a href="/lab/" class="brand-link" aria-label="Vitalis Lab Deck Home">
+          <img src="./logo.svg" alt="Vitalis Logo" class="brand-logo" />
+          <div class="brand-text">
+            <span class="brand-name">Vitalis <span class="brand-accent">Lab Deck</span></span>
+            <span class="brand-sub">Diagnostic Workstation &amp; Ledger</span>
+          </div>
+        </a>
+        <div class="live-status-chip" title="Hyperledger Fabric LabMSP Gateway Status">
+          <span class="status-dot"></span>
+          <span class="status-label">Fabric LabMSP</span>
         </div>
-      </header>
-
-      <div class="sidebar">
-        <article class="panel reveal" style="--delay: 150ms">
-          <h2>
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
-            Create Record
-          </h2>
-          <form id="createForm" class="form-grid">
-            <label>
-              Result ID
-              <input name="resultId" placeholder="e.g. labresult10" required />
-            </label>
-            <label>
-              Patient ID
-              <input name="patientId" placeholder="e.g. patient-1010" required />
-            </label>
-            <label>
-              Test Code
-              <input name="testCode" placeholder="e.g. LIPID" required />
-            </label>
-            <label>
-              Collected At
-              <input name="collectedAt" type="datetime-local" required />
-            </label>
-            <label>
-              Initial Status
-              <input name="status" placeholder="e.g. PENDING or REPORTED" required />
-            </label>
-            <label>
-              Result Data (JSON, optional with file upload)
-              <textarea name="resultData" placeholder='{"hdl":"56","ldl":"108"}'></textarea>
-            </label>
-            <label>
-              Lab Report File (PDF/Image)
-              <input
-                id="reportFile"
-                name="reportFile"
-                type="file"
-                accept="application/pdf,image/*"
-              />
-              <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
-                Upload a PDF/image report to store in IPFS and extract text for AI analysis.
-              </span>
-            </label>
-            <label class="checkbox-row">
-              <input id="storeInIpfs" name="storeInIpfs" type="checkbox" checked />
-              Store result payload in IPFS (CID anchored on-chain)
-            </label>
-            <label class="checkbox-row">
-              <input id="runAiAgents" name="runAiAgents" type="checkbox" checked />
-              Run Gemini AI agents (lab analysis + decision support) before submit
-            </label>
-            <button class="btn btn-primary" type="submit">Submit Record</button>
-          </form>
-        </article>
-
-        <article class="panel reveal" style="--delay: 200ms">
-          <h2>
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            Query Tools
-          </h2>
-          <form id="readForm" class="inline-form">
-            <label>
-              Read by Result ID
-              <input name="resultId" placeholder="labresult1" required />
-            </label>
-            <button class="btn btn-secondary" type="submit">Lookup</button>
-          </form>
-
-          <form id="resolveDataForm" class="inline-form">
-            <label>
-              Resolve IPFS Data by Result ID
-              <input name="resultId" placeholder="labresult1" required />
-            </label>
-            <button class="btn btn-secondary" type="submit">Resolve Payload</button>
-          </form>
-
-          <form id="patientForm" class="inline-form">
-            <label>
-              History by Patient ID
-              <input name="patientId" placeholder="patient-1001" required />
-            </label>
-            <button class="btn btn-secondary" type="submit">Lookup</button>
-          </form>
-
-          <form id="updateStatusForm" class="inline-form">
-            <label>
-              Update Result State
-              <input name="resultId" placeholder="Result ID" required />
-            </label>
-            <label>
-              New Status
-              <input name="status" placeholder="REPORTED" required />
-            </label>
-            <button class="btn btn-secondary" type="submit" style="grid-column: 1 / -1;">Update Status</button>
-          </form>
-        </article>
       </div>
 
-      <div class="main-content">
-        <section class="panel reveal" style="--delay: 250ms">
-          <div class="panel-header">
-            <h2>Ledger Snapshot</h2>
-            <p id="metaPill" class="pill">Connecting...</p>
+      <div class="topbar-controls">
+        <div class="peer-selector-wrap">
+          <svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+          <label for="peerSelect" class="sr-only">Gateway Peer</label>
+          <select id="peerSelect" aria-label="Select Gateway Peer" title="Active Gateway Peer"></select>
+        </div>
+
+        <button id="refreshBtn" class="pill-btn secondary" type="button" title="Refresh ledger state">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6"></path>
+            <path d="M1 20v-6h6"></path>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>Refresh</span>
+        </button>
+
+        <a href="/" class="pill-btn outline hub-link" title="Navigate to Workspace Hub">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span class="hide-mobile">Workspace Hub</span>
+        </a>
+
+        <button id="themeToggle" class="pill-btn theme-toggle-btn" type="button" aria-pressed="false" title="Toggle color scheme">
+          <span class="theme-icon" aria-hidden="true">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="lab-shell">
+    <!-- Hero Banner (Reference 1 & 2 Aesthetic) -->
+    <section class="lab-hero-card">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          <span>Hyperledger Fabric &middot; Channel ehrchannel &middot; IPFS Kubo</span>
+        </div>
+        <h1 class="hero-title">Precision Diagnostic Workstation &amp; Ledger</h1>
+        <p class="hero-subtitle">
+          Cryptographically sign, verify, and anchor patient diagnostic reports, pathology panels, and blood chemistry records on the decentralized health ledger with automated Gemini AI diagnostic support.
+        </p>
+
+        <div class="floating-chips-row">
+          <span class="glass-chip">
+            <span class="chip-icon">🛡️</span> LabMSP Endorsed
+          </span>
+          <span class="glass-chip">
+            <span class="chip-icon">🔗</span> Zero-Tamper IPFS CID
+          </span>
+          <span class="glass-chip">
+            <span class="chip-icon">🤖</span> Gemini AI Decision Support
+          </span>
+          <span class="glass-chip">
+            <span class="chip-icon">🔒</span> Cross-Org Verified
+          </span>
+        </div>
+      </div>
+
+      <!-- Reference 1: Four Pastel Stat Tiles -->
+      <div class="pastel-stats-grid">
+        <div class="pastel-stat-card mint">
+          <div class="stat-top">
+            <span class="stat-title">Ledger Records</span>
+            <span class="stat-tag">Active</span>
+          </div>
+          <div class="stat-val" id="statRecordsCount">0</div>
+          <p class="stat-desc">Committed diagnostic entries</p>
+        </div>
+
+        <div class="pastel-stat-card sky">
+          <div class="stat-top">
+            <span class="stat-title">Consensus Channel</span>
+            <span class="stat-tag">Fabric</span>
+          </div>
+          <div class="stat-val" id="statChannel">ehrchannel</div>
+          <p class="stat-desc">Chaincode: labresults v2</p>
+        </div>
+
+        <div class="pastel-stat-card yellow">
+          <div class="stat-top">
+            <span class="stat-title">Storage Cluster</span>
+            <span class="stat-tag">IPFS</span>
+          </div>
+          <div class="stat-val" id="statIpfs">Kubo 0.28</div>
+          <p class="stat-desc">Decentralized CID anchor</p>
+        </div>
+
+        <div class="pastel-stat-card pink">
+          <div class="stat-top">
+            <span class="stat-title">Clinical AI Engine</span>
+            <span class="stat-tag">Gemini</span>
+          </div>
+          <div class="stat-val" id="statAi">Ready</div>
+          <p class="stat-desc">Multi-modal report reasoning</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Operational Workstation Grid -->
+    <div class="workstation-layout">
+      <!-- Left Column: Diagnostic Action Workstation -->
+      <aside class="workstation-sidebar">
+        <div class="bento-panel">
+          <!-- Action Navigation Tabs -->
+          <div class="bento-tabs">
+            <button type="button" id="tabCreate" class="tab-btn active" data-target="panel-create">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+              <span>New Record</span>
+            </button>
+            <button type="button" id="tabQuery" class="tab-btn" data-target="panel-query">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <span>Ledger Queries</span>
+            </button>
           </div>
 
-          <div class="table-wrap">
-            <table>
+          <!-- Tab 1: New Record Form -->
+          <div id="panel-create" class="tab-content active">
+            <div class="panel-intro">
+              <div>
+                <h2 class="panel-heading">Commit Diagnostic Result</h2>
+                <p class="panel-sub">Sign and register laboratory findings to Fabric LabMSP</p>
+              </div>
+              <button type="button" id="demoFillBtn" class="demo-fill-btn" title="Fill sample clinical data">
+                Demo Sample
+              </button>
+            </div>
+
+            <form id="createForm" class="modern-form">
+              <div class="form-grid-2">
+                <div class="form-field">
+                  <label for="createResultId">Result ID <span class="required">*</span></label>
+                  <input id="createResultId" name="resultId" placeholder="e.g. LAB-RES-101" required />
+                </div>
+                <div class="form-field">
+                  <label for="createPatientId">Patient ID <span class="required">*</span></label>
+                  <input id="createPatientId" name="patientId" placeholder="e.g. PAT-001" required />
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-field">
+                  <label for="createTestCode">Test Code / Panel <span class="required">*</span></label>
+                  <input id="createTestCode" name="testCode" placeholder="e.g. LIPID, CBC, CMP" required />
+                </div>
+                <div class="form-field">
+                  <label for="createStatus">Status <span class="required">*</span></label>
+                  <select id="createStatus" name="status" required>
+                    <option value="REPORTED">REPORTED (Final Findings)</option>
+                    <option value="PENDING">PENDING (Awaiting Verification)</option>
+                    <option value="CRITICAL">CRITICAL (Alert Required)</option>
+                    <option value="IN_REVIEW">IN_REVIEW (Secondary Review)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="createCollectedAt">Collection Timestamp <span class="required">*</span></label>
+                <input id="createCollectedAt" name="collectedAt" type="datetime-local" required />
+              </div>
+
+              <div class="form-field">
+                <div class="label-with-action">
+                  <label for="createResultData">Result Data (JSON Parameters)</label>
+                  <button type="button" id="formatJsonBtn" class="link-btn">Format JSON</button>
+                </div>
+                <textarea id="createResultData" name="resultData" rows="3" placeholder='{"cholesterol": 195, "hdl": 58, "ldl": 112, "triglycerides": 130}'></textarea>
+              </div>
+
+              <!-- Drag & Drop File Upload -->
+              <div class="form-field">
+                <label>Laboratory Report Document (PDF / Image)</label>
+                <div class="file-dropzone" id="fileDropzone">
+                  <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                  </svg>
+                  <div class="dropzone-text">
+                    <span class="primary-text">Click to browse or drag &amp; drop document</span>
+                    <span class="secondary-text">PDF, PNG, JPG up to 10MB (stored in IPFS)</span>
+                  </div>
+                  <input id="reportFile" name="reportFile" type="file" accept="application/pdf,image/*" class="file-input-hidden" />
+                  <div id="fileSelectedBadge" class="file-badge hidden">
+                    <span class="file-badge-name" id="fileNameDisplay">report.pdf</span>
+                    <button type="button" id="clearFileBtn" class="file-clear-btn" title="Remove file">&times;</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Switches -->
+              <div class="switches-container">
+                <label class="switch-row">
+                  <input id="storeInIpfs" name="storeInIpfs" type="checkbox" checked />
+                  <span class="switch-slider"></span>
+                  <span class="switch-label">
+                    <strong>Store in Kubo IPFS</strong>
+                    <small>Anchor cryptographic CID on Fabric ledger</small>
+                  </span>
+                </label>
+
+                <label class="switch-row">
+                  <input id="runAiAgents" name="runAiAgents" type="checkbox" checked />
+                  <span class="switch-slider"></span>
+                  <span class="switch-label">
+                    <strong>Run Gemini AI Diagnostics</strong>
+                    <small>Extract report text &amp; synthesize clinical insights</small>
+                  </span>
+                </label>
+              </div>
+
+              <button class="pill-btn primary submit-btn" type="submit">
+                <span>Commit Record to Ledger</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-arrow">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </button>
+            </form>
+          </div>
+
+          <!-- Tab 2: Ledger Query & Mutation Tools -->
+          <div id="panel-query" class="tab-content">
+            <div class="panel-intro">
+              <div>
+                <h2 class="panel-heading">Ledger Diagnostic Tools</h2>
+                <p class="panel-sub">Query entries, inspect CIDs, and mutate record states</p>
+              </div>
+            </div>
+
+            <div class="query-sections">
+              <!-- Query 1: Single Result Lookup -->
+              <div class="query-card">
+                <h3>Lookup by Result ID</h3>
+                <form id="readForm" class="modern-inline-form">
+                  <input name="resultId" placeholder="e.g. LAB-RES-101" required />
+                  <button class="pill-btn secondary sm" type="submit">Lookup</button>
+                </form>
+              </div>
+
+              <!-- Query 2: Resolve IPFS Payload -->
+              <div class="query-card">
+                <h3>Resolve IPFS Payload</h3>
+                <form id="resolveDataForm" class="modern-inline-form">
+                  <input name="resultId" placeholder="e.g. LAB-RES-101" required />
+                  <button class="pill-btn secondary sm" type="submit">Resolve</button>
+                </form>
+              </div>
+
+              <!-- Query 3: Patient Diagnostic History -->
+              <div class="query-card">
+                <h3>Patient Diagnostic History</h3>
+                <form id="patientForm" class="modern-inline-form">
+                  <input name="patientId" placeholder="e.g. PAT-001" required />
+                  <button class="pill-btn secondary sm" type="submit">Search</button>
+                </form>
+              </div>
+
+              <!-- Mutation: Update Status -->
+              <div class="query-card highlight">
+                <h3>Mutate Result State</h3>
+                <form id="updateStatusForm" class="modern-stack-form">
+                  <div class="form-grid-2">
+                    <input name="resultId" placeholder="Result ID" required />
+                    <select name="status" required>
+                      <option value="REPORTED">REPORTED</option>
+                      <option value="CRITICAL">CRITICAL</option>
+                      <option value="PENDING">PENDING</option>
+                      <option value="ARCHIVED">ARCHIVED</option>
+                    </select>
+                  </div>
+                  <button class="pill-btn primary sm" type="submit">Apply Status Update</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Column: Ledger Table & Diagnostic Inspector -->
+      <section class="workstation-content">
+        <!-- Records Ledger Bento Panel -->
+        <div class="bento-panel">
+          <div class="panel-header-row">
+            <div>
+              <div class="header-with-badge">
+                <h2 class="section-title">Ledger Diagnostic Records</h2>
+                <span id="metaPill" class="vitalis-pill-badge">Connecting...</span>
+              </div>
+              <p class="section-desc">Real-time records endorsed by LabMSP peers on ehrchannel</p>
+            </div>
+
+            <!-- Search & Filters -->
+            <div class="table-actions-row">
+              <div class="search-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="recordSearch" placeholder="Search result ID, patient, panel..." />
+              </div>
+
+              <div class="status-filter-pills" id="statusFilters">
+                <button type="button" class="filter-pill active" data-filter="ALL">All</button>
+                <button type="button" class="filter-pill" data-filter="REPORTED">Reported</button>
+                <button type="button" class="filter-pill" data-filter="PENDING">Pending</button>
+                <button type="button" class="filter-pill" data-filter="CRITICAL">Critical</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ledger Table -->
+          <div class="modern-table-wrap">
+            <table class="modern-ledger-table">
               <thead>
                 <tr>
                   <th>Result ID</th>
                   <th>Patient ID</th>
-                  <th>Test Code</th>
+                  <th>Diagnostic Test</th>
                   <th>Status</th>
-                  <th>Collected At</th>
+                  <th>Collected Date</th>
+                  <th style="text-align: right;">Action</th>
                 </tr>
               </thead>
               <tbody id="recordsBody">
-                <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading ledger data...</td></tr>
+                <tr>
+                  <td colspan="6" class="table-empty-row">
+                    <div class="loading-state-box">
+                      <span class="loading-spinner"></span>
+                      <span>Connecting to Fabric LabMSP peers...</span>
+                    </div>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
 
-        <section class="panel panel-output reveal" style="--delay: 300ms">
-          <div class="panel-header">
-            <h2>Transaction Output</h2>
-            <button id="clearOutputBtn" class="btn btn-ghost btn-sm" type="button">Clear Logs</button>
+        <!-- Ledger-Integrity Re-Check Panel -->
+        <div class="bento-panel integrity-panel">
+          <div class="panel-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div>
+              <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Ledger-Integrity Re-Check</h3>
+              <p id="integrityMeta" class="integrity-meta" style="margin: 4px 0 0; font-size: 0.82rem; color: var(--lab-text-muted);">No check has run yet.</p>
+            </div>
+            <button id="integrityRunBtn" class="pill-btn primary sm" type="button">Run Check Now</button>
           </div>
-          <pre id="rawOutput" aria-live="polite">Awaiting transactions...</pre>
-        </section>
-      </div>
-    </main>
+          <div class="integrity-counts" style="display: flex; gap: 8px; margin-bottom: 14px;">
+            <span class="status-pill-badge reported">OK:&nbsp;<strong id="integrityOk">-</strong></span>
+            <span class="status-pill-badge critical">Mismatch:&nbsp;<strong id="integrityMismatch">-</strong></span>
+            <span class="status-pill-badge pending">Missing:&nbsp;<strong id="integrityMissing">-</strong></span>
+          </div>
+          <div class="table-scroll-wrap">
+            <table class="modern-ledger-table">
+              <thead>
+                <tr>
+                  <th>Result ID</th>
+                  <th>Object</th>
+                  <th>Status</th>
+                  <th>Expected / Actual Digest</th>
+                </tr>
+              </thead>
+              <tbody id="integrityBody">
+                <tr><td colspan="4" class="table-empty-row">Waiting for first integrity run...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-    <div id="toast" role="status" aria-live="polite"></div>
+        <!-- Live Output & Diagnostic Terminal -->
+        <div class="bento-panel output-panel">
+          <div class="output-header-row">
+            <div class="output-title-group">
+              <span class="terminal-dots">
+                <i class="dot red"></i><i class="dot yellow"></i><i class="dot green"></i>
+              </span>
+              <h3>Transaction Inspector &amp; AI Diagnostic Output</h3>
+            </div>
+            <div class="output-actions">
+              <button id="copyOutputBtn" class="pill-btn outline xs" type="button">Copy JSON</button>
+              <button id="clearOutputBtn" class="pill-btn outline xs" type="button">Clear Output</button>
+            </div>
+          </div>
+          <pre id="rawOutput" class="terminal-pre" aria-live="polite">Awaiting ledger transactions or query inspections...</pre>
+        </div>
+      </section>
+    </div>
+  </main>
 
-    <script src="./app.js" defer></script>
-  </body>
+  <!-- Toast Notification Container -->
+  <div id="toast" class="vitalis-toast" role="status" aria-live="polite"></div>
+
+  <footer class="lab-footer">
+    <div class="footer-inner">
+      <span>Vitalis Diagnostic Lab Deck &middot; Hyperledger Fabric LabMSP &middot; Kubo IPFS</span>
+      <span>Secure Care, Verified on Chain</span>
+    </div>
+  </footer>
+
+  <script src="./theme.js" defer></script>
+  <script src="./app.js" defer></script>
+</body>
 </html>

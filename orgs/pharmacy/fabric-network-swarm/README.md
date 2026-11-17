@@ -1,75 +1,116 @@
-# Electronic Health Record (EHR) System 🏥💊
-**Hyperledger Fabric Swarm Network - Pharmacy Organization Module**
+# Pharmacy Organization & Applications
 
-The **EHR Pharmacy Organization Module** is a secure, decentralized, and scalable platform designed for hospital administration, pharmaceutical inventory management, and patient record tracking. Built on **Hyperledger Fabric v2.5** and orchestrated across a multi-node **Docker Swarm**, it guarantees high-availability, immutable record keeping, and patient privacy through Attribute-Based Access Control (ABAC) and Self-Sovereign Identity.
-
----
-
-## 👥 Contributors & Roles
-
-This enterprise-grade system was designed and deployed as a collaborative effort:
-- **Ankit Chaudhari (25CSM2R03)** - *Infrastructure Architect & Swarm Master (PC1)*
-  - Docker Swarm orchestration, Fabric CA, Raft Orderer, and the Manager Governance Portal.
-- **Mohit Tomar (25CSM2R13)** - *Smart Contract Lead & Clinical Portals (PC2)*
-  - Node.js Chaincode (Smart Contracts), CouchDB Rich Queries, Patient Portal, and Pharmacist Portal.
-- **Ronitsingh Rawat (25CSM2S06)** - *API Gateway Architect & Inventory Lead (PC3)*
-  - Central Node.js API Gateway (Fabric SDK), Wallet Mapping, High-Availability Peer Redundancy, and Inventory Supply Chain Portal.
+> **Module Lead / System Integration:** Himanshu (`devbyhimans`) — Group 1 Lead System Orchestrator  
+> **Key Contributions:** Root-cause 500 error fix on `/api/inventory`, implementation of resilient persistent storage (`store.js`), automatic inventory stock deduction, Kubo IPFS multihash integration, Docker network bridging, and complete engineering of the interactive CarePoint Pharmacy Patient Portal (`:3004`).
 
 ---
 
-## 🏗️ System Architecture
+## 🏥 Overview
 
-The overarching system abstracts into four primary layers:
-1. **Presentation Layer:** 4 Custom React (Vite) Dashboards mapping distinct access scopes.
-2. **Application Layer:** Express.js Native SDK Bridge enabling JSON requests to map to cryptographic gRPC blocks.
-3. **Blockchain Layer:** Hyperledger Fabric blockchain with Raft consensus. 
-4. **Storage Layer:** Dual-storage strategy. On-chain metadata validation coupled with explicit off-chain heavy document storage acting on an **IPFS (Kubo)** decentralized network.
+The pharmacy organization provides decentralized prescription fulfillment, inventory stock management, itemized billing, and patient consent governance for the EHR Blockchain Consortium.
+
+All pharmacy applications are integrated into the master Compose stack and accessible either directly on host ports or through the unified Nginx gateway on Port 80 (`/pharmacy/*`).
 
 ---
 
-## 🚀 Key Features
+## 🚀 Application Map
 
-- **Attribute-Based Access Control (ABAC):** Guarantees pharmacists only see what has been prescribed and hospital managers cannot view explicit diagnostic patient history.
-- **Self-Sovereign Identity:** Patients explicitly own and can cryptographically revoke viewing rights of their medical reports to healthcare individuals via IPFS integration.
-- **Atomic Supply Chain Deductions:** Successfully ties billing prescription fulfillments implicitly to global hospital inventory supply stock. 
-- **Gossip Protocol Distribution:** Decentralizes the CouchDB world state flawlessly across physical machines `PC1`, `PC2`, and `PC3` connected via a Tailscale VPN mesh.
-
----
-
-## ⚙️ Dependencies & Requirements
-
-Please thoroughly view the heavily detailed **[`SUPPLEMENTARY.md`](./SUPPLEMENTARY.md)** file available in the root of this project. It outlines:
-- Complete Hardware Specifications per node.
-- Linux / Ubuntu / Docker environment configurations.
-- Recommended LTS versions (Hyperledger Fabric v2.5, Node.js v18.x, CouchDB v3.3.2).
+| Application | Host Port | Gateway Route | Status | Description |
+|:---|:---:|:---|:---:|:---|
+| **Pharmacy Backend API** | `3000` | `/api/pharmacy/` | **ACTIVE** | Express REST API connected to persistent store, Kubo IPFS (`:5001`), and Fabric `ehrchannel`. |
+| **Manager Portal** | `3001` | `/pharmacy/manager/` | **ACTIVE** | Staff registration, global billing audit, inventory overview, and network node monitoring. |
+| **Employee Portal** | `3002` | `/pharmacy/employee/` | **ACTIVE** | Pharmacist dispensing workspace: patient lookup, prescription validation, and bill creation. |
+| **Inventory Portal** | `3003` | `/pharmacy/inventory/` | **ACTIVE** | Stock officer dashboard: view medicines, add/restock items, track unit prices and stock levels. |
+| **Patient Portal** | `3004` | `/pharmacy/patient/` | **ACTIVE** | CarePoint Patient Portal: active patient switcher, prescription records, dispensing timeline, consent self-governance (grant/revoke access), and IPFS receipts. |
+| **Billing Portal** | `3005` | `/pharmacy/billing/` | **ACTIVE** | Prescription package billing: pre-configured templates (Post-Op, Chronic Care, Emergency), IPFS document pinning, and auto-deduction. |
+| **Pharmacy Main Hub** | `5175` | `/pharmacy/` | **ACTIVE** | MedBlock consortium dashboard displaying verified medication records with IPFS CID verification. |
 
 ---
 
-## 🛠️ Deployment Instructions
+## 🏛️ Architecture & Data Flow
 
-The repository uniquely features a universal `deploy.sh` script to streamline the intensive procedure of tearing down and deploying multi-node Fabric test-networks.
+```mermaid
+flowchart TB
+  subgraph Client ["Client Layer (Browser)"]
+    Browser["User in Browser"]
+  end
 
-### Step 1: Pre-requisites & Cleanup
-Ensure your Tailscale topology successfully maps ping requests between all your worker nodes. From the primary manager (`PC1`), execute:
-```bash
-# This cleanly stops the old containers and eliminates dangling chaincode volumes.
-./deploy.sh --teardown
+  subgraph Gateway ["Reverse Proxy Gateway (Port 80)"]
+    Nginx["Nginx Reverse Proxy"]
+  end
+
+  subgraph Portals ["Pharmacy Frontends (Vite / React)"]
+    MainUI["Main Hub :5175<br/>/pharmacy/"]
+    MgrUI["Manager :3001<br/>/pharmacy/manager/"]
+    EmpUI["Employee :3002<br/>/pharmacy/employee/"]
+    InvUI["Inventory :3003<br/>/pharmacy/inventory/"]
+    PatUI["Patient :3004<br/>/pharmacy/patient/"]
+    BillUI["Billing :3005<br/>/pharmacy/billing/"]
+  end
+
+  subgraph Backend ["Pharmacy Backend Microservice"]
+    API["p-backend :3000<br/>Express API"]
+    Store["Persistent Store (store.js)<br/>data/pharmacy_store.json"]
+  end
+
+  subgraph Infrastructure ["Decentralized Infrastructure"]
+    Fabric[("Hyperledger Fabric<br/>ehrchannel (ehr:1.0)")]
+    IPFS[("Kubo IPFS Node<br/>ipfs.ehr.local:5001")]
+  end
+
+  Browser --> Nginx
+  Nginx --> MainUI
+  Nginx --> MgrUI
+  Nginx --> EmpUI
+  Nginx --> InvUI
+  Nginx --> PatUI
+  Nginx --> BillUI
+
+  MainUI -->|/api/pharmacy/*| API
+  MgrUI -->|/api/pharmacy/*| API
+  EmpUI -->|/api/pharmacy/*| API
+  InvUI -->|/api/pharmacy/*| API
+  PatUI -->|/api/pharmacy/*| API
+  BillUI -->|/api/pharmacy/*| API
+
+  API <--> Store
+  API -->|Pin Prescriptions| IPFS
+  API -.->|Smart Contract Invocation| Fabric
 ```
 
-### Step 2: Distribution and Startup
-Trigger the central deployment from `PC1`:
-```bash
-./deploy.sh --start
-```
-**Deployment Cycle Steps Executed Automatically:**
-1. Packages the EHR `.tar.gz` chaincode.
-2. Formats all Organization MSP/TLS certificates strictly using the `cryptogen` tool and the Fabric CA.
-3. Launches the Raft Orderer and genesis block bindings.
-4. Performs an automated secure shell transfer (`scp`) pushing the `crypto-config/` state and compiled channel blocks exactly to Worker Nodes `PC2` and `PC3`.
-5. Connects all 3 remote peers natively via Docker Swarm topologies to join the primary overarching `mychannel`.
-6. Invokes the chaincode ledger instantiation sequence.
+---
 
-### Step 3: API & Frontends
-Once the internal `.sh` processes have finalized network synchronization:
-1. Navigate to `app/backend/` and run `npm start` to spin up the API gateway on port `4000`.
-2. Navigate to your desired frontend module (e.g. `app/manager/`, `app/patient/`) and execute `npm run dev`.
+## 📡 REST API Reference
+
+All routes are mounted at `/api/pharmacy` through Nginx or directly at `http://localhost:3000`:
+
+| Method | Endpoint | Description |
+|:---|:---|:---|
+| `GET` | `/health` | Service health status and swarm host IP (`{"status":"UP"}`). |
+| `GET` | `/api/network-status` | Block heights for Peer0, Peer1, Peer2, and IPFS status (`{"nodes":{...},"ipfs":"UP"}`). |
+| `GET` | `/api/ipfs-status` | Live IPFS node check (`{"status":"UP"}`). |
+| `GET` | `/api/inventory` | List all medications with stock levels, unit prices, and IPFS CIDs. |
+| `POST` | `/api/inventory` | Add a new medicine item or restock existing inventory. |
+| `POST` | `/api/inventory/deduct` | Deduct stock quantity for a medicine item. |
+| `GET` | `/api/patient/:id` | Fetch patient profile demographics and ledger alias. |
+| `POST` | `/api/create-patient` | Register a new patient on the pharmacy ledger. |
+| `GET` | `/api/patient/:id/access-list` | Get authorized identities permitted to view patient records. |
+| `POST` | `/api/grant-access` | Patient grants record access to a pharmacist or doctor identity. |
+| `POST` | `/api/revoke-access` | Patient revokes record access from an identity. |
+| `POST` | `/api/billing` | Issue prescription bill: uploads JSON to IPFS, records bill, auto-deducts inventory. |
+| `POST` | `/api/prescription` | Alias for `/api/billing` used by the billing portal. |
+| `GET` | `/api/bills/patient/:id` | Retrieve all prescription bills issued for a patient. |
+| `GET` | `/api/bills/audit` | Global audit log of all bills issued across the pharmacy. |
+| `GET` | `/api/employees` | List registered pharmacy staff and assigned roles. |
+| `POST` | `/api/register-employee` | Register a new employee with cryptographic role mapping. |
+| `GET` | `/api/roles` | Pharmacy role taxonomy and permission specifications. |
+
+---
+
+## 💾 Storage & Resiliency Architecture
+
+To ensure 100% uptime and eliminate runtime crashes:
+1. **Persistent JSON Storage (`store.js`):** Operations persist state to `data/pharmacy_store.json`. Initial data is pre-populated with standard medications (Amoxicillin, Ibuprofen, Metformin, Atorvastatin, Lisinopril, Paracetamol, etc.), seeded patient records (`PAT-001`, `PAT-014`, `PAT-021`, `testuser`), initial bills, and staff roles.
+2. **Fabric Gateway with Resilient Fallback:** When Fabric peer certificates are loaded, transactions execute against the smart contract on `ehrchannel`. If gateway connection encounters missing certificates, it gracefully falls back to `store.js` without throwing 500 errors.
+3. **Decentralized IPFS Pinning:** When bills are issued, prescription metadata is pinned to Kubo IPFS (`http://ipfs.ehr.local:5001/api/v0/add`) returning a cryptographic CID (`Qm...`), accessible directly via the gateway at `http://localhost:8090/ipfs/<CID>`.
+4. **Automatic Stock Deduction:** Issuing a prescription with an `itemId` automatically deducts the prescribed quantity from inventory, enforcing real-time stock integrity.

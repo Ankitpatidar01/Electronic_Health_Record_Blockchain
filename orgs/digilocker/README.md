@@ -1,16 +1,22 @@
-# Digilocker Module
+# Digilocker — proposed module only
 
-This module is designed to securely anchor patient files on the blockchain and store the actual encrypted files on IPFS.
+Digilocker is inventoried as a proposed patient-controlled document vault. This folder does not contain a runnable frontend, backend, or chaincode implementation. It is not started by root `./start.sh`, and no encryption, patient key custody, IPFS pinning, ledger anchoring, or consent workflow should be described as implemented here.
 
-## Intended Design
+The diagram below shows a design direction only. It is not a deployed data path:
 
-1. **Hashing:** The uploaded file is hashed using SHA-256 on the client or backend before upload.
-2. **IPFS Storage:** The file is then uploaded to IPFS. Currently, IPFS files in other modules are stored unencrypted. **This module must fix this gap by ensuring files are encrypted before being uploaded to IPFS.**
-3. **On-Chain Anchoring:** The file's hash, its resulting IPFS CID, and any relevant metadata (e.g., patient ID, timestamp, encryption key reference) are stored on the Hyperledger Fabric ledger via smart contracts.
-4. **Verification:** When retrieving a file, the system fetches it from IPFS, decrypts it, re-hashes it, and compares it to the on-chain hash to verify its integrity and authenticity.
+```mermaid
+flowchart LR
+  Patient["Patient-controlled client"] -. "future encrypted upload" .-> Vault["Proposed vault service"]
+  Vault -. "future ciphertext storage" .-> IPFS[("IPFS, not integrated")]
+  Vault -. "future hash/CID anchor" .-> Fabric[("Fabric, not integrated")]
+  Patient -. "future consent UI" .-> Consent["Consent workflow, not implemented"]
+```
 
-## Folder Structure
+## Work required before implementation
 
-- `chaincode/`: Will contain the Hyperledger Fabric smart contracts for storing and verifying metadata.
-- `backend/`: Will contain the API gateway for handling uploads, encryption, IPFS integration, and chaincode invocation.
-- `frontend/`: Will contain the user interface for patients or doctors to upload and view their secured documents.
+- Agree encryption, key generation, recovery, revocation, and device-loss behavior with the Security and EHR teams.
+- Define what is stored off-chain and which metadata may be anchored on-chain.
+- Implement authenticated APIs and UI from approved interfaces.
+- Validate zero-PHI event and audit requirements before any dashboard producer is connected.
+
+Until then, use the hospital patient portal for existing patient workflows and do not treat this proposal as a document repository.
