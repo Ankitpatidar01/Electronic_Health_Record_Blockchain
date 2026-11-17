@@ -14,6 +14,7 @@ const {
 const {
   createLabResult,
   getAllLabResults,
+  getLedgerConfig,
   getLabResultsByPatient,
   listGatewayPeers,
   readLabResult,
@@ -165,11 +166,13 @@ function normalizeError(error) {
 app.get('/api/meta', (_req, res) => {
   const ipfs = getIpfsConfig();
   const ai = getAiAgentConfig();
+  const ledger = getLedgerConfig();
   res.json({
     peers: listGatewayPeers(),
-    defaultPeer: process.env.GATEWAY_PEER || 'peer0.lab.example.com',
-    channel: 'ehrchannel',
-    chaincode: 'labresults',
+    defaultPeer: ledger.defaultPeer,
+    channel: ledger.channel,
+    chaincode: ledger.chaincode,
+    mspId: ledger.mspId,
     ipfs,
     ai: {
       provider: ai.provider,
