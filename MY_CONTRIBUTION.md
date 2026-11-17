@@ -100,6 +100,27 @@ When this project started, it was split into three separate, disconnected pieces
 
 ---
 
+### E. CareGrid Soft Glass Bento Frontend Redesign & Design System Foundation
+* **Unified Design Tokens (`packages/caregrid-ui/src/tokens.css`):**
+  * Built the semantic OKLCH token foundation with ambient backdrop gradients, frosted glass blur (`--glass-blur: 20px`), pastel tints (`--tint-mint`, `--tint-sky`, `--tint-butter`), ink-pill buttons (`btn-ink-pill`), and high-contrast dark mode support.
+  * Created reusable blockchain trust UI primitives: `VerifiedBadge.jsx` (on-chain verification pill with block number), `HashChip.jsx` (click-to-copy mono hashes), `DataSourceTag.jsx` (honest Live/Cached/Demo state indicator), `BentoCard.jsx` (bento layout container with pastel tints), `LoadingSkeleton.jsx`, `EmptyState.jsx`, and `ErrorState.jsx`.
+* **Browser Subagent Asset Research & Integration (`docs/redesign/ASSETS.md`):**
+  * Researched and integrated 4 high-resolution, free Unsplash medical backgrounds (`clinical-lab.jpg`, `doctor-desk.jpg`, `hospital-interior.jpg`, `medical-research.jpg`) and author-generated mesh SVGs (`mesh-gradient.svg`).
+  * Enforced zero-hotlinking policy: all assets are local in `public/assets/` across all frontends with documented attribution.
+* **Patient Portal Complete Redesign (`:5174`):**
+  * Modernized `Layout.jsx` with a responsive desktop sidebar, mobile bottom tab bar, and frosted glass shell (`soft-glass-shell`).
+  * Rebuilt `Overview.jsx` into an interactive Soft Glass Bento health home with vitals parameters (BP, Pulse, SpO₂, Temp, BMI), active clinical visit cards, and quick actions.
+  * Rebuilt `Login.jsx` with split ambient layout, patient ID lookup, and account activation wizard.
+* **Hospital Staff Portal Overhaul (`:5173`):**
+  * Modernized `Layout.jsx` with deep-teal clinical styling, role badges, and header status.
+  * Rebuilt `Login.jsx` with role switching, hints, and MSP-authenticated session handling.
+* **Automated Sync Engine (`scripts/sync-ui.sh`):**
+  * Built an automated sync script distributing the UI kit and assets across all 9 React apps and 2 vanilla JS apps (Lab console & Nginx hub) without breaking container volume boundaries.
+* **Verification & Zero-Error Compilation:**
+  * Successfully compiled production builds for all 9 frontends (`patient-portal`, `hospital-portal`, `dashboard-portal`, `patient`, `frontend`, `billing`, `employee`, `inventory`, `manager`).
+
+---
+
 ## 📁 4. Summary of Files Authored & Modified
 
 ### 1. Root & Orchestration

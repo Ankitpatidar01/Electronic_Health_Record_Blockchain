@@ -1,3 +1,4 @@
+@import './ui-kit/tokens.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
