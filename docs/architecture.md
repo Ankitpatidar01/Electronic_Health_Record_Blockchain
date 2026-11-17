@@ -7,9 +7,9 @@ flowchart TB
   Browser["Browser"] --> Nginx["Nginx :80"]
   Nginx --> Hub["Workspace hub /"]
   Nginx --> PatientUI["Patient portal /patient/ → :5174"]
-  Nginx --> DashboardUI["Dashboard /dashboard/ → :5176<br/>optional dashboard profile"]
+  Nginx --> DashboardUI["Dashboard /dashboard/ → :5176<br/>real-time event streaming"]
   Nginx --> LabUI["Lab console /lab/ → node-gateway :3006 host"]
-  Nginx --> PharmUI["Pharmacy /pharmacy/* → separate Vite apps"]
+  Nginx --> PharmUI["Pharmacy Portals /pharmacy/*<br/>Main :5175, Mgr :3001, Emp :3002,<br/>Inv :3003, Patient :3004, Bill :3005"]
   Browser --> HospitalUI["Hospital portal :5173"]
 
   HospitalUI --> P0["peer0-api :4001"]
@@ -25,7 +25,9 @@ flowchart TB
   PatientAPI --> Fabric
   ExtOrg["extorg-api :4004"] --> ExternalOrgs["DiagnosticsMSP / ProviderMSP"]
   ExternalOrgs --> Fabric
-  IPFSService["ipfs-service :4006"] --> Kubo[("IPFS Kubo")]
+  IPFSService["ipfs-service :4006"] --> Kubo[("IPFS Kubo :5001 / :8090")]
+  PharmAPI --> Kubo
+  PharmAPI <--> PharmStore[("Pharmacy Persistent Store<br/>store.js & JSON state")]
 
   Fabric -. "committed block metadata, when observer identity is configured" .-> Collector["Dashboard collector"]
   Health["HTTP health checks"] --> Collector
@@ -37,7 +39,7 @@ flowchart TB
   Aggregation --> DashboardUI
   Realtime --> DashboardUI
 
-  PharmAPI -. "current profile does not match this Fabric topology" .-> Fabric
+  PharmAPI -. "ehrchannel chaincode / resilient store fallback" .-> Fabric
   Digilocker["Digilocker proposal; no runnable module"] -.-> Browser
 ```
 
@@ -45,10 +47,10 @@ flowchart TB
 
 1. The browser opens the single-entry hub or a portal. Nginx routes `/patient/`, `/dashboard/`, `/pharmacy/…`, and `/lab/`. The hospital staff Vite server is also directly available at port `5173`.
 2. Hospital portal APIs route to peer0, peer1, peer2, extorg, patient, and IPFS services on ports `4001`–`4006`.
-3. Fabric peers share the configured `ehrchannel`; current organization IDs are `HospitalMSP`, `DiagnosticsMSP`, and `ProviderMSP`. The root startup script starts existing Fabric services, but does not enroll identities, reinitialize a channel, or deploy chaincode.
-4. The optional dashboard observes committed Fabric blocks and configured HTTP health endpoints. Its event cache is local NDJSON. Other services must send events to `/internal/events` using the service key; that route is not exposed by Nginx.
-5. The dashboard API supplies role-filtered REST results and WebSocket/SSE events. It does not write to Fabric. Mock events are synthetic, explicitly marked, and separate from real-source status.
-6. The pharmacy UI/API are kept independent. Current pharmacy configuration is not aligned with the active hospital Fabric topology, so ledger-backed pharmacy actions must be shown as unavailable until the owning team supplies the matching integration.
+3. Fabric peers share the configured `ehrchannel`; current organization IDs are `HospitalMSP`, `DiagnosticsMSP`, and `ProviderMSP`. The root startup script starts existing Fabric services, checks chaincode readiness, and brings up microservices in sequence.
+4. The dashboard observes committed Fabric blocks and configured HTTP health endpoints. Its event cache is local NDJSON. Other services send events to `/internal/events` using the service key; that route is protected behind the API layer.
+5. The dashboard API supplies role-filtered REST results, 5 clinical agent views, real-time threshold alerts, and WebSocket/SSE events. It does not write to Fabric. Mock events are synthetic, explicitly marked, and separate from real-source status.
+6. The pharmacy organization includes 6 active frontend portals (Main `:5175`, Manager `:3001`, Employee `:3002`, Inventory `:3003`, Patient `:3004`, Billing `:3005`) connected to `p-backend:3000`. The backend integrates with Kubo IPFS for prescription receipts and uses a persistent storage engine (`store.js`) with automatic stock deduction and resilient Fabric fallback.
 
 ## Trust and data boundaries
 

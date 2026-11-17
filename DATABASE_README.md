@@ -209,7 +209,49 @@ Storing full medical PDFs, imaging files (X-rays, MRIs), or multi-page consultat
 
 ---
 
+### 3.7 Pharmacy Operational & Inventory Store (JSON State)
+
+- **Location**: `orgs/pharmacy/fabric-network-swarm/app/backend/data/pharmacy_store.json`
+- **Engine**: File-backed JSON persistence managed by `store.js`.
+- **Purpose**: Provides atomic, persistent storage for pharmacy inventory stock, registered patient profiles, patient consent access-lists, itemized billing records, and pharmacy employee roles with automated inventory deduction and IPFS receipt pinning.
+
+#### Managed Data Collections
+1. **`inventory` (Stock Catalog & Quantities)**:
+   - `itemId`: Unique medicine SKU (e.g., `MED-001`, `MED-002`).
+   - `name`: Generic and brand name with dosage (e.g., `Amoxicillin 500mg`, `Ibuprofen 400mg`).
+   - `quantity`: Current in-stock units (automatically deducted upon prescription issuance).
+   - `price`: Unit price in USD.
+   - `unit`: Measurement unit (`capsules`, `tablets`, `vials`, `inhalers`).
+   - `ipfsHash`: Pinned IPFS CID representing the medication batch sheet or provenance document.
+   - `patientId`: Associated patient reference or global stock indicator.
+2. **`patients` (Demographics & Consent Registry)**:
+   - `patientId`: Unique patient identifier (`PAT-001`, `PAT-014`, `PAT-021`, `testuser`).
+   - `name`: Patient legal full name.
+   - `age`: Patient age.
+   - `certAlias`: Deterministic X.509 certificate mapping (`user1`, `user2`, etc.).
+   - `accessList`: Array of authorized staff identities (`ph_alice`, `billing_office_1`) permitted to review prescription data.
+3. **`bills` (Prescriptions & Dispensing Records)**:
+   - `billId`: Cryptographic or timestamped bill ID (e.g., `BILL_1710001001`).
+   - `patientId`: Target patient identifier.
+   - `templateName`: Clinical prescription pack name (`Post-Op Recovery Pack`, `Chronic Care Monthly`).
+   - `amount`: Total calculated or customized price.
+   - `issuedBy`: Dispensing pharmacist or billing officer identity.
+   - `medicineList`: Array of itemized medicines with quantities and SKU references.
+   - `ipfsHash`: Pinned IPFS multihash CID for verifiable receipt download.
+   - `status`: Dispensing state (`ACTIVE` or `DISPENSED`).
+   - `txId`: On-chain transaction reference hash.
+4. **`employees` (Staff Registry & Roles)**:
+   - `userId`: Staff login identifier (`mgr_evelyn`, `ph_alice`, `inv_charlie`).
+   - `role`: Role taxonomy (`manager`, `billing`, `inventory`, `patient`).
+   - `name`: Full professional name.
+   - `dept`: Department assignment (`Dispensing`, `Administration`, `Stock`).
+   - `certMapped`: Mapped Fabric X.509 certificate identity.
+
+---
+
 ## 4. End-to-End Data Flow
+
+### 4.1 Clinical Consultation & Medical Record Creation
 
 The following sequence illustrates how the different databases interact during a clinical encounter:
 
@@ -235,6 +277,35 @@ sequenceDiagram
     Peer->>EventHub: Block listener captures transaction
     EventHub->>EventHub: Append Zero-PHI event to events.ndjson
     EventHub-->>Doctor: Push real-time event via WebSocket
+```
+
+### 4.2 Pharmacy Dispensing, IPFS Pinning & Stock Deduction Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Pharmacist as Pharmacist (Browser :3002/:3005)
+    participant Backend as Pharmacy Backend (:3000)
+    participant IPFS as Kubo IPFS (:5001)
+    participant Store as Pharmacy Store (JSON)
+    participant Gateway as IPFS Gateway (:8090)
+    actor Patient as Patient (Browser :3004)
+
+    Pharmacist->>Backend: POST /api/billing (patientId, medicines, amount)
+    Backend->>Store: Check patient profile & access authorization
+    Backend->>IPFS: Pin prescription receipt document JSON
+    IPFS-->>Backend: Return IPFS multihash CID (Qm...)
+    Backend->>Store: Record bill into bills array
+    loop For each medicine with itemId
+        Backend->>Store: Deduct stock quantity (inventory[itemId].qty - qty)
+    end
+    Backend-->>Pharmacist: Return 200 OK (billId, ipfsHash, status: DISPENSED)
+    
+    Patient->>Backend: GET /api/bills/patient/:id
+    Backend->>Store: Retrieve itemized bills & receipts
+    Backend-->>Patient: Return bill records with IPFS CIDs
+    Patient->>Gateway: Click IPFS chip -> GET /ipfs/:CID
+    Gateway-->>Patient: Download raw verifiable cryptographic receipt
 ```
 
 ---

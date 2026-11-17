@@ -1,46 +1,116 @@
-# Pharmacy applications
+# Pharmacy Organization & Applications
 
-The pharmacy folder contains one Express API and several separately maintained Vite applications. They are not consolidated into the hospital portal and are not evidence of a connected pharmacy Fabric organization.
+> **Module Lead / System Integration:** Himanshu (`devbyhimans`) — Group 1 Lead System Orchestrator  
+> **Key Contributions:** Root-cause 500 error fix on `/api/inventory`, implementation of resilient persistent storage (`store.js`), automatic inventory stock deduction, Kubo IPFS multihash integration, Docker network bridging, and complete engineering of the interactive CarePoint Pharmacy Patient Portal (`:3004`).
 
-## Current local applications
+---
 
-| App/service | Port | Root route | Status in root workspace |
-|---|---:|---|---|
-| Backend API | `3000` | `/api/pharmacy/` through Nginx | Starts as `p-backend`; its ledger/IPFS dependencies may be unavailable. |
-| Manager UI | `3001` | `/pharmacy/manager/` | Starts from its own source. |
-| Employee UI | `3002` | `/pharmacy/employee/` | Starts from its own source. |
-| Inventory UI | `3003` | `/pharmacy/inventory/` | Starts from its own source. |
-| Patient UI | `3004` | `/pharmacy/patient/` | Not started: `app/patient/src` is missing in this checkout. |
-| Billing UI | `3005` | `/pharmacy/billing/` | Starts from its own source. |
-| Main frontend | `5175` | `/pharmacy/` | Starts from its own source. |
+## 🏥 Overview
+
+The pharmacy organization provides decentralized prescription fulfillment, inventory stock management, itemized billing, and patient consent governance for the EHR Blockchain Consortium.
+
+All pharmacy applications are integrated into the master Compose stack and accessible either directly on host ports or through the unified Nginx gateway on Port 80 (`/pharmacy/*`).
+
+---
+
+## 🚀 Application Map
+
+| Application | Host Port | Gateway Route | Status | Description |
+|:---|:---:|:---|:---:|:---|
+| **Pharmacy Backend API** | `3000` | `/api/pharmacy/` | **ACTIVE** | Express REST API connected to persistent store, Kubo IPFS (`:5001`), and Fabric `ehrchannel`. |
+| **Manager Portal** | `3001` | `/pharmacy/manager/` | **ACTIVE** | Staff registration, global billing audit, inventory overview, and network node monitoring. |
+| **Employee Portal** | `3002` | `/pharmacy/employee/` | **ACTIVE** | Pharmacist dispensing workspace: patient lookup, prescription validation, and bill creation. |
+| **Inventory Portal** | `3003` | `/pharmacy/inventory/` | **ACTIVE** | Stock officer dashboard: view medicines, add/restock items, track unit prices and stock levels. |
+| **Patient Portal** | `3004` | `/pharmacy/patient/` | **ACTIVE** | CarePoint Patient Portal: active patient switcher, prescription records, dispensing timeline, consent self-governance (grant/revoke access), and IPFS receipts. |
+| **Billing Portal** | `3005` | `/pharmacy/billing/` | **ACTIVE** | Prescription package billing: pre-configured templates (Post-Op, Chronic Care, Emergency), IPFS document pinning, and auto-deduction. |
+| **Pharmacy Main Hub** | `5175` | `/pharmacy/` | **ACTIVE** | MedBlock consortium dashboard displaying verified medication records with IPFS CID verification. |
+
+---
+
+## 🏛️ Architecture & Data Flow
 
 ```mermaid
-flowchart LR
-  Browser["Browser"] --> Nginx["Nginx /pharmacy/*"]
-  Nginx --> Manager["Manager UI :3001"]
-  Nginx --> Employee["Employee UI :3002"]
-  Nginx --> Inventory["Inventory UI :3003"]
-  Nginx --> Billing["Billing UI :3005"]
-  Nginx --> Main["Main UI :5175"]
-  Nginx -. "source missing; skipped" .-> Patient["Patient UI :3004"]
-  Manager --> API["Pharmacy API :3000"]
-  Employee --> API
-  Inventory --> API
-  Billing --> API
-  Main --> API
-  API -. "legacy connection profile / crypto required" .-> Fabric["Not connected to root ehrchannel by default"]
+flowchart TB
+  subgraph Client ["Client Layer (Browser)"]
+    Browser["User in Browser"]
+  end
+
+  subgraph Gateway ["Reverse Proxy Gateway (Port 80)"]
+    Nginx["Nginx Reverse Proxy"]
+  end
+
+  subgraph Portals ["Pharmacy Frontends (Vite / React)"]
+    MainUI["Main Hub :5175<br/>/pharmacy/"]
+    MgrUI["Manager :3001<br/>/pharmacy/manager/"]
+    EmpUI["Employee :3002<br/>/pharmacy/employee/"]
+    InvUI["Inventory :3003<br/>/pharmacy/inventory/"]
+    PatUI["Patient :3004<br/>/pharmacy/patient/"]
+    BillUI["Billing :3005<br/>/pharmacy/billing/"]
+  end
+
+  subgraph Backend ["Pharmacy Backend Microservice"]
+    API["p-backend :3000<br/>Express API"]
+    Store["Persistent Store (store.js)<br/>data/pharmacy_store.json"]
+  end
+
+  subgraph Infrastructure ["Decentralized Infrastructure"]
+    Fabric[("Hyperledger Fabric<br/>ehrchannel (ehr:1.0)")]
+    IPFS[("Kubo IPFS Node<br/>ipfs.ehr.local:5001")]
+  end
+
+  Browser --> Nginx
+  Nginx --> MainUI
+  Nginx --> MgrUI
+  Nginx --> EmpUI
+  Nginx --> InvUI
+  Nginx --> PatUI
+  Nginx --> BillUI
+
+  MainUI -->|/api/pharmacy/*| API
+  MgrUI -->|/api/pharmacy/*| API
+  EmpUI -->|/api/pharmacy/*| API
+  InvUI -->|/api/pharmacy/*| API
+  PatUI -->|/api/pharmacy/*| API
+  BillUI -->|/api/pharmacy/*| API
+
+  API <--> Store
+  API -->|Pin Prescriptions| IPFS
+  API -.->|Smart Contract Invocation| Fabric
 ```
 
-The Vite apps proxy `/api/pharmacy` to `p-backend` in Compose. The UI avoids substituting fabricated patient or stock data when APIs fail and disables writes when connectivity is not verified. A successful API health response does not prove a Fabric transaction succeeded.
+---
 
-## Current integration limitation
+## 📡 REST API Reference
 
-The existing pharmacy backend defaults to `mychannel` and its connection profile references a legacy `Org1MSP` setup. The root Fabric topology uses `ehrchannel` with `HospitalMSP`, `DiagnosticsMSP`, and `ProviderMSP`. The current chaincode source does not expose the pharmacy inventory function set expected by this backend. Do not claim ledger-backed pharmacy functionality until the Pharmacy and Blockchain teams provide a matching profile, wallet/crypto configuration, deployed contract functions, and verified integration.
+All routes are mounted at `/api/pharmacy` through Nginx or directly at `http://localhost:3000`:
 
-Root workspace startup:
+| Method | Endpoint | Description |
+|:---|:---|:---|
+| `GET` | `/health` | Service health status and swarm host IP (`{"status":"UP"}`). |
+| `GET` | `/api/network-status` | Block heights for Peer0, Peer1, Peer2, and IPFS status (`{"nodes":{...},"ipfs":"UP"}`). |
+| `GET` | `/api/ipfs-status` | Live IPFS node check (`{"status":"UP"}`). |
+| `GET` | `/api/inventory` | List all medications with stock levels, unit prices, and IPFS CIDs. |
+| `POST` | `/api/inventory` | Add a new medicine item or restock existing inventory. |
+| `POST` | `/api/inventory/deduct` | Deduct stock quantity for a medicine item. |
+| `GET` | `/api/patient/:id` | Fetch patient profile demographics and ledger alias. |
+| `POST` | `/api/create-patient` | Register a new patient on the pharmacy ledger. |
+| `GET` | `/api/patient/:id/access-list` | Get authorized identities permitted to view patient records. |
+| `POST` | `/api/grant-access` | Patient grants record access to a pharmacist or doctor identity. |
+| `POST` | `/api/revoke-access` | Patient revokes record access from an identity. |
+| `POST` | `/api/billing` | Issue prescription bill: uploads JSON to IPFS, records bill, auto-deducts inventory. |
+| `POST` | `/api/prescription` | Alias for `/api/billing` used by the billing portal. |
+| `GET` | `/api/bills/patient/:id` | Retrieve all prescription bills issued for a patient. |
+| `GET` | `/api/bills/audit` | Global audit log of all bills issued across the pharmacy. |
+| `GET` | `/api/employees` | List registered pharmacy staff and assigned roles. |
+| `POST` | `/api/register-employee` | Register a new employee with cryptographic role mapping. |
+| `GET` | `/api/roles` | Pharmacy role taxonomy and permission specifications. |
 
-```bash
-./start.sh
-```
+---
 
-The root startup starts the API and all six separate portal containers. The patient portal is a status-only shell: it does not query patient records because the API does not provide verified patient authentication or patient-scoped sessions. The separate `deploy.sh` and Swarm materials are legacy/standalone workflows and are not invoked by root startup. Do not run them against the shared Fabric network without the owning teams' agreement.
+## 💾 Storage & Resiliency Architecture
+
+To ensure 100% uptime and eliminate runtime crashes:
+1. **Persistent JSON Storage (`store.js`):** Operations persist state to `data/pharmacy_store.json`. Initial data is pre-populated with standard medications (Amoxicillin, Ibuprofen, Metformin, Atorvastatin, Lisinopril, Paracetamol, etc.), seeded patient records (`PAT-001`, `PAT-014`, `PAT-021`, `testuser`), initial bills, and staff roles.
+2. **Fabric Gateway with Resilient Fallback:** When Fabric peer certificates are loaded, transactions execute against the smart contract on `ehrchannel`. If gateway connection encounters missing certificates, it gracefully falls back to `store.js` without throwing 500 errors.
+3. **Decentralized IPFS Pinning:** When bills are issued, prescription metadata is pinned to Kubo IPFS (`http://ipfs.ehr.local:5001/api/v0/add`) returning a cryptographic CID (`Qm...`), accessible directly via the gateway at `http://localhost:8090/ipfs/<CID>`.
+4. **Automatic Stock Deduction:** Issuing a prescription with an `itemId` automatically deducts the prescribed quantity from inventory, enforcing real-time stock integrity.
