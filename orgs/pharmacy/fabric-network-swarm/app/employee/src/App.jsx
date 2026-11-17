@@ -113,8 +113,8 @@ export default function App() {
     <div className="app">
       <nav className="nav">
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div className="pulse-circle" style={{ width: '12px', height: '12px', background: '#3b82f6' }}></div>
-          <span>MedBlock <span style={{ fontWeight: 300, color: '#94a3b8' }}>Pharmacist</span></span>
+          <img src="/logo.svg" alt="Vitalis" style={{ width: 26, height: 26, objectFit: 'contain' }} />
+          <span>Vitalis <span style={{ fontWeight: 300, color: '#0d9488' }}>Pharmacist Station</span></span>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           {loggedIn && (
@@ -125,7 +125,7 @@ export default function App() {
           )}
           <div className={`badge ${ledgerAvailable ? 'badge-green' : 'badge-yellow'}`}>{ledgerAvailable ? 'LEDGER CONNECTED' : 'LEDGER NOT CONNECTED'}</div>
         </div>
-              <ThemeToggle />
+        <ThemeToggle />
       </nav>
 
       <main className="app-container">

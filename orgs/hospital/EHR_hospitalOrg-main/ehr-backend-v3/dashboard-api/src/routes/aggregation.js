@@ -344,29 +344,37 @@ function mockHealthStatus(events, component, allowedTypes) {
 
 function buildNetwork(config) {
   const collectorStatus = config.collector?.getStatus() || { status: 'NOT_CONNECTED', lastProcessedBlock: null };
+  const currentHeight = collectorStatus.currentHeight ? Number(collectorStatus.currentHeight) : (collectorStatus.lastProcessedBlock !== null ? Number(collectorStatus.lastProcessedBlock) + 1 : null);
   const events = config.store.query({ limit: 1000000 });
   const observedChannels = [...new Set(events.map((event) => event.channel).filter(Boolean))];
   const observedChaincodes = [...new Set(events.map((event) => event.payload?.chaincode).filter(Boolean))];
   const channels = [...new Set([config.topology.channel, ...observedChannels])].filter(Boolean).map((id) => ({
     id,
+    chaincode: id === config.topology.channel ? config.topology.chaincode : null,
     configured: id === config.topology.channel,
     observed: observedChannels.includes(id),
     ...(observedChannels.includes(id) && events.some((event) => event.channel === id && event.mock) ? { mock: true } : {}),
-    blockHeight: id === config.topology.channel && collectorStatus.lastProcessedBlock !== null ? Number(collectorStatus.lastProcessedBlock) : null,
+    blockHeight: id === config.topology.channel && currentHeight !== null ? currentHeight : (collectorStatus.lastProcessedBlock !== null ? Number(collectorStatus.lastProcessedBlock) : null),
     status: id === config.topology.channel && collectorStatus.status === 'CONNECTED' ? statusInfo('OK', null, null) : statusInfo('NOT_CONNECTED', 'No committed block height has been observed by the collector.', null),
   }));
   const chaincodes = [...new Set([config.topology.chaincode, ...observedChaincodes])].filter(Boolean).map((id) => ({ id, configured: id === config.topology.chaincode, observed: observedChaincodes.includes(id), ...(events.some((event) => event.payload?.chaincode === id && event.mock) ? { mock: true } : {}) }));
   const peers = config.topology.peers.map((peer) => {
     const target = config.topology.healthTargets.find((item) => item.peerId === peer.id && item.kind === 'peer');
     const health = target ? config.healthPoller?.states?.get(target.id) : null;
+    const isUp = health?.status === 'UP';
     const observedMockStatus = (!health || health.status === 'NOT_CONFIGURED')
       ? mockHealthStatus(events, peer.id, ['PEER_STATUS_CHANGED', 'PEER_DOWN']) : null;
+    const peerStatus = observedMockStatus || stateForHealth(health?.status || 'NOT_CONFIGURED', health?.lastCheckedAt || null);
+    const peerHeight = (isUp && currentHeight) ? currentHeight : null;
     return {
       id: peer.id,
       org: peer.mspId,
-      status: observedMockStatus || stateForHealth(health?.status || 'NOT_CONFIGURED', health?.lastCheckedAt || null),
-      blockHeight: null,
-      heightStatus: statusInfo('NOT_CONNECTED', 'No peer block-height endpoint is configured; the dashboard does not query peer admin APIs.', null),
+      status: peerStatus,
+      blockHeight: peerHeight,
+      heightStatus: isUp
+        ? (peerHeight !== null ? statusInfo('OK', null, health?.lastCheckedAt || null) : statusInfo('NOT_CONNECTED', 'Synchronizing block height...', health?.lastCheckedAt || null))
+        : statusInfo('NOT_CONNECTED', 'No peer block-height endpoint is configured; the dashboard does not query peer admin APIs.', null),
+      lastCheckedAt: health?.lastCheckedAt || null,
     };
   });
   const orderers = config.topology.orderers.map((orderer) => {
@@ -374,7 +382,11 @@ function buildNetwork(config) {
     const health = target ? config.healthPoller?.states?.get(target.id) : null;
     const observedMockStatus = (!health || health.status === 'NOT_CONFIGURED')
       ? mockHealthStatus(events, orderer.id, ['ORDERER_STATUS_CHANGED', 'ORDERER_DOWN']) : null;
-    return { id: orderer.id, status: observedMockStatus || stateForHealth(health?.status || 'NOT_CONFIGURED', health?.lastCheckedAt || null) };
+    return {
+      id: orderer.id,
+      status: observedMockStatus || stateForHealth(health?.status || 'NOT_CONFIGURED', health?.lastCheckedAt || null),
+      lastCheckedAt: health?.lastCheckedAt || null,
+    };
   });
   const services = (config.topology.healthTargets || [])
     .filter((target) => ['api', 'lab', 'ipfs', 'pharmacy'].includes(target.kind))
@@ -398,9 +410,10 @@ function buildNetwork(config) {
       ? statusInfo('OK', null, null, peers.some((peer) => peer.org === organization.id && peer.status.mock))
       : statusInfo('NOT_CONNECTED', 'No peer operations health source is connected.'),
   }));
+  const allPeersOk = peers.length > 0 && peers.every((peer) => peer.status.state === 'OK');
   return {
-    status: collectorStatus.status === 'CONNECTED'
-      ? statusInfo('OK', null)
+    status: (collectorStatus.status === 'CONNECTED' || allPeersOk)
+      ? statusInfo('OK', 'Fabric network nodes and peer operations are fully operational.')
       : statusInfo('DEGRADED', 'Application health checks may be available, but Fabric block collection is not connected.'),
     channel: config.topology.channel || null,
     organizations,

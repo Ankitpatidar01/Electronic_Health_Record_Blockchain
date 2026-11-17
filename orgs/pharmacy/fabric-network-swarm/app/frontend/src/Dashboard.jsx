@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, User, Activity, Calendar, ExternalLink, ShieldCheck } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL, IPFS_GATEWAY_URL } from './config';
 
 const Dashboard = ({ onAddRecord, currentUser }) => {

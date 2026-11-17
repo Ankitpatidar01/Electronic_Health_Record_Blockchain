@@ -37,6 +37,7 @@
     { "id": "history-agent", "kind": "ai", "org": "HospitalMSP", "status": "not_connected", "dependency": "AI" },
     { "id": "governance-agent", "kind": "ai", "org": "HospitalMSP", "status": "not_connected", "dependency": "Security" },
     { "id": "lab-agent", "kind": "ai", "org": "DiagnosticsMSP", "status": "not_connected", "dependency": "AI" },
+    { "id": "doctor-agent", "kind": "ai", "org": "HospitalMSP", "peerId": "peer1.hospital", "status": "not_connected", "dependency": "AI" },
     { "id": "nurse-agent", "kind": "logical", "org": "HospitalMSP", "peerId": "peer2.hospital", "status": "not_connected", "dependency": "Hospital API" },
     { "id": "pharmacy-agent", "kind": "logical", "org": "HospitalMSP", "peerId": "peer2.hospital", "status": "not_connected", "dependency": "Hospital API" }
   ]

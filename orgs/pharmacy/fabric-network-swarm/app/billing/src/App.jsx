@@ -122,8 +122,8 @@ export default function App() {
     <div className="app">
       <nav className="nav">
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Pill size={24} color="#3b82f6" />
-          <span>MedBlock <span style={{ fontWeight: 300, color: '#94a3b8' }}>Billing</span></span>
+          <img src="/logo.svg" alt="Vitalis" style={{ width: 26, height: 26, objectFit: 'contain' }} />
+          <span>Vitalis <span style={{ fontWeight: 300, color: '#0d9488' }}>Pharmacy Billing</span></span>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div className="glass-card" style={{ padding: '0.4rem 1rem', borderRadius: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)' }}>

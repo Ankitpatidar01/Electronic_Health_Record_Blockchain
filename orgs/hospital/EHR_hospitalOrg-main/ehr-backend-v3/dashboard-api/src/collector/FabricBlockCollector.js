@@ -134,6 +134,7 @@ class FabricBlockCollector {
         if (this.recentBlocks.size === 0) {
           try {
             const currentHeight = await client.getCurrentHeight();
+            this.currentHeight = currentHeight.toString();
             const backfillStart = computeStartBlock(null, currentHeight, Math.min(Number(currentHeight), 100));
             const backfillStream = await client.getBlockEvents(backfillStart);
             for await (const b of backfillStream) {
@@ -145,6 +146,15 @@ class FabricBlockCollector {
         }
 
         const checkpoint = await this.checkpoints.load();
+        if (checkpoint?.lastProcessedBlock !== undefined && checkpoint?.lastProcessedBlock !== null) {
+          this.lastProcessedBlock = checkpoint.lastProcessedBlock.toString();
+        }
+        if (!this.currentHeight) {
+          try {
+            const h = await client.getCurrentHeight();
+            this.currentHeight = h.toString();
+          } catch {}
+        }
         const startBlock = checkpoint
           ? BigInt(checkpoint.lastProcessedBlock) + 1n
           : computeStartBlock(null, await client.getCurrentHeight(), this.config.backfillBlocks);
@@ -199,7 +209,11 @@ class FabricBlockCollector {
   }
 
   getStatus() {
-    return { status: this.status, lastProcessedBlock: this.lastProcessedBlock };
+    return {
+      status: this.status,
+      lastProcessedBlock: this.lastProcessedBlock,
+      currentHeight: this.currentHeight || (this.lastProcessedBlock !== null ? String(Number(this.lastProcessedBlock) + 1) : null),
+    };
   }
 
   async close() {

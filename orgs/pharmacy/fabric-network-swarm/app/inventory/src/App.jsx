@@ -71,10 +71,12 @@ export default function App() {
       <AnimatePresence>
         {toast && (
           <motion.div initial={{ opacity: 0, y: -40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 999,
+            style={{
+              position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 999,
               background: toast.type === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)',
               border: `1px solid ${toast.type === 'error' ? '#ef4444' : '#10b981'}`,
-              borderRadius: '1rem', padding: '1rem 1.5rem', backdropFilter: 'blur(16px)', color: 'white', fontWeight: 600 }}>
+              borderRadius: '1rem', padding: '1rem 1.5rem', backdropFilter: 'blur(16px)', color: 'white', fontWeight: 600
+            }}>
             {toast.msg}
           </motion.div>
         )}
@@ -82,8 +84,8 @@ export default function App() {
 
       <nav className="nav">
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Package size={28} color="#eab308" />
-          <span>MedBlock <span style={{ fontWeight: 300, color: '#94a3b8' }}>Inventory</span></span>
+          <img src="/logo.svg" alt="Vitalis" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+          <span>Vitalis <span style={{ fontWeight: 300, color: '#0d9488' }}>Pharmacy Inventory</span></span>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div className="glass-card" style={{ padding: '0.4rem 1rem', borderRadius: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)' }}>
@@ -98,7 +100,7 @@ export default function App() {
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
-              <ThemeToggle />
+        <ThemeToggle />
       </nav>
 
       <main className="app-container">
@@ -114,7 +116,7 @@ export default function App() {
                 <div className="glass-card" style={{ gridColumn: 'span 2' }}>
                   <h3><Database size={20} color="#eab308" /> Pharmacy Real-Time Stock</h3>
                   <p>Global inventory state distributed across the blockchain swarm.</p>
-                  
+
                   <div style={{ marginTop: '2.5rem' }}>
                     {items.length === 0 ? (
                       <div role="status" style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary)' }}>
@@ -137,7 +139,7 @@ export default function App() {
                               <td style={{ color: '#10b981' }}>${item.price}</td>
                               <td style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(item.lastRestocked || item.createdAt).toLocaleString()}</td>
                               <td>
-                                {item.quantity <= (item.lowStockThreshold || 50) 
+                                {item.quantity <= (item.lowStockThreshold || 50)
                                   ? <span className="badge badge-red">Low Stock</span>
                                   : <span className="badge badge-green">Healthy</span>
                                 }
@@ -182,27 +184,27 @@ export default function App() {
                 <div className="glass-card">
                   <h3><Plus size={20} color="#10b981" /> Add / Restock Medicine</h3>
                   <p style={{ fontSize: '0.8rem', marginBottom: '2rem' }}>Updates are anchored to the blockchain and visible to pharmacists instantly.</p>
-                  
+
                   <form onSubmit={handleAddStock}>
                     <label>Item SKU / ID</label>
-                    <input value={newItem.itemId} onChange={e => setNewItem({...newItem, itemId: e.target.value})} placeholder="med_001" required />
-                    
+                    <input value={newItem.itemId} onChange={e => setNewItem({ ...newItem, itemId: e.target.value })} placeholder="med_001" required />
+
                     <label>Medicine Name</label>
-                    <input value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} placeholder="Paracetamol 500mg" required />
-                    
+                    <input value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} placeholder="Paracetamol 500mg" required />
+
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
                         <label>Quantity</label>
-                        <input type="number" value={newItem.quantity} onChange={e => setNewItem({...newItem, quantity: e.target.value})} placeholder="500" required />
+                        <input type="number" value={newItem.quantity} onChange={e => setNewItem({ ...newItem, quantity: e.target.value })} placeholder="500" required />
                       </div>
                       <div>
                         <label>Base Price ($)</label>
-                        <input type="number" step="0.01" value={newItem.price} onChange={e => setNewItem({...newItem, price: e.target.value})} placeholder="10.00" />
+                        <input type="number" step="0.01" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} placeholder="10.00" />
                       </div>
                     </div>
 
                     <label>Unit</label>
-                    <select value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value})}>
+                    <select value={newItem.unit} onChange={e => setNewItem({ ...newItem, unit: e.target.value })}>
                       <option value="tablets">Tablets</option>
                       <option value="vials">Vials</option>
                       <option value="bottles">Bottles</option>

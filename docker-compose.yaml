@@ -166,6 +166,12 @@ services:
       DASHBOARD_HEALTH_EXTORG_API_URL: http://h-extorg-api:4004/health
       DASHBOARD_HEALTH_IPFS_URL: http://h-ipfs-service:4006/health
       DASHBOARD_HEALTH_PHARMACY_URL: http://p-backend:3000/api/network-status
+      DASHBOARD_HEALTH_PEER0_OPERATIONS_URL: http://peer0.hospital.example.com:17051/healthz
+      DASHBOARD_HEALTH_PEER1_OPERATIONS_URL: http://peer1.hospital.example.com:19051/healthz
+      DASHBOARD_HEALTH_PEER2_OPERATIONS_URL: http://peer2.hospital.example.com:20051/healthz
+      DASHBOARD_HEALTH_DIAGNOSTICS_OPERATIONS_URL: http://peer0.diagnostic.example.com:18051/healthz
+      DASHBOARD_HEALTH_PROVIDER_OPERATIONS_URL: http://peer0.provider.example.com:21051/healthz
+      DASHBOARD_HEALTH_ORDERER_URL: http://orderer.example.com:17050/healthz
     ports:
       - "127.0.0.1:4010:4010"
     volumes:
@@ -239,6 +245,13 @@ services:
       - p-backend-modules:/app/node_modules
     ports:
       - "3000:3000"
+    environment:
+      - IPFS_API=http://ipfs.ehr.local:5001/api/v0
+      - FABRIC_CHANNEL_NAME=ehrchannel
+      - FABRIC_CHAINCODE_NAME=ehr
+    networks:
+      - default
+      - ehr_network
     command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
     restart: unless-stopped
 
@@ -330,9 +343,19 @@ services:
     working_dir: /app
     volumes:
       - ./orgs/lab/EHR-LABORG-main/client/node-gateway:/app
+      - ./orgs/lab/EHR-LABORG-main/connection-profiles:/connection-profiles:ro
+      - ./orgs/lab/EHR-LABORG-main/organizations:/organizations:ro
       - l-node-gateway-modules:/app/node_modules
+    environment:
+      - CONNECTION_PROFILE_PATH=/connection-profiles/lab-connection.json
+      - USER_MSP_DIR=/organizations/peerOrganizations/lab.example.com/users/User1@lab.example.com/msp
+      - IPFS_API_URL=http://ipfs.ehr.local:5001
+      - IPFS_GATEWAY_URL=http://localhost:8090/ipfs
     ports:
       - "3006:3000"
+    networks:
+      - default
+      - ehr_network
     command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run web"
     restart: unless-stopped
 

@@ -1,69 +1,67 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
-  Users, Calendar, FlaskConical, FileText,
-  LogOut, Activity, Stethoscope, Pill, FolderOpen,
-  ChevronRight, Menu, X, ShieldCheck
+  Users, Calendar, FileText, LogOut, Activity,
+  Stethoscope, Pill, FolderOpen, ChevronRight, Menu, X, ShieldCheck,
+  Search, Bell
 } from 'lucide-react'
 import { useState } from 'react'
 import ThemeToggle from '../ThemeToggle'
+import VerifiedBadge from '../../ui-kit/components/VerifiedBadge'
+import DataSourceTag from '../../ui-kit/components/DataSourceTag'
+import Avatar from '../../design-system/components/Avatar'
+import BRAND from '../../design-system/brand.config'
 
 const ROLE_CONFIG = {
   receptionist: {
-    label: 'Reception',
-    color: 'bg-slate-900',
-    accent: 'text-slate-200',
+    label: 'Reception & Registry',
+    badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
     nav: [
-      { to: '/patients',       icon: Users,     label: 'Patients' },
-      { to: '/visits',         icon: Calendar,  label: 'Visits' },
-      { to: '/register',       icon: Users,     label: 'Register Patient' },
-      { to: '/open-visit',     icon: Calendar,  label: 'Open Visit' },
+      { to: '/patients',   icon: Users,    label: 'Patients' },
+      { to: '/visits',     icon: Calendar, label: 'Active Visits' },
+      { to: '/register',   icon: Users,    label: 'Register Patient' },
+      { to: '/open-visit', icon: Calendar, label: 'Open New Visit' },
     ],
   },
   admin: {
-    label: 'Administration',
-    color: 'bg-slate-900',
-    accent: 'text-slate-200',
+    label: 'Hospital Governance',
+    badgeClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
     nav: [
-      { to: '/patients',       icon: Users,     label: 'Patients' },
-      { to: '/staff',          icon: Users,     label: 'Clinical Staff' },
-      { to: '/visits',         icon: Calendar,  label: 'Visits' },
-      { to: '/register',       icon: Users,     label: 'Register Patient' },
-      { to: '/open-visit',     icon: Calendar,  label: 'Open Visit' },
-      { to: '/discharge',      icon: LogOut,    label: 'Discharge' },
+      { to: '/patients',   icon: Users,    label: 'Patients' },
+      { to: '/staff',      icon: Users,    label: 'Doctors & Staff' },
+      { to: '/visits',     icon: Calendar, label: 'Encounters' },
+      { to: '/register',   icon: Users,    label: 'Register Patient' },
+      { to: '/open-visit', icon: Calendar, label: 'Open Visit' },
+      { to: '/discharge',  icon: LogOut,   label: 'Discharge' },
     ],
   },
   doctor: {
-    label: 'Doctor',
-    color: 'bg-blue-950',
-    accent: 'text-blue-200',
+    label: 'Clinical Physician',
+    badgeClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
     nav: [
-      { to: '/my-visits',      icon: Stethoscope, label: 'My Visits' },
-      { to: '/visit-detail',   icon: FileText,    label: 'Visit Detail' },
+      { to: '/my-visits',    icon: Stethoscope, label: 'Doctor Queue' },
+      { to: '/visit-detail', icon: FileText,    label: 'Clinical Chart' },
     ],
   },
   nurse: {
-    label: 'Nurse',
-    color: 'bg-violet-950',
-    accent: 'text-violet-200',
+    label: 'Nursing & Triage',
+    badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
     nav: [
-      { to: '/my-visits',      icon: Activity,  label: 'My Visits' },
+      { to: '/my-visits', icon: Activity, label: 'Triage & Vitals' },
     ],
   },
   pharmacist: {
-    label: 'Pharmacy',
-    color: 'bg-teal-950',
-    accent: 'text-teal-200',
+    label: 'Clinical Pharmacy',
+    badgeClass: 'bg-teal-500/20 text-teal-300 border-teal-500/30',
     nav: [
-      { to: '/dispense',       icon: Pill,      label: 'Dispense' },
+      { to: '/dispense', icon: Pill, label: 'Dispense Queue' },
     ],
   },
   medrecordofficer: {
-    label: 'Medical Records',
-    color: 'bg-emerald-950',
-    accent: 'text-emerald-200',
+    label: 'Medical Records Audit',
+    badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
     nav: [
-      { to: '/finalize',       icon: FolderOpen, label: 'Finalize Records' },
+      { to: '/finalize', icon: FolderOpen, label: 'Finalize & Archive' },
     ],
   },
 }
@@ -73,6 +71,7 @@ export default function Layout({ children }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [globalSearch, setGlobalSearch] = useState('')
 
   if (!user) return null
 
@@ -85,98 +84,132 @@ export default function Layout({ children }) {
   }
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="p-6 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-            <ShieldCheck size={16} className="text-white" />
+    <div className="flex flex-col h-full p-4 lg:p-6 text-white select-none">
+      {/* Brand Header with Heart-ECG Logo (Reference 3) */}
+      <div className="flex items-center gap-3 mb-8 px-2">
+        <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center p-2 shadow-sm">
+          <img src="/logo.svg" alt="Vitalis" className="w-full h-full object-contain" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="font-extrabold text-lg tracking-tight text-white font-sans">
+              {BRAND.name}
+            </h1>
+            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-md bg-white/15 text-teal-200">
+              Clinical
+            </span>
           </div>
-          <div>
-            <p className="text-white font-semibold text-sm font-display">EHR Chain</p>
-            <p className={`text-xs ${cfg.accent}`}>{cfg.label}</p>
-          </div>
+          <p className="text-[11px] text-teal-100/70 truncate">{cfg.label}</p>
         </div>
       </div>
 
-      {/* User */}
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-white/10">
-          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-medium">{user.username?.[0]?.toUpperCase()}</span>
-          </div>
-          <div className="min-w-0">
-            <p className="text-white text-sm font-medium truncate">{user.username}</p>
-            <p className={`text-xs ${cfg.accent} capitalize`}>{user.role}</p>
-          </div>
+      {/* Pill Navigation Links (Reference 3: Pill tabs with active highlight) */}
+      <nav className="flex-1 space-y-2 overflow-y-auto pr-1">
+        <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-teal-200/60">
+          Navigation
         </div>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 p-4 space-y-1">
-        {cfg.nav.map(({ to, icon: Icon, label }) => (
-          <Link
-            key={to}
-            to={to}
-            onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-              isActive(to)
-                ? 'bg-white/20 text-white font-medium'
-                : `text-white/60 hover:text-white hover:bg-white/10`
-            }`}
-          >
-            <Icon size={16} />
-            {label}
-            {isActive(to) && <ChevronRight size={14} className="ml-auto" />}
-          </Link>
-        ))}
+        {cfg.nav.map(({ to, icon: Icon, label }) => {
+          const active = isActive(to)
+          return (
+            <Link
+              key={to}
+              to={to}
+              onClick={() => setMobileOpen(false)}
+              className={`vitalis-nav-pill ${active ? 'active' : ''}`}
+            >
+              <Icon size={18} className={active ? 'text-teal-600 dark:text-teal-300' : 'text-white/70'} />
+              <span>{label}</span>
+              {active && <ChevronRight size={14} className="ml-auto opacity-70" />}
+            </Link>
+          )
+        })}
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-white/10 space-y-2">
-        <ThemeToggle />
+      {/* User Card & Gateway Link in Sidebar */}
+      <div className="pt-4 border-t border-white/15 space-y-3">
+        <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15">
+          <Avatar id={user.username} name={user.username} size={36} status="online" ring={false} />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-white truncate">{user.username}</p>
+            <p className="text-[10px] text-teal-200/80 capitalize truncate">{user.role}</p>
+          </div>
+        </div>
+
         <button
+          type="button"
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all w-full"
+          className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-full text-xs font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-white/20 transition-all w-full cursor-pointer"
         >
-          <LogOut size={16} />
-          Sign out
+          <LogOut size={14} />
+          <span>Switch Role / Gateway</span>
         </button>
       </div>
     </div>
   )
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      {/* Desktop Sidebar */}
-      <aside className={`hidden md:flex w-56 flex-shrink-0 ${cfg.color} flex-col`}>
+    <div className="vitalis-staff-shell flex h-screen overflow-hidden">
+      {/* Desktop Sidebar (Reference 3: Teal pill-sidebar) */}
+      <aside className="hidden lg:flex w-64 shrink-0 flex-col">
         <SidebarContent />
       </aside>
 
-      {/* Mobile Sidebar */}
+      {/* Mobile Drawer */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className={`absolute left-0 top-0 h-full w-64 ${cfg.color} flex flex-col`}>
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute left-0 top-0 h-full w-64 vitalis-staff-shell shadow-2xl">
             <SidebarContent />
           </aside>
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar (mobile) */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200">
-          <button onClick={() => setMobileOpen(true)}>
-            <Menu size={20} className="text-slate-700" />
-          </button>
-          <span className="font-semibold text-slate-900 font-display">EHR Chain</span>
-          <div className="w-5" />
-        </header>
+      {/* Main Clinical Canvas Area (Reference 3: Large rounded content canvas) */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden p-2 sm:p-4 lg:p-6 lg:pl-0">
+        <div className="vitalis-canvas flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Top Bar inside Canvas */}
+          <header className="pb-4 mb-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <Menu size={20} />
+              </button>
+              <div>
+                <span className="text-xs uppercase font-bold tracking-wider text-teal-600 dark:text-teal-400">
+                  {cfg.label}
+                </span>
+                <h2 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                  Hospital Operations
+                </h2>
+              </div>
+            </div>
 
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
+            {/* Top Right Controls */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <VerifiedBadge verified={true} />
+              <DataSourceTag source="live" />
+              <ThemeToggle />
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="hidden sm:inline-flex btn-vitalis-ghost py-1.5 px-3.5 text-xs"
+                title="Return to the Main Role Gateway"
+              >
+                <Users size={13} />
+                <span>Switch Role</span>
+              </button>
+            </div>
+          </header>
+
+          {/* Dynamic Page Content */}
+          <main className="flex-1 overflow-y-auto pr-1">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   )

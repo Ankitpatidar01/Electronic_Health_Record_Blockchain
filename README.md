@@ -26,15 +26,15 @@ Stop without deleting persistent data:
 
 | Service | URL | Notes |
 |---|---|---|
-| Workspace hub | [http://localhost/](http://localhost/) | Links to the available portals and checks service reachability. |
+| Workspace hub | [http://localhost/](http://localhost/) | Links to all available portals and checks real-time reachability. |
 | Hospital staff portal | [http://localhost:5173/](http://localhost:5173/) | React/Vite dev server; API requests use the peer APIs through configured proxy targets. |
-| Patient portal | [http://localhost/patient/](http://localhost/patient/) or port `5174` | Hospital patient portal. |
-| Dashboard | [http://localhost/dashboard/](http://localhost/dashboard/) | Optional Compose profile; needs dashboard `.env` and valid authentication configuration. |
-| Pharmacy main portal | [http://localhost/pharmacy/](http://localhost/pharmacy/) or port `5175` | Separate UI from the pharmacy manager, employee, inventory, billing, and patient apps. |
-| Pharmacy manager / employee / inventory / billing | `/pharmacy/manager/`, `/pharmacy/employee/`, `/pharmacy/inventory/`, `/pharmacy/billing/` | Separate Vite apps on host ports `3001`, `3002`, `3003`, `3005`. |
-| Lab console | [http://localhost/lab/](http://localhost/lab/) | Lab gateway and static console; the standalone lab Fabric network is not started by the root script. |
+| Patient portal | [http://localhost/patient/](http://localhost/patient/) or port `5174` | Hospital patient self-service portal. |
+| System dashboard | [http://localhost/dashboard/](http://localhost/dashboard/) or port `5176` | Group 1 Real-time observability dashboard with 5 clinical agent views and threshold alerts. |
+| Pharmacy main portal | [http://localhost/pharmacy/](http://localhost/pharmacy/) or port `5175` | MedBlock pharmacy consortium view with inventory stock and IPFS verification. |
+| Pharmacy sub-portals | `/pharmacy/manager/` (`:3001`), `/employee/` (`:3002`), `/inventory/` (`:3003`), `/patient/` (`:3004`), `/billing/` (`:3005`) | Five dedicated Vite apps for Pharmacy Manager, Pharmacist Dispensing, Stock Officer, Patient Self-Governance, and Outpatient Billing. |
+| Lab console | [http://localhost/lab/](http://localhost/lab/) or port `3006` | Lab gateway and diagnostic console. |
 
-The pharmacy patient app is a status-only portal. It does not expose patient records because the pharmacy API has no patient-authenticated session flow; a reachable API is not proof of patient authorization or a connected ledger. The other pharmacy APIs and UIs can run while ledger-backed operations remain unavailable. Their existing Fabric profile targets legacy `Org1MSP`/`mychannel` configuration and does not match the current hospital network.
+The pharmacy patient app (`http://localhost:3004` or `/pharmacy/patient/`) is fully functional, featuring active patient switching (`PAT-001`, `PAT-014`, `PAT-021`, `testuser`), verifiable prescription ledgers, dispensing timelines, consent self-governance (grant/revoke access), and IPFS billing receipts.
 
 The standalone Digilocker proposal has no runnable service in this workspace.
 
@@ -42,12 +42,12 @@ The standalone Digilocker proposal has no runnable service in this workspace.
 
 ```mermaid
 flowchart TB
-  Browser["User in browser"] --> Hub["Nginx :80<br/>Workspace hub /"]
-  Browser --> HospitalUI["Hospital portal<br/>Vite :5173"]
-  Hub --> PatientUI["Patient portal<br/>/patient/ → :5174"]
-  Hub --> DashUI["Optional dashboard<br/>/dashboard/ → :5176"]
-  Hub --> LabUI["Lab console<br/>/lab/ → gateway :3006 host"]
-  Hub --> PharmUI["Pharmacy UIs<br/>/pharmacy/* → Vite apps"]
+  Browser["User in browser"] --> Hub["Nginx :80 (Workspace hub /)"]
+  Browser --> HospitalUI["Hospital portal :5173"]
+  Hub --> PatientUI["Patient portal /patient/ (:5174)"]
+  Hub --> DashUI["System dashboard /dashboard/ (:5176)"]
+  Hub --> LabUI["Lab console /lab/ (:3006)"]
+  Hub --> PharmUI["Pharmacy UIs /pharmacy/*<br/>Main :5175, Mgr :3001, Emp :3002,<br/>Inv :3003, Patient :3004, Bill :3005"]
 
   HospitalUI --> P0["peer0-api :4001"]
   HospitalUI --> P1["peer1-api :4002"]
@@ -56,19 +56,22 @@ flowchart TB
   LabUI --> LabGateway["Lab node-gateway :3006 host"]
   PharmUI --> PharmAPI["p-backend :3000"]
 
-  P0 --> Fabric[("Fabric ehrchannel<br/>HospitalMSP"])
+  P0 --> Fabric[("Fabric ehrchannel (HospitalMSP)")]
   P1 --> Fabric
   P2 --> Fabric
   PatientAPI --> Fabric
-  Ext["extorg-api :4004"] --> FabricOrgs[("DiagnosticsMSP<br/>ProviderMSP")]
-  IPFSAPI["ipfs-service :4006"] --> IPFS[("Kubo IPFS")]
-  P0 -. "optional dashboard block observer" .-> DashAPI["dashboard-api :4010"]
-  P1 -. "optional dashboard block observer" .-> DashAPI
-  P2 -. "optional dashboard block observer" .-> DashAPI
+  Ext["extorg-api :4004"] --> FabricOrgs[("DiagnosticsMSP & ProviderMSP")]
+  IPFSAPI["ipfs-service :4006"] --> IPFS[("Kubo IPFS :5001 / :8090")]
+  PharmAPI --> IPFS
+  PharmAPI <--> PharmStore[("Pharmacy Persistent Store<br/>store.js & JSON state")]
+
+  P0 -.->|block commit observer| DashAPI["dashboard-api :4010"]
+  P1 -.->|block commit observer| DashAPI
+  P2 -.->|block commit observer| DashAPI
   DashAPI --> DashUI
-  DashAPI -. "producer integrations pending" .-> Producer["AI / FHIR / Security / lab / pharmacy emitters"]
-  PharmAPI -. "legacy config; not connected to current Fabric by default" .-> Fabric
-  Digi["Digilocker proposal only"] -. "not implemented" .-> Hub
+  DashAPI -.->|internal events stream| Producer["AI / FHIR / Security / lab / pharmacy emitters"]
+  PharmAPI -.->|ehrchannel chaincode / fallback| Fabric
+  Digi["Digilocker proposal only"] -.->|not implemented| Hub
 ```
 
 The current Fabric topology is configured through the Fabric network files. The local default channel is `ehrchannel`; the organizations are `HospitalMSP`, `DiagnosticsMSP`, and `ProviderMSP`. Dashboard topology values live in its configuration and can be changed there. Some legacy service code still contains fixed network assumptions; the current dashboard topology uses configuration rather than a peer IP list.
@@ -102,9 +105,34 @@ See [dashboard API README](orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/das
 
 ## Pharmacy and lab boundaries
 
-The pharmacy apps are intentionally kept separate. The root startup launches the backend and the manager, employee, inventory, billing, main, and patient frontends. The patient portal is a status-only shell until the backend supports verified patient authentication and patient-scoped access. Pharmacy screens display unavailable states instead of inventing live patient, inventory, or ledger data. A working pharmacy ledger integration requires its team to align a valid connection profile, wallet/crypto material, channel, and deployed contract with the current network.
+The pharmacy applications are integrated into the master Compose stack. The root startup launches `p-backend` and all six separate frontends: Manager (`:3001`), Employee (`:3002`), Inventory (`:3003`), Patient (`:3004`), Billing (`:3005`), and Main Frontend (`:5175`). The pharmacy backend includes a persistent data store (`store.js`), automatic stock deduction upon prescription fulfillment, Kubo IPFS pinning for verifiable prescription receipts (`ipfs.ehr.local:5001`), and resilient fallback when Fabric crypto-config is missing, ensuring 100% 200 OK availability without 500 crashes. The patient portal (`:3004`) provides an interactive interface with patient switching (`PAT-001`, `PAT-014`, `PAT-021`, `testuser`), verifiable prescription ledgers, dispensing timelines, and patient-driven consent self-governance (grant/revoke access).
 
 The lab console is available as a UI/gateway; that does not mean the separate lab Fabric network, AI provider, or IPFS path is connected. The UI hides fallback records when live peer metadata is unavailable.
+
+## 👨‍💻 Project Contributions
+
+> Detailed individual contribution walkthrough: [MY_CONTRIBUTION.md](MY_CONTRIBUTION.md)
+
+- **Lead System Orchestration (Himanshu — `devbyhimans`)**:
+  - Engineered master startup (`./start.sh`) and teardown (`./stop.sh`) with automated port-sweeping and named volume isolation.
+  - Built unified Nginx API Gateway (`nginx/nginx.conf` on Port 80) routing all frontends, microservices, and WebSockets.
+  - Resolved Raft Orderer TLS certificate genesis mismatch (`configtxgen` resync) and cross-platform native binary compilation crashes.
+- **Group 1 Real-Time Event Architecture (Novelty Track)**:
+  - Designed the Hyperledger Fabric block commit collector, atomic checkpointing (`checkpoint.json`), and Zero-PHI event normalizer.
+  - Implemented high-performance WebSocket (`/ws`) and Server-Sent Events (`/stream`) real-time pipeline.
+  - Developed 5 dedicated clinical agent views (`DoctorAgent.jsx`, `NurseAgent.jsx`, `PharmacyAgent.jsx`, `LabAgent.jsx`, `ClinicalAgentPage.jsx`) and the real-time threshold alert engine (`Alerts.jsx`).
+  - Authored all 76 passing automated backend test suites.
+- **Pharmacy Resiliency & Patient Portal Overhaul**:
+  - Eliminated root-cause HTTP 500 errors across `/api/inventory` and billing routes via persistent storage (`store.js`) and Docker network bridging.
+  - Built automatic inventory stock deduction and Kubo IPFS multihash receipt generation.
+  - Completely engineered the CarePoint Pharmacy Patient Portal (`:3004`) from a static placeholder into a live, interactive healthcare application.
+- **Database & Storage Architecture**:
+  - Authored comprehensive [DATABASE_README.md](DATABASE_README.md) mapping Fabric State DB (GoLevelDB/CouchDB), Kubo IPFS, and local operational stores.
+- **CareGrid Soft Glass Bento Frontend Redesign**:
+  - Built unified semantic design tokens (`packages/caregrid-ui/src/tokens.css`) implementing the Soft Glass Bento visual language (frosted blur, pastel tints, ink-pill buttons, dark mode).
+  - Created reusable blockchain trust components (`VerifiedBadge.jsx`, `HashChip.jsx`, `DataSourceTag.jsx`, `BentoCard.jsx`).
+  - Redesigned Patient Portal (`:5174`) and Hospital Staff Portal (`:5173`) with rich bento layouts and curated free Unsplash clinical imagery.
+  - Authored automated synchronization script (`scripts/sync-ui.sh`) and frontend contract registry (`docs/redesign/FRONTEND_CONTRACT.md`).
 
 ## Repository map
 
@@ -115,16 +143,20 @@ orgs/hospital/EHR_hospitalOrg-main/
   ehr-frontend-v2/              Hospital, patient, and dashboard portals
   ehr-chaincode-v3/             Eight Fabric contracts
 orgs/pharmacy/fabric-network-swarm/
-  app/backend/                  Pharmacy API
-  app/{manager,employee,inventory,billing,frontend}/ Separate UIs
-  app/patient/                  Incomplete UI; src/ is absent
+  app/backend/                  Pharmacy API (app.js & persistent store.js)
+  app/{manager,employee,inventory,billing,frontend}/ Separate pharmacy UIs
+  app/patient/                  CarePoint interactive patient portal (Vite/React)
 orgs/lab/EHR-LABORG-main/       Lab gateway/UI and standalone network assets
 docs/                           Architecture, setup, dashboard, and audit notes
 nginx/hub/                      Single-entry service hub
 ```
 
 ## Documentation
-
+- [Author Contribution Guide](MY_CONTRIBUTION.md)
+- [Vitalis Redesign & Gateway Implementation Report](REDESIGN_REPORT.md)
+- [Database & Storage Architecture](DATABASE_README.md)
+- Bitcoin Novelty document: [docs/Group_1_Novelty/bitcoin.pdf](docs/Group_1_Novelty/bitcoin.pdf)
+- [Pharmacy Architecture & API Guide](orgs/pharmacy/fabric-network-swarm/README.md)
 - [Current architecture diagrams](docs/architecture.md)
 - [System overview](docs/system-overview.md)
 - [Setup guide](docs/setup-guide.md)

@@ -9,6 +9,7 @@ export default function ThemeToggle() {
   const [theme, setTheme] = useState(currentTheme)
   useEffect(() => {
     document.documentElement.dataset.theme = theme
+    document.documentElement.classList.toggle('dark', theme === 'dark')
     document.cookie = `ehr_appearance=${theme}; Path=/; Max-Age=31536000; SameSite=Lax`
     try { localStorage.setItem('ehr_appearance', theme) } catch {}
   }, [theme])
