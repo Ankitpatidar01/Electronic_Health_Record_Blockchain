@@ -1,0 +1,62 @@
+[
+  {
+    "title": "Diagnosis and Management of Hypertension in Adults",
+    "abstract": "Hypertension is a major preventable cause of cardiovascular disease and premature death worldwide. Normal blood pressure is defined as systolic blood pressure below 120 mmHg and diastolic below 80 mmHg. Stage 1 hypertension is defined as systolic 130-139 mmHg or diastolic 80-89 mmHg. Stage 2 hypertension corresponds to systolic 140 mmHg or higher, or diastolic 90 mmHg or higher. First-line pharmacologic agents include thiazide diuretics, calcium channel blockers, and ACE inhibitors or angiotensin receptor blockers.",
+    "source": "PubMed ID: 31050724",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/31050724/"
+  },
+  {
+    "title": "Type 2 Diabetes Mellitus: Diagnostic Criteria and Clinical Targets",
+    "abstract": "Diabetes mellitus is characterized by chronic hyperglycemia resulting from defects in insulin secretion, insulin action, or both. Fasting plasma glucose levels equal to or greater than 126 mg/dL (7.0 mmol/L) or a glycated hemoglobin (HbA1c) level of 6.5% (48 mmol/mol) or higher are diagnostic of diabetes. Pre-diabetes is classified with fasting blood glucose between 100-125 mg/dL or HbA1c between 5.7% and 6.4%. Lifestyle modifications, metformin administration, and cardiovascular risk factor management remain foundational.",
+    "source": "PubMed ID: 32014763",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/32014763/"
+  },
+  {
+    "title": "Clinical Assessment of Heart Rate and Resting Cardiovascular Metrics",
+    "abstract": "A normal resting heart rate for adults ranges between 60 and 100 beats per minute (bpm). Resting bradycardia is defined as a heart rate less than 60 bpm, while resting tachycardia is defined as a heart rate greater than 100 bpm. Elevated resting heart rate correlates with increased sympathetic tone and cardiovascular morbidity in patients with underlying ischemic heart disease.",
+    "source": "PubMed ID: 29874120",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/29874120/"
+  },
+  {
+    "title": "Body Mass Index (BMI) Classifications and Metabolic Health",
+    "abstract": "Body Mass Index (BMI) is calculated as weight in kilograms divided by height in meters squared (kg/m2). Categories for adults include: underweight (<18.5), normal weight (18.5–24.9), overweight (25.0–29.9), and obesity class 1 (30.0–34.9). Elevated BMI strongly associates with dyslipidemia, insulin resistance, and elevated total serum cholesterol above 200 mg/dL.",
+    "source": "PubMed ID: 30421832",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/30421832/"
+  },
+  {
+    "title": "Pulse Oximetry and Peripheral Oxygen Saturation (SpO2) Standards",
+    "abstract": "Pulse oximetry measures peripheral capillary oxygen saturation (SpO2). Normal physiological values at sea level range from 95% to 100%. Levels below 90% signify hypoxemia requiring immediate clinical evaluation, supplemental oxygen administration, and respiratory tract assessment.",
+    "source": "PubMed ID: 31892401",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/31892401/"
+  },
+  {
+    "title": "Dyslipidemia and Serum Cholesterol Risk Stratification",
+    "abstract": "Total cholesterol levels below 200 mg/dL (5.2 mmol/L) are desirable in adults. Borderline high total cholesterol ranges from 200 to 239 mg/dL, and levels of 240 mg/dL and above are categorized as high risk for atherosclerotic cardiovascular disease (ASCVD). High LDL-C and low HDL-C further amplify coronary heart disease hazards.",
+    "source": "PubMed ID: 30586742",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/30586742/"
+  },
+  {
+    "title": "Anatomy and Physiology of the Cardiovascular System",
+    "abstract": "The human cardiovascular system consists of the four-chambered heart (right and left atria and ventricles) and a closed network of systemic and pulmonary blood vessels. Systemic arterial pressure is maintained by cardiac output and systemic vascular resistance.",
+    "source": "PubMed ID: 28613481",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/28613481/"
+  },
+  {
+    "title": "Respiratory Mechanics and Pulmonary Gas Exchange",
+    "abstract": "The respiratory system conducts atmospheric air to the pulmonary alveoli where passive gas exchange occurs between alveolar air and pulmonary capillary blood. Normal adult respiratory rates range from 12 to 20 breaths per minute at rest.",
+    "source": "PubMed ID: 30252311",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/30252311/"
+  },
+  {
+    "title": "Normal Body Temperature Regulation and Febrile Responses",
+    "abstract": "Normal human body temperature regulated by the preoptic anterior hypothalamus is approximately 98.6°F (37.0°C), with diurnal variation between 97.7°F and 99.5°F. Fever (pyrexia) is clinically identified when oral temperature exceeds 100.4°F (38.0°C).",
+    "source": "PubMed ID: 29262194",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/29262194/"
+  },
+  {
+    "title": "Diabetic Nephropathy and Microvascular Complications",
+    "abstract": "Persistent poorly controlled blood glucose (fasting glucose >140 mg/dL, HbA1c >7.0%) damages renal microvasculature, leading to microalbuminuria and diabetic kidney disease. Strict glycemic control and blood pressure optimization substantially attenuate nephropathy progression.",
+    "source": "PubMed ID: 31422789",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/31422789/"
+  }
+]

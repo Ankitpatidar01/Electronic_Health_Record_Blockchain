@@ -1,0 +1,144 @@
+{
+  "TEST001": {
+    "name": "Test Patient",
+    "age": 30,
+    "gender": "Male",
+    "measurements": [
+      {
+        "timestamp": "2026-10-26T19:28:03.881639",
+        "data": {
+          "Blood Pressure": "120/80 mmHg"
+        }
+      },
+      {
+        "timestamp": "2026-10-27T01:36:44.847942",
+        "data": {
+          "Blood Pressure": "120/80 mmHg"
+        }
+      },
+      {
+        "timestamp": "2026-10-27T01:36:50.201913",
+        "data": {
+          "Blood Pressure": "120/80 mmHg"
+        }
+      },
+      {
+        "timestamp": "2026-10-27T02:01:43.575232",
+        "data": {
+          "Blood Pressure": "120/80 mmHg"
+        }
+      },
+      {
+        "timestamp": "2026-10-27T02:04:56.541200",
+        "data": {
+          "Blood Pressure": "120/80 mmHg"
+        }
+      },
+      {
+        "timestamp": "2026-11-17T15:54:21.882487",
+        "data": {
+          "Blood Pressure": "120/80 mmHg"
+        }
+      }
+    ],
+    "created_at": "2026-10-26T19:28:03.880898"
+  },
+  "P001": {
+    "name": "John Doe",
+    "age": 45,
+    "gender": "Male",
+    "measurements": [
+      {
+        "timestamp": "2026-11-17T15:56:17.152433",
+        "data": {
+          "Blood Pressure": "140/90 mmHg",
+          "Heart Rate": "85 bpm",
+          "Blood Sugar (Fasting)": "180 mg/dL",
+          "Weight": "85 kg",
+          "Height": "175 cm",
+          "BMI": "27.8",
+          "Temperature": "98.6°F",
+          "Oxygen Saturation": "97%",
+          "Cholesterol Total": "240 mg/dL",
+          "HbA1c": "7.5%"
+        }
+      }
+    ],
+    "created_at": "2026-11-17T15:56:17.151894"
+  },
+  "P002": {
+    "name": "Jane Smith",
+    "age": 32,
+    "gender": "Female",
+    "measurements": [
+      {
+        "timestamp": "2026-11-17T15:56:17.153610",
+        "data": {
+          "Blood Pressure": "120/80 mmHg",
+          "Heart Rate": "72 bpm",
+          "Blood Sugar (Fasting)": "95 mg/dL",
+          "Weight": "62 kg",
+          "Height": "165 cm",
+          "BMI": "22.8",
+          "Temperature": "98.4°F",
+          "Oxygen Saturation": "98%",
+          "Cholesterol Total": "180 mg/dL",
+          "HbA1c": "5.2%"
+        }
+      }
+    ],
+    "created_at": "2026-11-17T15:56:17.153026"
+  },
+  "P003": {
+    "name": "Robert Johnson",
+    "age": 58,
+    "gender": "Male",
+    "measurements": [
+      {
+        "timestamp": "2026-11-17T15:56:17.154413",
+        "data": {
+          "Blood Pressure": "160/95 mmHg",
+          "Heart Rate": "90 bpm",
+          "Blood Sugar (Fasting)": "210 mg/dL",
+          "Weight": "95 kg",
+          "Height": "180 cm",
+          "BMI": "29.3",
+          "Temperature": "98.8°F",
+          "Oxygen Saturation": "96%",
+          "Cholesterol Total": "260 mg/dL",
+          "HbA1c": "8.2%"
+        }
+      }
+    ],
+    "created_at": "2026-11-17T15:56:17.154032"
+  },
+  "API_TEST_01": {
+    "name": "Integration Subject",
+    "age": 42,
+    "gender": "Male",
+    "created_at": "2026-11-17T16:05:30.613303",
+    "measurements": [
+      {
+        "timestamp": "2026-11-17T16:05:30.613296",
+        "data": {
+          "Blood Pressure": "125/82 mmHg",
+          "Heart Rate": "74 bpm"
+        }
+      },
+      {
+        "timestamp": "2026-11-17T16:05:30.623176",
+        "data": {
+          "Blood Pressure": "190/125 mmHg",
+          "Oxygen Saturation": "88%"
+        }
+      },
+      {
+        "timestamp": "2026-11-17T16:06:05.578707",
+        "data": {
+          "Blood Pressure": "190/125 mmHg",
+          "Oxygen Saturation": "88%"
+        }
+      }
+    ]
+  }
+}
