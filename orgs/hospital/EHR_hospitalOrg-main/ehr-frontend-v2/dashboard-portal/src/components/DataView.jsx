@@ -21,8 +21,11 @@ export function StatusPill({ state, label }) {
   )
 }
 
-export function DataView({ title, description, path, rows, columns, children }) {
-  const { data, error, loading } = useDashboardData(path)
+export function DataView({ title, description, path, rows, columns, children, data: propData }) {
+  const { data: fetchedData, error: fetchErr, loading: fetchLoading } = useDashboardData(propData ? null : path)
+  const data = propData || fetchedData
+  const error = propData ? null : fetchErr
+  const loading = propData ? false : fetchLoading
   const values = rows ? rows(data) : []
   const state = data?.status?.state || 'OK'
 

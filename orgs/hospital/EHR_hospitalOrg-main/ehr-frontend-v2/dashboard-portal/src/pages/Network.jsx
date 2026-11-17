@@ -12,7 +12,7 @@ function NetCard({ label, value, icon: Icon, sub, tone = 'blue' }) {
   }[tone] || 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'
 
   return (
-    <div className="premium-card p-5">
+    <div className={`premium-card tone-${tone} p-5`}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</span>
         {Icon && (
@@ -79,6 +79,7 @@ export default function Network() {
         title="Peers, Orderers & Services"
         description="All configured nodes. Fabric block height requires a connected observer."
         path="/network"
+        data={data}
         rows={data => [
           ...(data?.peers || []).map(row => ({ ...row, rowKind: 'Peer' })),
           ...(data?.orderers || []).map(row => ({ ...row, rowKind: 'Orderer' })),
