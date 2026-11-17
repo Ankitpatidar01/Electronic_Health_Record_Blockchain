@@ -4,6 +4,39 @@ This repository contains a local academic/demo EHR workspace built around a Hype
 
 FHIR R4, ABDM/ABHA, India DPDP Act 2023, HIPAA-style controls, and GDPR are design targets/reference points. Dashboard events are intended to contain zero patient-identifiable or clinical content. Digilocker remains proposed only.
 
+## First-time setup (From a fresh git clone)
+
+When cloning this repository for the first time on a new laptop or VM:
+
+### 1. Prerequisites
+- **OS:** Linux (Ubuntu 22.04 or 24.04 recommended) or Windows with WSL2 (Ubuntu).
+- **Packages:** Docker Engine & Docker Compose plugin (`docker compose version`), Node.js (v20+), npm, Python 3.10+, curl, jq.
+- Ensure Docker can be run without root:
+  ```bash
+  sudo usermod -aG docker "$USER"
+  # Log out and log back in, or run: newgrp docker
+  ```
+
+### 2. Initialize application dependencies
+```bash
+./setup.sh
+```
+
+### 3. Bootstrap Hyperledger Fabric Network (First run only)
+Because cryptographic MSP keys and CA databases are excluded from Git for security, generate the initial certificates and channel ledger:
+```bash
+cd orgs/hospital/EHR_hospitalOrg-main/ehr-network
+bash scripts/network-up.sh
+bash scripts/deployChaincode.sh
+cd ../../../..
+```
+
+### 4. Launch the Complete Workspace
+```bash
+./start.sh
+```
+All 20 services, portals, AI agents, and the realtime dashboard will launch at [http://localhost/](http://localhost/).
+
 ## Start and stop
 
 From the repository root:

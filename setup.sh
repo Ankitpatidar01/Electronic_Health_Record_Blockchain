@@ -53,7 +53,7 @@ for img in "${REQUIRED_IMAGES[@]}"; do
 done
 
 # 4. Install Node.js dependencies
-echo "[4/4] Installing application and chaincode dependencies..."
+echo "[4/5] Installing application and chaincode dependencies..."
 MODULES=(
   "orgs/hospital/EHR_hospitalOrg-main/ehr-chaincode-v3"
   "orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/ipfs-service"
@@ -62,8 +62,10 @@ MODULES=(
   "orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/peer2-api"
   "orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/extorg-api"
   "orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/patient-api"
+  "orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api"
   "orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/hospital-portal"
   "orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/patient-portal"
+  "orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/dashboard-portal"
   "orgs/lab/EHR-LABORG-main/client/node-gateway"
   "orgs/pharmacy/fabric-network-swarm/app/frontend"
 )
@@ -77,7 +79,27 @@ for mod in "${MODULES[@]}"; do
   fi
 done
 
+# 5. Initialize environment configs if missing
+echo "[5/5] Checking configuration files..."
+DASHBOARD_ENV="${ROOT_DIR}/orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/.env"
+if [ ! -f "$DASHBOARD_ENV" ] && [ -f "${DASHBOARD_ENV}.example" ]; then
+  cp "${DASHBOARD_ENV}.example" "$DASHBOARD_ENV"
+  echo "  ✓ Created dashboard-api/.env from .env.example"
+fi
+
 echo ""
 echo "════════════════════════════════════════════════════"
-echo "  ✓ Setup Complete! Next run: ./start.sh"
+if [ ! -d "${ROOT_DIR}/orgs/hospital/EHR_hospitalOrg-main/ehr-network/organizations/peerOrganizations" ]; then
+  echo "  [!] FIRST-TIME SETUP REQUIRED:"
+  echo "      Cryptographic identities are not yet generated."
+  echo "      Run network bootstrap (only once):"
+  echo ""
+  echo "      cd orgs/hospital/EHR_hospitalOrg-main/ehr-network"
+  echo "      bash scripts/network-up.sh"
+  echo "      bash scripts/deployChaincode.sh"
+  echo "      cd ../../../.."
+  echo "      ./start.sh"
+else
+  echo "  ✓ Setup Complete! Next run: ./start.sh"
+fi
 echo "════════════════════════════════════════════════════"

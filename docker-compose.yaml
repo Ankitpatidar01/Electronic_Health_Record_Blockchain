@@ -169,7 +169,8 @@ services:
       context: ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api
     working_dir: /app
     env_file:
-      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/.env
+      - path: ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/.env
+        required: false
     environment:
       DASHBOARD_FABRIC_GATEWAY_ENDPOINT: peer0.hospital.example.com:7051
       DASHBOARD_PEER_HOSPITAL_RECEPTION: peer0.hospital.example.com:7051
