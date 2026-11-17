@@ -701,6 +701,95 @@ if (copyOutputBtn) {
 }
 
 // ==========================================================================
+// Ledger-Integrity Re-Check
+// ==========================================================================
+const integrityRunBtn = document.getElementById('integrityRunBtn');
+const integrityMeta = document.getElementById('integrityMeta');
+const integrityBody = document.getElementById('integrityBody');
+
+function shortDigest(value) {
+  return value ? `${value.slice(0, 16)}...` : '-';
+}
+
+function renderIntegrity(state) {
+  if (!integrityBody) return;
+  const report = state && state.lastReport;
+  const counts = (report && report.summary) || {};
+  const okEl = document.getElementById('integrityOk');
+  const mismatchEl = document.getElementById('integrityMismatch');
+  const missingEl = document.getElementById('integrityMissing');
+  if (okEl) okEl.textContent = counts.ok ?? '-';
+  if (mismatchEl) mismatchEl.textContent = counts.mismatch ?? '-';
+  if (missingEl) missingEl.textContent = counts.missing ?? '-';
+
+  if (!report) {
+    if (integrityMeta) integrityMeta.textContent = state && state.running ? 'Check running...' : 'No check has run yet.';
+    return;
+  }
+
+  const every = state.intervalMs ? ` · runs every ${Math.round(state.intervalMs / 60000)} min` : '';
+  if (integrityMeta) {
+    integrityMeta.textContent = report.ok
+      ? `Last run: ${new Date(report.finishedAt).toLocaleString()} (${report.trigger}) · ${counts.checked} IPFS-backed record(s), ${counts.skippedOnChain} on-chain only${every}`
+      : `Last run failed: ${report.error}`;
+  }
+
+  const rows = [];
+  for (const record of report.records || []) {
+    for (const check of record.checks) {
+      const statusClass = check.status === 'OK'
+        ? 'reported'
+        : check.status === 'MISMATCH'
+          ? 'critical'
+          : 'pending';
+      const detail = check.status === 'MISSING'
+        ? escapeHtml(check.error || 'not retrievable')
+        : `${escapeHtml(shortDigest(check.expected))}<br/>${escapeHtml(shortDigest(check.actual))}`;
+      rows.push(`
+        <tr>
+          <td data-label="Result ID" style="font-family: 'IBM Plex Mono', monospace; font-weight: 700;">${escapeHtml(record.resultId || '')}</td>
+          <td data-label="Object">${escapeHtml(check.kind)}</td>
+          <td data-label="Status"><span class="status-pill-badge ${statusClass}">${escapeHtml(check.status)}</span></td>
+          <td data-label="Digest" class="digest-cell" style="font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; word-break: break-all;">${detail}</td>
+        </tr>`);
+    }
+  }
+
+  integrityBody.innerHTML = rows.length
+    ? rows.join('')
+    : '<tr><td colspan="4" class="table-empty-row">No IPFS-backed records to check.</td></tr>';
+}
+
+async function loadIntegrityStatus() {
+  try {
+    const status = await apiRequest('/api/integrity/status');
+    renderIntegrity(status);
+  } catch (_error) {
+    // Status polling is best-effort
+  }
+}
+
+if (integrityRunBtn) {
+  integrityRunBtn.addEventListener('click', async () => {
+    toggleLoading(integrityRunBtn, true);
+    try {
+      const report = await apiRequest('/api/integrity/run', { method: 'POST' });
+      setOutput('POST /api/integrity/run', report);
+      await loadIntegrityStatus();
+      const s = report.summary;
+      showToast(report.ok ? `Integrity check: ${s.ok} OK, ${s.mismatch} mismatch, ${s.missing} missing` : report.error);
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      toggleLoading(integrityRunBtn, false);
+    }
+  });
+}
+
+loadIntegrityStatus();
+setInterval(loadIntegrityStatus, 15000);
+
+// ==========================================================================
 // Initialization
 // ==========================================================================
 (async () => {

@@ -392,6 +392,37 @@
           </div>
         </div>
 
+        <!-- Ledger-Integrity Re-Check Panel -->
+        <div class="bento-panel integrity-panel">
+          <div class="panel-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div>
+              <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Ledger-Integrity Re-Check</h3>
+              <p id="integrityMeta" class="integrity-meta" style="margin: 4px 0 0; font-size: 0.82rem; color: var(--lab-text-muted);">No check has run yet.</p>
+            </div>
+            <button id="integrityRunBtn" class="pill-btn primary sm" type="button">Run Check Now</button>
+          </div>
+          <div class="integrity-counts" style="display: flex; gap: 8px; margin-bottom: 14px;">
+            <span class="status-pill-badge reported">OK:&nbsp;<strong id="integrityOk">-</strong></span>
+            <span class="status-pill-badge critical">Mismatch:&nbsp;<strong id="integrityMismatch">-</strong></span>
+            <span class="status-pill-badge pending">Missing:&nbsp;<strong id="integrityMissing">-</strong></span>
+          </div>
+          <div class="table-scroll-wrap">
+            <table class="modern-ledger-table">
+              <thead>
+                <tr>
+                  <th>Result ID</th>
+                  <th>Object</th>
+                  <th>Status</th>
+                  <th>Expected / Actual Digest</th>
+                </tr>
+              </thead>
+              <tbody id="integrityBody">
+                <tr><td colspan="4" class="table-empty-row">Waiting for first integrity run...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Live Output & Diagnostic Terminal -->
         <div class="bento-panel output-panel">
           <div class="output-header-row">
