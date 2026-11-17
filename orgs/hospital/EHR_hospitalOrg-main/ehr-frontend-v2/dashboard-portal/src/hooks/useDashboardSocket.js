@@ -4,6 +4,12 @@ import { fetchApi, hasDashboardAuth } from '../services/api';
 export function useDashboardSocket() {
   const [isConnected, setConnected] = useState(false); const [lastBlock, setLastBlock] = useState(null); const [events, setEvents] = useState([]);
   useEffect(() => {
+    fetchApi('/network').then(net => {
+      const h = net?.channels?.[0]?.blockHeight ?? (net?.collector?.lastProcessedBlock != null ? Number(net.collector.lastProcessedBlock) + 1 : null);
+      if (h != null) setLastBlock(prev => prev ?? h);
+    }).catch(() => {});
+  }, []);
+  useEffect(() => {
     let socket; let stopped = false; let retry;
     async function connect() {
       if (stopped || !hasDashboardAuth()) return;

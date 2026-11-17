@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { DataView, valueText, useDashboardData } from '../components/DataView'
+import { DataView, valueText, useDashboardData, StatusPill } from '../components/DataView'
 import { CLINICAL_AGENTS, agentConfig } from '../config/agentConfig'
 import { Bot, Stethoscope, Pill, FlaskConical, Heart } from 'lucide-react'
 
@@ -19,10 +19,10 @@ const agentIcons = {
 }
 
 const colorMap = {
-  blue: 'bg-blue-100 text-blue-600',
-  emerald: 'bg-emerald-100 text-emerald-600',
-  violet: 'bg-violet-100 text-violet-600',
-  cyan: 'bg-cyan-100 text-cyan-600',
+  blue: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-cyan-400',
+  emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
+  violet: 'bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400',
+  cyan: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400',
 }
 
 function ClinicalAgentSummaryCard({ agentId }) {
@@ -35,37 +35,36 @@ function ClinicalAgentSummaryCard({ agentId }) {
   const metrics = data?.metrics?.metrics || {}
 
   return (
-    <Link to={route} className="block bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${colorMap[cfg?.color] || 'bg-slate-100 text-slate-500'}`}>
-            <Icon size={22} />
-          </div>
-          <div>
-            <h3 className="font-semibold text-slate-900">{cfg?.title || agentId}</h3>
-            <p className="text-xs text-slate-400 font-mono">{agentId}</p>
-          </div>
-        </div>
-        {!loading && (
-          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-            {loading ? '…' : isOnline ? 'ONLINE' : statusState || 'NOT CONNECTED'}
-          </span>
-        )}
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {cfg?.metrics?.slice(0, 2).map(key => {
-          const label = cfg.domainMetrics?.[key] || key
-          const val = metrics[key === 'successRate' ? 'successRate' : key === 'averageLatency' ? 'averageLatencyMs' : 'executions']
-          return (
-            <div key={key} className="bg-slate-50 rounded-lg p-2.5 border border-slate-100">
-              <div className="text-xs text-slate-500">{label}</div>
-              <div className="font-semibold text-slate-800 text-sm mt-0.5">{loading ? '…' : valueText(val)}</div>
+    <Link to={route} className="block group">
+      <div className="premium-card p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl ${colorMap[cfg?.color] || 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+              <Icon size={22} />
             </div>
-          )
-        })}
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-cyan-400 transition-colors">{cfg?.title || agentId}</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{agentId}</p>
+            </div>
+          </div>
+          {!loading && (
+            <StatusPill status={isOnline ? 'ONLINE' : statusState || 'NOT_CONNECTED'} />
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-2.5">
+          {cfg?.metrics?.slice(0, 2).map(key => {
+            const label = cfg.domainMetrics?.[key] || key
+            const val = metrics[key === 'successRate' ? 'successRate' : key === 'averageLatency' ? 'averageLatencyMs' : 'executions']
+            return (
+              <div key={key} className="bg-slate-50/80 dark:bg-slate-900/60 rounded-xl p-2.5 border border-slate-200/60 dark:border-slate-800/80">
+                <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{label}</div>
+                <div className="font-bold text-slate-800 dark:text-slate-200 text-sm mt-1">{loading ? '…' : valueText(val)}</div>
+              </div>
+            )
+          })}
+        </div>
+        <p className="text-xs text-blue-600 dark:text-cyan-400 mt-3.5 font-semibold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">View dashboard →</p>
       </div>
-      <p className="text-xs text-blue-600 mt-3 font-medium">View dashboard →</p>
     </Link>
   )
 }

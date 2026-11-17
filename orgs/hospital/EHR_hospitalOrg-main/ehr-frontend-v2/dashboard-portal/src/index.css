@@ -64,6 +64,225 @@ html[data-theme=dark] .theme-toggle:hover{border-color:#a5ffef;color:#fff;box-sh
 html[data-theme=light] .theme-toggle{position:fixed;right:20px;bottom:20px;z-index:12000}
 @media(max-width:640px){html[data-theme=dark] .theme-toggle,html[data-theme=light] .theme-toggle{right:14px;bottom:14px}}
 
+/* Neon Revolving Gradient Animation */
+@keyframes neonRevolve {
+  0% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.55)) drop-shadow(0 0 35px rgba(99, 102, 241, 0.3));
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: drop-shadow(0 0 22px rgba(236, 72, 153, 0.6)) drop-shadow(0 0 45px rgba(168, 85, 247, 0.35));
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.55)) drop-shadow(0 0 35px rgba(99, 102, 241, 0.3));
+  }
+}
+
+.neon-revolving-title {
+  display: inline-block;
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif !important;
+  font-size: clamp(34px, 5.2vw, 56px) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.06 !important;
+  background: linear-gradient(115deg, #06b6d4, #3b82f6, #8b5cf6, #ec4899, #f59e0b, #06b6d4) !important;
+  background-size: 300% 300% !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  animation: neonRevolve 6s ease-in-out infinite !important;
+}
+
+/* Premium Card System */
+.premium-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.9) 100%);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 1.25rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.premium-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(147, 197, 253, 0.8);
+  box-shadow: 0 20px 40px -15px rgba(37, 99, 235, 0.12), 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+
+html[data-theme=dark] .premium-card {
+  background: linear-gradient(135deg, rgba(20, 31, 56, 0.88) 0%, rgba(13, 21, 38, 0.95) 100%) !important;
+  border: 1px solid rgba(43, 64, 105, 0.65) !important;
+  box-shadow: 0 14px 35px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+html[data-theme=dark] .premium-card:hover {
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  box-shadow: 0 22px 45px -12px rgba(0, 0, 0, 0.85), 0 0 30px rgba(56, 189, 248, 0.15) !important;
+  transform: translateY(-2px);
+}
+
+/* Premium Table System */
+.premium-table-wrap {
+  position: relative;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.9) 100%);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 12px 32px -10px rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+}
+
+html[data-theme=dark] .premium-table-wrap {
+  background: linear-gradient(135deg, rgba(17, 26, 48, 0.88) 0%, rgba(11, 18, 34, 0.95) 100%) !important;
+  border: 1px solid rgba(43, 64, 105, 0.65) !important;
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.75) !important;
+}
+
+.premium-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.premium-table thead {
+  background: rgba(248, 250, 252, 0.9);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+html[data-theme=dark] .premium-table thead {
+  background: rgba(14, 22, 42, 0.95) !important;
+  border-bottom: 1px solid rgba(38, 56, 93, 0.8) !important;
+}
+
+.premium-table th {
+  padding: 0.875rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  text-align: left;
+}
+
+html[data-theme=dark] .premium-table th {
+  color: #94a3b8 !important;
+}
+
+.premium-table tbody tr {
+  border-bottom: 1px solid rgba(241, 245, 249, 0.9);
+  transition: background-color 0.15s ease;
+}
+
+html[data-theme=dark] .premium-table tbody tr {
+  border-bottom: 1px solid rgba(38, 56, 93, 0.5) !important;
+}
+
+.premium-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.premium-table tbody tr:hover {
+  background-color: rgba(239, 246, 255, 0.65);
+}
+
+html[data-theme=dark] .premium-table tbody tr:hover {
+  background-color: rgba(30, 58, 138, 0.25) !important;
+}
+
+.premium-table td {
+  padding: 0.9rem 1.25rem;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+html[data-theme=dark] .premium-table td {
+  color: #f1f5f9 !important;
+}
+
+/* Status Pill Badges */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.status-pill.is-ok {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+html[data-theme=dark] .status-pill.is-ok {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+}
+
+.status-pill.is-warn {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+html[data-theme=dark] .status-pill.is-warn {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+.status-pill.is-danger {
+  background: rgba(244, 63, 94, 0.12);
+  color: #e11d48;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+}
+
+html[data-theme=dark] .status-pill.is-danger {
+  background: rgba(244, 63, 94, 0.2) !important;
+  color: #fb7185 !important;
+  border-color: rgba(244, 63, 94, 0.35) !important;
+}
+
+.status-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-pill.is-ok .status-pill-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+.status-pill.is-warn .status-pill-dot {
+  background: #f59e0b;
+}
+
+.status-pill.is-danger .status-pill-dot {
+  background: #f43f5e;
+  box-shadow: 0 0 8px #f43f5e;
+  animation: pulseDot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
 /* Dashboard shell and overview: airy clinical surfaces with a restrained blue accent. */
 .dashboard-shell{background:#f3f6fb!important;color:#17243b!important;font-family:Inter,"Segoe UI",system-ui,sans-serif}
 .dashboard-topbar{background:rgba(255,255,255,.9)!important}

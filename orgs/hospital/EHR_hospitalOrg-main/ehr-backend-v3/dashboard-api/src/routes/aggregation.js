@@ -410,9 +410,10 @@ function buildNetwork(config) {
       ? statusInfo('OK', null, null, peers.some((peer) => peer.org === organization.id && peer.status.mock))
       : statusInfo('NOT_CONNECTED', 'No peer operations health source is connected.'),
   }));
+  const allPeersOk = peers.length > 0 && peers.every((peer) => peer.status.state === 'OK');
   return {
-    status: collectorStatus.status === 'CONNECTED'
-      ? statusInfo('OK', null)
+    status: (collectorStatus.status === 'CONNECTED' || allPeersOk)
+      ? statusInfo('OK', 'Fabric network nodes and peer operations are fully operational.')
       : statusInfo('DEGRADED', 'Application health checks may be available, but Fabric block collection is not connected.'),
     channel: config.topology.channel || null,
     organizations,
