@@ -16,7 +16,51 @@
  * 6. Return a deterministic AgentResult contract.
  */
 
+const { randomUUID } = require('crypto');
+
 const AGENT_ID = 'history-agent-v1';
+
+/**
+ * Emit non-blocking telemetry event to the Dashboard API if configured.
+ * Strictly adheres to Zero-PHI rules (no patient names or clinical narrative).
+ * @param {string} eventType - AGENT_EXECUTION_STARTED, AGENT_EXECUTION_COMPLETED, AGENT_EXECUTION_FAILED
+ * @param {Object} payload - Allowed scalar fields: { agentId, status, durationMs, errorCode, fallbackUsed }
+ */
+function emitDashboardTelemetry(eventType, payload = {}) {
+  const baseUrl = process.env.DASHBOARD_EVENT_API_URL;
+  const serviceKey = process.env.DASHBOARD_SERVICE_KEY;
+  const org = process.env.DASHBOARD_EVENT_ORG || 'HospitalMSP';
+
+  if (!baseUrl || !serviceKey || !['HospitalMSP', 'DiagnosticsMSP', 'ProviderMSP'].includes(org)) {
+    return; // Safely no-op if dashboard is unconfigured
+  }
+
+  const event = {
+    schemaVersion: 1,
+    eventId: `history-agent-${randomUUID()}`,
+    eventType,
+    timestamp: new Date().toISOString(),
+    source: 'history-agent-emitter',
+    org,
+    severity: eventType === 'AGENT_EXECUTION_FAILED' ? 'WARNING' : 'INFO',
+    payload: {
+      agentId: 'history-agent',
+      ...payload,
+    },
+  };
+
+  if (typeof fetch === 'function') {
+    void fetch(`${baseUrl.replace(/\/$/, '')}/internal/events`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-dashboard-service-key': serviceKey,
+      },
+      body: JSON.stringify({ events: [event] }),
+      signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(1000) : undefined,
+    }).catch(() => {});
+  }
+}
 
 /**
  * Validate incoming AgentContext.
@@ -317,6 +361,10 @@ async function runHistoryAgent(context) {
 
   // 1. Context Validation Check
   if (!validation.isValid) {
+    emitDashboardTelemetry('AGENT_EXECUTION_FAILED', {
+      status: 'FAILED',
+      errorCode: 'INVALID_CONTEXT',
+    });
     return {
       status: 'ERROR',
       agentId: AGENT_ID,
@@ -337,6 +385,7 @@ async function runHistoryAgent(context) {
   }
 
   const { patientId } = validation;
+  emitDashboardTelemetry('AGENT_EXECUTION_STARTED', { status: 'RUNNING' });
   let rawRecords = [];
   const warnings = [];
 
@@ -393,6 +442,10 @@ async function runHistoryAgent(context) {
       }
     }
   } catch (dataErr) {
+    emitDashboardTelemetry('AGENT_EXECUTION_FAILED', {
+      status: 'FAILED',
+      errorCode: 'DATA_ACCESS_FAILURE',
+    });
     return {
       status: 'ERROR',
       agentId: AGENT_ID,
@@ -417,6 +470,10 @@ async function runHistoryAgent(context) {
 
   // 3. Handle Empty History Explicitly
   if (recordList.length === 0) {
+    emitDashboardTelemetry('AGENT_EXECUTION_COMPLETED', {
+      status: 'DONE',
+      durationMs: Date.now() - startTime,
+    });
     return {
       status: 'EMPTY',
       agentId: AGENT_ID,
@@ -438,6 +495,10 @@ async function runHistoryAgent(context) {
 
   // If all records were filtered out due to patient isolation violation
   if (timelineResult.timeline.length === 0) {
+    emitDashboardTelemetry('AGENT_EXECUTION_COMPLETED', {
+      status: 'DONE',
+      durationMs: Date.now() - startTime,
+    });
     return {
       status: 'EMPTY',
       agentId: AGENT_ID,
@@ -457,6 +518,11 @@ async function runHistoryAgent(context) {
   const trendSummary = analyzeTrends(timelineResult.timeline);
 
   // 6. Return Structured AgentResult
+  emitDashboardTelemetry('AGENT_EXECUTION_COMPLETED', {
+    status: 'DONE',
+    durationMs: Date.now() - startTime,
+  });
+
   return {
     status: 'SUCCESS',
     agentId: AGENT_ID,
