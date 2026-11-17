@@ -1,0 +1,25 @@
+# Local environment & dependencies
+.venv/
+venv/
+ENV/
+env/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ChromaDB & local vector store
+chroma_db/
+.chroma/
+
+# Local secrets & configs
+.env
+*.local
+
+# Scratch and temp files
+_temp*/
+*.tmp
+
+# Pytest cache
+.pytest_cache/
