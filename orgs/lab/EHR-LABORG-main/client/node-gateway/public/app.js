@@ -471,13 +471,6 @@ async function loadAllRecords() {
     });
   }
 }
-    if (statRecordsCount) statRecordsCount.textContent = String(records.length);
-    applyFilters();
-    setOutput('GET /api/records', response);
-  } catch (err) {
-    showToast(err.message);
-  }
-}
 
 // Refresh Button
 if (refreshBtn) {
