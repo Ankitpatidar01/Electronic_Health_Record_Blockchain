@@ -26,6 +26,8 @@ export default function Network() {
 
   const onlinePeers = peers.filter(p => p.status?.state === 'OK').length
   const blockHeight = peers.map(p => p.blockHeight).filter(Boolean).reduce((a, b) => Math.max(a, b), null)
+    || channels[0]?.blockHeight
+    || (data?.collector?.lastProcessedBlock !== null && data?.collector?.lastProcessedBlock !== undefined ? Number(data.collector.lastProcessedBlock) + 1 : null)
 
   return (
     <section className="max-w-7xl mx-auto space-y-6">
