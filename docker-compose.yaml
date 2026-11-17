@@ -239,6 +239,13 @@ services:
       - p-backend-modules:/app/node_modules
     ports:
       - "3000:3000"
+    environment:
+      - IPFS_API=http://ipfs.ehr.local:5001/api/v0
+      - FABRIC_CHANNEL_NAME=ehrchannel
+      - FABRIC_CHAINCODE_NAME=ehr
+    networks:
+      - default
+      - ehr_network
     command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
     restart: unless-stopped
 
