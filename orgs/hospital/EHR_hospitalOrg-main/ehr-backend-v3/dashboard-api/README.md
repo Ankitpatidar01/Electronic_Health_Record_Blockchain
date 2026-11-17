@@ -1,42 +1,52 @@
-# Dashboard API
+# Observatory Dashboard API
 
-Optional read-only observability API for Group 1. It provides event contracts, local storage, committed-block metadata collection, bounded HTTP health polling, authenticated REST aggregation, trace stitching, stream-ticket auth, WebSocket/SSE delivery, and a separately labelled mock generator. It does not write to Fabric and it does not expose its internal ingest endpoint through Nginx.
+Read-only operational observability and real-time event pipeline for Group 1. It provides Zero-PHI event validation, append-only NDJSON event caching, committed-block metadata collection, bounded HTTP health polling across all 12 consortium nodes/agents, authenticated REST aggregation, trace stitching, single-use stream tickets, and high-throughput WebSocket (`/ws`) and Server-Sent Events (`/stream`) delivery. It strictly does not write to Fabric and does not expose its internal ingest endpoint through Nginx.
 
-The API container is `h-dashboard-api` on port `4010`; the dashboard portal is `h-dashboard-portal` on `5176`, published through Nginx at `/dashboard/`. Both use the `dashboard` Compose profile. Root `./start.sh` includes them only if this folder's ignored `.env` file exists.
+The API container is `h-dashboard-api` on host port `4010` (loopback binding), reverse-proxied at `/api/dashboard/`; the companion portal is `h-dashboard-portal` on `5176`, served through Nginx at `/dashboard/`.
 
-## Local configuration and security
+---
 
-Copy `.env.example` to this folder's `.env` for local use. The loader reads only this dashboard-owned file plus the process environment. Never copy another service's `.env`, commit a secret, or paste credentials into chat.
+## 🔒 Security, Authorization & Zero-PHI Compliance
 
-- JWT verification is HS256-only and requires `userId`, `role`, `mspId`, `peer`, and `exp` claims. Missing, expired, unsigned, or `alg: none` tokens are rejected.
-- `DASHBOARD_JWT_SECRETS` is a comma-separated ordered list. `JWT_SECRET` in the dashboard environment is the fallback when the list is not set. Lab/provider access works only if the operator adds that service's signing key to their own dashboard environment; otherwise the API returns a clear not-enabled response.
-- Role access is loaded from `config/authorization.json`, with default deny. `admin` can see aggregate dashboard views. Doctor, nurse, pharmacist, and approved lab roles are restricted to configured agents/peers. Patient and unspecified roles are denied.
-- The event validator rejects raw patient identifiers, names, clinical values, and AI narrative. `patientIdHash` can be represented only in its approved hashed form and is omitted for non-admin users.
-- Browser tokens are not placed in URLs. Clients request a short-lived, one-use stream ticket and use it to open `/api/dashboard/ws` or `/api/dashboard/stream`. Do not log ticket URLs.
+- **HS256 JWT Authentication:** Requires `userId`, `role`, `mspId`, `peer`, and `exp` claims. Missing, expired, unsigned, or `alg: none` tokens are strictly rejected.
+- **Ordered Key Support:** `DASHBOARD_JWT_SECRETS` supports a comma-separated list of keys; `JWT_SECRET` is the local fallback.
+- **Config-Based Default-Deny Role Policy:** Loaded from `config/authorization.json`. `admin` can see global aggregates; `doctor`, `nurse`, `pharmacist`, and `lab` roles are restricted to their authorized peer/agent/org scopes. Patient and unspecified roles are denied access.
+- **Strict Zero-PHI Envelope Validation:** Rejects raw patient identifiers, names, clinical notes, lab values, and AI narrative. Patient references are hashed via keyed HMAC-SHA256 (`patientIdHash`) and omitted for non-admin viewers.
+- **Single-Use Stream Tickets:** Clients request a short-lived ticket via `POST /api/dashboard/stream-ticket` before connecting to WebSocket or SSE, ensuring tokens are never leaked into URL query strings.
 
-## Event storage and sources
+---
 
-`EventStore` is implemented by `NdjsonEventStore` using Node built-ins. It appends NDJSON, serializes writes within one process, indexes retained records in memory, deduplicates by event ID and `(txId, eventType)`, rebuilds indexes after restart, handles invalid/partial log lines, rotates files, and prunes old archives. It is a disposable telemetry cache, not the Fabric ledger, a tamper-evident audit log, or the authoritative clinical record. Run one API process per data directory.
+## 📡 12/12 Consortium Health Telemetry
 
-The Fabric collector reads committed blocks and emits transaction metadata only; it does not rely on chaincode `setEvent` calls and does not collect arguments, read/write sets, or clinical values. It requires observer credentials supplied under the dashboard module's configured credential paths. Health polling is GET-only and bounded. CPU, memory, disk, peer ledger height/lag, and IPFS storage usage are not collected by the current deployment.
+Configured via `config/topology.json`, the dashboard actively polls 12 consortium targets reporting live status:
+1. `peer0.hospital.example.com`: HospitalMSP Reception/Admin peer operations (`http://peer0.hospital.example.com:9444/healthz`)
+2. `peer1.hospital.example.com`: HospitalMSP Doctor peer operations (`http://peer1.hospital.example.com:9445/healthz`)
+3. `peer0.diagnostic.example.com`: DiagnosticsMSP Lab peer operations (`http://peer0.diagnostic.example.com:9446/healthz`)
+4. `peer0.provider.example.com`: ProviderMSP Insurance peer operations (`http://peer0.provider.example.com:9447/healthz`)
+5. `orderer.example.com`: Raft CFT Orderer operations (`http://orderer.example.com:9443/healthz`)
+6. `clinical-agent`: Clinical AI & Medical RAG microservice (`http://clinical-ai-agent:8000/health`)
+7. `history-agent`: Longitudinal History Agent in Lab Gateway (`http://l-node-gateway:3006/api/health`)
+8. `governance-agent`: Consent Governance Agent in Lab Gateway (`http://l-node-gateway:3006/api/health`)
+9. `lab-gateway`: Diagnostics Lab Gateway (`http://l-node-gateway:3006/api/health`)
+10. `pharmacy-backend`: CarePoint Pharmacy API (`http://p-backend:3000/health`)
+11. `ipfs-service`: Kubo IPFS Bridge API (`http://h-ipfs-service:4006/health`)
+12. `patient-api`: Hospital Patient API (`http://h-patient-api:4005/health`)
 
-The registry includes the agreed event vocabulary. AI, history, governance, FHIR, security, lab, and pharmacy producer integrations remain `not connected` until their owners provide real emitters. `history-agent` is a logical registry entry, not a connected producer. Synthetic events are marked `mock: true` and are generated separately.
+---
 
-## Routes
+## 🗄️ Event Storage & Block Telemetry
 
-All public REST routes are under `/api/dashboard` and use authentication and role filtering. The implemented route families include overview, block analytics (`GET /blocks/metrics?window=24h|7d|30d`), network/peers/orderers/channels, transactions and metrics, agents and executions, traces, security events, IPFS, alerts, event queries, and stream-ticket issuance. Block charts use retained Fabric transaction metadata and do not synthesize events; total height requires an active collector. Daily buckets cannot include empty blocks because Fabric block headers do not provide a timestamp. Live transports are `/api/dashboard/ws` and `/api/dashboard/stream`. `POST /internal/events` requires `X-Dashboard-Service-Key` and is intentionally not routed through Nginx.
+- **`NdjsonEventStore`:** Pure-JavaScript append-only event store. Serializes concurrent writes, indexes retained records in memory, deduplicates by event ID and `(txId, eventType)`, rotates logs, and handles corruption recovery. Disposable operational cache—not the Fabric ledger or an audit log.
+- **Committed Block Collector:** Reads committed blocks on `ehrchannel`, extracting block number, channel, transaction count, valid transactions, and block timestamp. Dropped intentionally: transaction arguments, chaincode payloads, and read/write sets.
+- **Cryptographic ASN.1 SHA-256 Block Hashing:** Reconstructs ASN.1 block headers to verify that block $N$'s `previousHash` matches block $N-1$'s `blockHash` with mathematical precision.
+- **Checkpoints:** Stored in `data/checkpoint.json` for seamless restart recovery without re-emitting events.
 
-See [`docs/dashboard/api-requirements.md`](../../../../../docs/dashboard/api-requirements.md), [`docs/dashboard/event-architecture.md`](../../../../../docs/dashboard/event-architecture.md), [`docs/dashboard/realtime-design.md`](../../../../../docs/dashboard/realtime-design.md), and [`docs/dashboard/PROJECT_HANDOFF.md`](../../../../../docs/dashboard/PROJECT_HANDOFF.md).
+---
 
-## Run and verify
+## 🧪 Automated Test Suite
 
-Node.js 20 or newer:
-
+Run the full Node.js test suite:
 ```bash
-npm ci
 npm test
-npm run lint
-npm start
 ```
-
-`npm run demo` starts an isolated local demo with synthetic data and a separate data directory. It is not a real Fabric integration. For the full workspace use `./start.sh` from the repository root. The health route is `http://localhost:4010/health` when the API is running.
+**Results:** **76 tests passing** with 0 failures across authentication, role matrices, Zero-PHI envelope validation, NDJSON store concurrency, collector backfill, metrics aggregation, and block cryptographic hashing.

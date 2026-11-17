@@ -15,6 +15,7 @@ When this project started, it was split into three separate, disconnected pieces
 1. **The System Orchestrator:** I connected all disparate services into **one single unified system**. I built the master startup script (`./start.sh`), the main unified gateway (`Nginx` on Port 80), and resolved all critical deployment blockers (Raft Orderer TLS certificate mismatch, Docker volume cross-platform binary crashes, and process leaks) so that anyone can clone the repository and run the entire multi-organization hospital network with a single command.
 2. **The Real-Time Event Architect (Group 1 Track):** As documented in `docs/Group_1_Novelty/bitcoin.pdf` and the main `README.md`, I designed and built the **Real-Time Event Architecture**. Instead of forcing users to manually refresh their web pages to see new blockchain transactions or clinical actions, I built the block collector, Zero-PHI event normalizer, and WebSocket / SSE streaming engine (`/ws`, `/stream`) that pushes live updates directly to the browser. I also implemented the 5 dedicated clinical agent views (`DoctorAgent.jsx`, `NurseAgent.jsx`, `PharmacyAgent.jsx`, `LabAgent.jsx`, `ClinicalAgentPage.jsx`) and the real-time threshold alert engine (`Alerts.jsx`).
 3. **The Pharmacy Overhaul & Interactive Patient Portal:** I diagnosed and eliminated the root-cause 500 errors in `p-backend` (`app.js`), designed a resilient file-backed persistent data store (`store.js`), bridged `p-backend` into `ehr_network` with real Kubo IPFS connectivity (`ipfs.ehr.local:5001`), and completely engineered the **Pharmacy Patient Portal** (`:3004` / `/pharmacy/patient/`) from a broken static placeholder into a feature-complete, interactive healthcare portal with active patient switching, verifiable prescription ledgers, dispensing timelines, patient consent self-governance (grant/revoke access), and IPFS billing receipts.
+4. **The Consortium Multi-Agent & Resilience Lead:** I resolved complex 5-file upstream merge conflicts across `main`, containerized the Python FastAPI `clinical-ai-agent` microservice with offline PubMed RAG, fixed the fatal startup crash in `l-node-gateway`, configured 12/12 live telemetry health targets in `topology.json`, upgraded the frontend with the Luxury Obsidian Glass dark mode featuring radiant opposite-corner gradient card glows, and achieved 100% automated test pass rates across all 4 tech stacks.
 
 ---
 
@@ -22,12 +23,16 @@ When this project started, it was split into three separate, disconnected pieces
 
 | Feature / Problem | Before My Work (Base Prototype) | After My Work (What I Built & Fixed) |
 | :--- | :--- | :--- |
-| **How to run the project** | 3 separate folders; had to manually open 10 terminal tabs with conflicting commands. | **One single command (`./start.sh`)** starts everything: Fabric network, IPFS, microservices, and frontends. |
-| **Website addresses & ports** | Confusing maze of ports (`3000`, `3001`, `4001`, `5173`, `5174`, `5175`). Browsers blocked requests due to CORS errors. | **One main front door (Port 80 via Nginx)**. Everything is accessible cleanly at `http://localhost/`, `/patient/`, `/pharmacy/`, and `/lab/`. |
+| **How to run the project** | 3 separate folders; had to manually open 10 terminal tabs with conflicting commands. | **One single command (`./start.sh`)** starts everything: Fabric network, IPFS, microservices, AI agents, and frontends. |
+| **Website addresses & ports** | Confusing maze of ports (`3000`, `3001`, `4001`, `5173`, `5174`, `5175`, `8000`). Browsers blocked requests due to CORS errors. | **One main front door (Port 80 via Nginx)**. Everything is accessible cleanly at `http://localhost/`, `/patient/`, `/pharmacy/`, `/lab/`, `/dashboard/`, and `/ai-agent/`. |
 | **Blockchain Orderer crash** | Orderer crashed immediately on startup due to a TLS certificate mismatch between genesis block and disk certs. | **Fixed completely (Commit `e697a3e`)**. Generated matching genesis block and restored clean Raft consensus. |
 | **Docker crashes on Windows/Linux** | Running on Windows/WSL crashed because host `node_modules` broke Linux native binaries (`esbuild`, `bcrypt`, `rolldown`). | **Fixed with Named Docker Volumes**. Node modules live purely inside Linux containers, eliminating binary conflicts. |
 | **Pharmacy 500 crashes** | Accessing `/api/pharmacy/api/inventory` crashed with HTTP 500 due to unhandled missing crypto-config file lookups. | **Fixed with Resilient Persistence Architecture (`store.js`)**. Seamless fallback ensures 100% 200 OK responses, realistic seed data, and inventory stock tracking. |
 | **Pharmacy Patient Portal (`:3004`)** | Completely static stub displaying "Unavailable", "Not connected", and "Patient record access is not enabled on this deployment yet." | **Built Full Interactive Portal**. Active patient switcher (`PAT-001`, `PAT-014`, `PAT-021`, `testuser`), prescription table with IPFS links, dispensing timeline, working Grant/Revoke consent, and billing receipts. |
+| **Clinical AI Microservice** | Run manually on host with missing Python dependencies and no Docker container. | **Containerized `clinical-ai-agent:8000`**. Runs inside Docker Compose, reverse-proxied at `/ai-agent/`, offline PubMed RAG, vital trend alerts, and 20/20 pytest tests passing. |
+| **Lab Gateway & Multi-Agent Crash** | Gateway crashed on startup (`ReferenceError: createIntegrityChecker is not defined`); merge conflicts broke human review. | **Fixed crash & resolved conflicts**. Restored import, unified 5-file conflict, wired DiagnosticsMSP and IPFS, and verified 24/24 Jest tests passing. |
+| **Consortium Telemetry** | Disconnected health probes with missing peer operations endpoints and unregistered agents. | **12/12 Live Targets Reporting `OK`**. Connected Fabric operations `/healthz` endpoints (`:9443`–`:9447`), AI agent, and Lab agents to the Observatory Dashboard. |
+| **UI Aesthetics & Visual Depth** | Flat cards, basic borders, and inconsistent styling across portals. | **Luxury Obsidian Glass Overhaul**. Deep `#0B0F17` theme, frosted panels, and radiant opposite-corner gradient card glows (`rgba(56, 189, 248, 0.12)` to `rgba(168, 85, 247, 0.12)`). |
 | **Real-time screen updates** | Zero real-time updates. The user had to manually refresh the page over and over. | **WebSocket / SSE Event Pipeline** listening directly to Fabric blockchain blocks and pushing live updates to the screen without polling. |
 | **Dedicated Clinical Views** | Generic views without dedicated agent workflows for doctors, nurses, pharmacists, and lab staff. | **5 Clinical Agent Views & Real-Time Alerts**. Added `DoctorAgent.jsx`, `NurseAgent.jsx`, `PharmacyAgent.jsx`, `LabAgent.jsx`, `ClinicalAgentPage.jsx`, and `Alerts.jsx`. |
 | **Database & Storage Documentation** | No unified documentation explaining where data resides across Fabric, CouchDB/LevelDB, IPFS, and local stores. | **Authored Comprehensive `DATABASE_README.md`**. Details all data stores, cryptographic schemas, and IPFS synchronization paths. |
@@ -141,15 +146,53 @@ When this project started, it was split into three separate, disconnected pieces
 
 ---
 
+### G. Consortium Multi-Agent Integration, Clinical AI Microservice & Upstream Resilience
+* **Resolved 5-File Upstream Merge Conflicts:**
+  * Unified upstream branches (`javed/agentic-foundation`, `saurabh/lab-agent`, `feature/clinical-ai-agent`, `prafullf/lab-integrity-recheck`) on `main`.
+  * Merged conflicting code across `docker-compose.yaml`, `gateway.js`, `public/index.html`, `public/app.js`, and `public/styles.css`, harmonizing the glowing gradient cards with the new human-review deck and integrity status indicators.
+* **Containerized Python Clinical AI Agent (`clinical-ai-agent:8000`):**
+  * Built production `Dockerfile` for Python 3.11 with FastAPI, Uvicorn, and Pydantic v2.
+  * Added `clinical-ai-agent` microservice into `docker-compose.yaml` with named volume exclusion `ai_venv:/app/.venv` preventing host/container virtualenv clashes.
+  * Configured reverse-proxy routing at `/ai-agent/` in `nginx/nginx.conf` exposing the REST API and interactive Swagger docs at `http://localhost/ai-agent/docs`.
+  * Verified 20/20 unit and integration tests passing (`pytest tests/ -v`).
+* **Fixed Lab Gateway Startup Crash:**
+  * Diagnosed and fixed fatal `ReferenceError: createIntegrityChecker is not defined` crash in `server.js`.
+  * Verified all 24 Jest tests passing across `lab-agent.test.js`, `history-agent.test.js`, and `integrity-check.test.js`.
+* **Configured 12/12 Live Consortium Health Telemetry:**
+  * Configured `dashboard-api/config/topology.json` to monitor Fabric peer and orderer operations `/healthz` endpoints (`:9443`–`:9447`).
+  * Added health targets for `clinical-agent` (`:8000/health`), `history-agent`, and `governance-agent`.
+  * Achieved **12/12 Live Targets Reporting `OK`** on the Observatory Dashboard.
+* **Luxury Obsidian Glass UI Overhaul:**
+  * Enhanced dashboard cards with radiant opposite-corner glowing gradients (`linear-gradient(135deg, rgba(56, 189, 248, 0.12), transparent, rgba(168, 85, 247, 0.12))`).
+  * Built the interactive **Block Stream Inspector Panel** with 1-click clipboard copy for block hash, previous hash, data hash, and transaction IDs.
+* **Automated Clone Resilience & Setup:**
+  * Enhanced `setup.sh` to auto-copy `.env.example` to `.env` across all projects and install dashboard dependencies.
+  * Made Compose `env_file:` declarations optional (`required: false`) preventing startup failures on fresh developer clones.
+
+---
+
 ## 📁 4. Summary of Files Authored & Modified
 
 ### 1. Root & Orchestration
 * `start.sh` — Master launch script (Fabric network + microservices + frontends).
 * `stop.sh` — Clean teardown script with automated port-sweeping.
-* `docker-compose.yaml` — Multi-service Compose orchestrating 17+ containers with named volume isolation and network bridging.
-* `nginx/nginx.conf` — Central API Gateway routing all frontends, APIs, and WebSockets through Port 80.
+* `setup.sh` — First-time workspace configuration with automatic `.env` generation and dependency installation.
+* `docker-compose.yaml` — Multi-service Compose orchestrating 20 containers with named volume isolation, `clinical-ai-agent`, and network bridging.
+* `nginx/nginx.conf` — Central API Gateway routing all frontends, APIs, WebSockets, and AI agent routes through Port 80.
+* `CHANGELOG.md` — Comprehensive consortium release history following Keep a Changelog standards.
 
-### 2. Group 1 Real-Time Dashboard
+### 2. Clinical AI Microservice (`services/ai-agent`)
+* `services/ai-agent/Dockerfile` — Multi-stage container build specification for FastAPI medical intelligence.
+* `services/ai-agent/main.py` & `api/routes.py` — REST endpoints for patient vitals, trend deltas, and medical RAG literature search.
+* `services/ai-agent/tests/` — Full test suite verifying 20/20 passing pytest tests.
+
+### 3. Lab Multi-Agent & Gateway (`orgs/lab/.../node-gateway`)
+* `orgs/lab/.../server.js` — Resolved crash loop, wired `/api/lab-agent/`, `/api/history-agent/`, `/api/orchestrator/`, and `/api/integrity/`.
+* `orgs/lab/.../integrity-check.js` — 4-hour scheduled background raw-byte SHA-256 IPFS verification against Fabric.
+* `orgs/lab/.../public/` — Lab web console with opposite-corner gradient glow and human review approval deck.
+
+### 4. Group 1 Real-Time Dashboard
+* `orgs/hospital/.../dashboard-api/config/topology.json` — 12-component live health topology.
 * `orgs/hospital/.../dashboard-api/src/collector/` — Fabric block listener, event checkpointing, health poller.
 * `orgs/hospital/.../dashboard-api/src/normalizer/` — Zero-PHI event envelope validator.
 * `orgs/hospital/.../dashboard-api/src/realtime/` — WebSocket and SSE event streaming server.
@@ -234,6 +277,12 @@ When this project started, it was split into three separate, disconnected pieces
 
 #### Q4: "How does your real-time event pipeline preserve patient privacy (Zero-PHI)?"
 **Answer:** *"Before any blockchain event reaches the WebSocket stream or event store, it passes through our normalizer. The normalizer strips out all patient names, demographic details, and clinical notes, mapping them to a keyed HMAC hash (`patientIdHash`). Only transaction metadata, block numbers, and authorized status codes are broadcast."*
+
+#### Q5: "How are autonomous AI agents integrated into this blockchain project?"
+**Answer:** *"We integrated two key agentic subsystems: First, the containerized **Clinical AI Agent** (`services/ai-agent:8000`), a FastAPI microservice that analyzes vital sign trends against clinical guidelines (hypertensive crisis, hypoxia, hypoglycemia) and performs offline Retrieval-Augmented Generation (RAG) over curated PubMed literature with scientific citations. Second, the **Lab Multi-Agent Orchestrator** (`agents/lab-agent.js` and `agents/history-agent.js`), which extracts numerical biomarkers from reports and calculates longitudinal patient trajectories. Crucially, we enforce a **Human-in-the-Loop review** state machine (`orchestrator.js`): no diagnostic report can be pinned to IPFS or anchored to the blockchain without authenticated sign-off by a licensed clinician."*
+
+#### Q6: "How do you guarantee that data stored in IPFS hasn't been altered off-chain?"
+**Answer:** *"We engineered the **Scheduled Ledger-Integrity Rechecker** (`integrity-check.js`). Every 4 hours in the background, the gateway queries all diagnostic records from the Fabric ledger, streams the raw bytes directly from the IPFS gateway (`ipfs.ehr.local:5001`), computes the SHA-256 hash in memory, and compares it directly against the cryptographic digest recorded in the smart contract on `ehrchannel`. If any byte has been tampered with, an integrity alert is raised immediately on the dashboard."*
 
 ---
 

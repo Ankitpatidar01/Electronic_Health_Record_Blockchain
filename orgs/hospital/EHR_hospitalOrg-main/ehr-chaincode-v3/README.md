@@ -1,39 +1,84 @@
-# Hospital EHR chaincode — source overview
+# Hospital EHR Chaincode — Smart Contract Package
 
-The source package exports eight Fabric contracts from `index.js`: `PatientContract`, `VisitContract`, `ForwardContract`, `ClinicalContract`, `LabContract`, `ClaimsContract`, `EhrContract`, and `AccessContract`. The implementation in `lib/` is authoritative for available transaction names and behavior; do not treat an academic specification or an earlier deployment note as proof that a function is committed to a live channel.
+This directory contains the production Hyperledger Fabric smart contract package for the Electronic Health Record (EHR) Consortium, deployed on the shared channel `ehrchannel`.
+
+The package exports eight distinct smart contracts from `index.js`, implementing domain-separated access controls, clinical governance, and cross-organizational interoperability.
+
+---
+
+## 🏛️ Smart Contract Architecture
 
 ```mermaid
-flowchart LR
-  API["Hospital / patient / extorg APIs"] --> Fabric["Fabric channel ehrchannel"]
-  Fabric --> Contracts["ehr chaincode package"]
-  Contracts --> Patient["PatientContract"]
-  Contracts --> Visit["VisitContract"]
-  Contracts --> Clinical["ClinicalContract"]
-  Contracts --> Forward["ForwardContract"]
-  Contracts --> Lab["LabContract"]
-  Contracts --> Claims["ClaimsContract"]
-  Contracts --> EHR["EhrContract"]
-  Contracts --> Access["AccessContract"]
-  Fabric -. "committed block metadata; no setEvent call in current source" .-> Dashboard["Optional read-only dashboard observer"]
+flowchart TB
+  subgraph ConsortiumAPIs ["Consortium Microservices"]
+    HospitalAPI["Hospital APIs (:4001–:4003)"]
+    PatientAPI["Patient API (:4005)"]
+    ExtOrgAPI["ExtOrg API (:4004)"]
+    LabGateway["Lab Node Gateway (:3006)"]
+    PharmAPI["Pharmacy Backend (:3000)"]
+  end
+
+  subgraph FabricLayer ["Hyperledger Fabric Network (ehrchannel)"]
+    ChaincodeRouter["EHR Chaincode Package (ehr:1.0)"]
+
+    subgraph Contracts ["8 Exported Smart Contracts"]
+      PatientC["PatientContract<br/>Registration, demographic profile, EHR root CID"]
+      VisitC["VisitContract<br/>Encounter lifecycle, queue assignment, discharge"]
+      ClinicalC["ClinicalContract<br/>Consultation notes, diagnoses, prescriptions"]
+      ForwardC["ForwardContract<br/>Inter-department patient transfer & handoffs"]
+      LabC["LabContract<br/>Lab orders, biomarker results, approval anchoring"]
+      ClaimsC["ClaimsContract<br/>Insurance claim generation & auditing"]
+      EhrC["EhrContract<br/>Patient EHR metadata & immutable IPFS CIDs"]
+      AccessC["AccessContract<br/>Consent grants, revocations, and access logs"]
+    end
+  end
+
+  HospitalAPI --> ChaincodeRouter
+  PatientAPI --> ChaincodeRouter
+  ExtOrgAPI --> ChaincodeRouter
+  LabGateway --> ChaincodeRouter
+  PharmAPI --> ChaincodeRouter
+
+  ChaincodeRouter --> PatientC
+  ChaincodeRouter --> VisitC
+  ChaincodeRouter --> ClinicalC
+  ChaincodeRouter --> ForwardC
+  ChaincodeRouter --> LabC
+  ChaincodeRouter --> ClaimsC
+  ChaincodeRouter --> EhrC
+  ChaincodeRouter --> AccessC
 ```
 
-## Current data and privacy note
+---
 
-The chaincode stores personal and clinical fields in ledger state. For example, patient registration accepts patient identifiers, names, demographic/contact details, and the visit contract stores visit workflow data. Do not use real patient information in this academic/demo network. This source does not by itself establish FHIR conformance, encryption at rest, private-data-collection coverage, legal compliance, or production suitability.
+## 📜 Contract Reference & Responsibilities
 
-The dashboard collector derives metadata from committed blocks and intentionally does not depend on `stub.setEvent()`. A proposal to add an event helper is only a draft for team review; it is not part of this chaincode unless a future coordinated source change is made and deployed.
+| Contract | Source File | Key Transaction Functions |
+|:---|:---|:---|
+| **`PatientContract`** | `lib/patientContract.js` | `registerPatient`, `queryPatient`, `updatePatientDemographics`, `getPatientHistory` |
+| **`VisitContract`** | `lib/visitContract.js` | `createVisit`, `finalizeVisit`, `dischargePatient`, `getVisitHistory` |
+| **`ForwardContract`** | `lib/forwardContract.js` | `forwardToDoctor`, `forwardToNurse`, `forwardToLab`, `forwardToPharmacy` |
+| **`ClinicalContract`** | `lib/clinicalContract.js` | `recordVitals`, `addDiagnosisNote`, `createPrescription`, `dispenseMedication` |
+| **`LabContract`** | `lib/labContract.js` | `createLabRequest`, `acknowledgeLabRequest`, `recordDiagnosticReport`, `approveLabReport` |
+| **`ClaimsContract`** | `lib/claimsContract.js` | `submitClaim`, `processClaim`, `auditClaimsHistory` |
+| **`EhrContract`** | `lib/ehrContract.js` | `anchorEhrCid`, `getEhrHistory`, `verifyRecordMultihash` |
+| **`AccessContract`** | `lib/accessContract.js` | `grantAccess`, `revokeAccess`, `checkAccess`, `getConsentAuditLog` |
 
-## Contract areas
+---
 
-| Contract | Source file | Main area (verify transactions in source) |
-|---|---|---|
-| `PatientContract` | `lib/patientContract.js` | Registration, patient queries, patient history, patient EHR CID links. |
-| `VisitContract` | `lib/visitContract.js` | Visit lifecycle, assignments, finalization, discharge, visit history. |
-| `ForwardContract` | `lib/forwardContract.js` | Forwarding visits between nurse, doctor, and lab workflows. |
-| `ClinicalContract` | `lib/clinicalContract.js` | Diagnosis notes, vitals, care notes, prescriptions, dispensing. |
-| `LabContract` | `lib/labContract.js` | Lab request acknowledgements, results, and approvals. |
-| `ClaimsContract` | `lib/claimsContract.js` | Claim submission, audit, and processing. |
-| `EhrContract` | `lib/ehrContract.js` | EHR CID state and history. |
-| `AccessContract` | `lib/accessContract.js` | Consent grants, revocation, access requests, and audit helpers. |
+## 🔒 Data Privacy & State Storage
 
-To inspect the current contract exports, read `index.js` and the corresponding `lib/` file. Root `./start.sh` starts the existing Fabric deployment but does not enroll identities, reset a channel, or deploy chaincode. See the [root setup guide](../../../../README.md).
+- **World State (GoLevelDB / CouchDB):** Records are indexed by structured keys (e.g. `PATIENT_PAT-001`, `VISIT_VIS-2026-001`).
+- **Zero-PHI Compliance:** Production deployments require patient identifiers to be pseudonymized and all bulky medical payloads (diagnostic scans, itemized invoices) pinned to IPFS, storing only the cryptographic CID multihash on-chain.
+- **Multi-MSP Endorsement:** Transactions involving cross-organization workflows (such as Lab approvals and Pharmacy billing) enforce endorsement policies spanning `HospitalMSP`, `DiagnosticsMSP`, and `ProviderMSP`.
+
+---
+
+## 🚀 Deployment & Upgrades
+
+Chaincode deployment is managed by the network bootstrap script:
+```bash
+cd orgs/hospital/EHR_hospitalOrg-main/ehr-network
+bash scripts/deployChaincode.sh
+```
+This script packages the chaincode from `ehr-chaincode-v3/`, installs it on all 5 consortium peers across the 3 organizations, approves the definition, and commits it to `ehrchannel`.

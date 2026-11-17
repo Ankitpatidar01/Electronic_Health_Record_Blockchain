@@ -1,37 +1,45 @@
-# Hospital backend services
+# Hospital Backend Services & Microservices
 
-This folder contains the hospital-facing Fabric APIs, IPFS bridge, and optional Group 1 dashboard API. The root workspace uses Docker Compose and the ports below; this is distinct from old standalone deployment notes that may use historical internal port values.
+This folder contains the hospital-facing Fabric API gateways, IPFS bridge, and the Group 1 Observatory Dashboard API. In the unified consortium workspace, these services run as containerized Docker microservices managed by the root `./start.sh` launcher.
 
-## Services
+---
 
-| Service | Host port | Main responsibility |
-|---|---:|---|
-| `peer0-api` | `4001` | Reception/admin routes and hospital staff login. |
-| `peer1-api` | `4002` | Doctor workflow routes. |
-| `peer2-api` | `4003` | Nurse, pharmacist, and medical-record routes. |
-| `extorg-api` | `4004` | Diagnostics/provider routes. |
-| `patient-api` | `4005` | Patient portal API. |
-| `ipfs-service` | `4006` | Authenticated IPFS bridge routes. |
-| `dashboard-api` | `4010` | Optional read-only observability API; opt-in profile. |
+## 🚀 Services & Port Mapping
 
-The three hospital peer APIs receive `VITE_*_API_TARGET` values in Compose so their Vite proxies use Docker service names from inside the container. Requests from the browser should use the Nginx paths such as `/api/hospital/peer0/auth/login` or the portal's Vite proxy in development.
+| Service | Container Name | Host Port | Ingress Route | Main Responsibility |
+|:---|:---|:---:|:---|:---|
+| `peer0-api` | `h-peer0-api` | `4001` | `/api/hospital/peer0/` | Reception/admin workflows and staff authentication. |
+| `peer1-api` | `h-peer1-api` | `4002` | `/api/hospital/peer1/` | Doctor consultations and clinical notes. |
+| `peer2-api` | `h-peer2-api` | `4003` | `/api/hospital/peer2/` | Nurse vitals, inpatient medication administration, and medical records. |
+| `extorg-api` | `h-extorg-api` | `4004` | `/api/hospital/extorg/` | Provider and diagnostics cross-organization routes. |
+| `patient-api` | `h-patient-api` | `4005` | `/api/hospital/patient/` | Patient self-service portal API. |
+| `ipfs-service` | `h-ipfs-service` | `4006` | `/api/hospital/ipfs/` | Authenticated Kubo IPFS bridge API. |
+| `dashboard-api` | `h-dashboard-api` | `4010` | `/api/dashboard/` | Real-time event pipeline, committed-block collector, 12/12 node telemetry, and WebSocket/SSE streams. |
 
-## Fabric and data
+Requests originating from client browsers flow through the Nginx reverse proxy on Port 80, eliminating CORS issues.
 
-The hospital APIs connect using the existing network configuration and wallets. Root `./start.sh` verifies that existing CA/identity material is present, starts the configured CA and peer/orderer Compose files, and does not reenroll identities, reset ledger state, create the channel, or deploy chaincode. Follow the network-specific first-time setup only when the owning team approves it.
+---
 
-The dashboard is a separate, read-only module. It does not share or read other services' `.env` files. Its observer identity and JWT verification keys must be supplied in the dashboard's own local environment; see [`dashboard-api/README.md`](dashboard-api/README.md).
+## 🔗 Fabric & Data Synchronization
 
-## Chaincode
+The hospital APIs connect to Hyperledger Fabric peers using the channel `ehrchannel` and the `HospitalMSP` identity profile. The root `./start.sh` script starts existing Fabric services, checks peer readiness, and launches these microservices in sequential order.
 
-The Fabric package exports eight contracts: `PatientContract`, `VisitContract`, `ForwardContract`, `ClinicalContract`, `LabContract`, `ClaimsContract`, `EhrContract`, and `AccessContract`. The source in `ehr-chaincode-v3/lib/` is authoritative for available transactions. See the [chaincode README](../ehr-chaincode-v3/README.md); the separate specification should not be taken as proof that every proposed flow is deployed.
+- **Smart Contracts:** Interacts with the 8 smart contracts exported from `ehr-chaincode-v3`: `PatientContract`, `VisitContract`, `ClinicalContract`, `ForwardContract`, `LabContract`, `ClaimsContract`, `EhrContract`, and `AccessContract`.
+- **IPFS Bridge:** Provides endpoints (`POST /pin`, `GET /fetch/:cid`, `POST /upload`) for off-chain storage of encrypted medical files.
+- **Dashboard Telemetry:** The `dashboard-api` reads committed blocks from `peer0.hospital` and polls health endpoints across the entire consortium.
 
-## Local run
+---
 
-Use the repository root:
+## 🏃 Running the Backend Services
 
+From the repository root:
 ```bash
 ./start.sh
 ```
 
-Use `./stop.sh` to stop services without deleting Docker volumes. See the [root README](../../../../README.md) for routes, limitations, and service status distinctions. Do not place credentials or patient data in this repository or chat.
+To run an individual service standalone for debugging:
+```bash
+cd peer0-api  # Or any other service directory
+npm install
+npm start
+```

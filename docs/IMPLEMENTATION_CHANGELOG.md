@@ -156,3 +156,44 @@ The Blockchain/Security owner must provision a dedicated HospitalMSP observer id
 - Reordered Nginx startup to step `[6/6]` with an automatic reload/restart to flush stale Docker DNS cache and prevent `502 Bad Gateway`.
 - Enhanced `stop.sh` with clean three-stage shutdown (apps, Fabric nodes, CAs) preserving persistent volumes.
 - Added redirect on `dashboard-api` root (`/`, `/dashboard`, `/dashboard/`) pointing to `http://localhost/dashboard/` for seamless browser navigation.
+
+## 12. Consortium Multi-Agent Integration, Clinical AI Microservice, and Resilience
+
+### Upstream integration and conflict resolution
+- Pulled PRs #7, #8, #9, and #10 on `main`, integrating contributions from Prafull Narang, Saurabh Singh, Javed, and Mohd Abd Khan.
+- Successfully resolved 5-file merge conflicts on `main` across `docker-compose.yaml`, `gateway.js`, `public/index.html`, `public/app.js`, and `public/styles.css`.
+- Preserved both the Obsidian Glass radiant gradient design system and the newly merged lab integrity and human review components.
+
+### Clinical AI Agent containerization (`services/ai-agent`)
+- Created `services/ai-agent/Dockerfile` with Python 3.11, FastAPI, Uvicorn, Pytest, and Pydantic v2.
+- Added service `clinical-ai-agent` to `docker-compose.yaml` (port `8000`), connected to `default` and `ehr_network`.
+- Mounted named volume exclusion `ai_venv:/app/.venv` to prevent host vs container environment conflicts.
+- Added `/ai-agent/` proxy route in `nginx/nginx.conf` exposing the REST API and interactive Swagger documentation at `http://localhost/ai-agent/docs`.
+- Verified 20/20 pytest unit and integration tests passing (`python -m pytest tests/ -v`).
+
+### Lab Multi-Agent System and Gateway bug fix
+- Diagnosed and resolved fatal `ReferenceError: createIntegrityChecker is not defined` crash in `orgs/lab/EHR-LABORG-main/client/node-gateway/server.js`.
+- Integrated `lab-agent.js` (Lab Report Analysis Agent), `history-agent.js` (Longitudinal Trend Analysis Agent), and `orchestrator.js` (Human-in-the-Loop review state machine).
+- Connected the Lab Gateway to `ehrchannel` as `DiagnosticsMSP` and to the shared Kubo IPFS node (`ipfs.ehr.local:5001`).
+- Verified 24/24 Jest unit tests passing across `history-agent.test.js`, `lab-agent.test.js`, and `integrity-check.test.js`.
+
+### 4-Hour scheduled ledger-integrity recheck engine
+- Implemented background re-verification loop checking IPFS multihash raw bytes against on-chain Fabric digests.
+- Added REST routes `GET /api/integrity/status` and `POST /api/integrity/run`.
+- Exposed real-time verification indicators in the Lab Console (`http://localhost/lab/`).
+
+### Fabric operations telemetry & 12/12 live health targets
+- Updated `dashboard-api/config/topology.json` to monitor Fabric operations `/healthz` endpoints:
+  - `peer0.hospital.example.com` (Port `9444`)
+  - `peer1.hospital.example.com` (Port `9445`)
+  - `peer0.diagnostic.example.com` (Port `9446`)
+  - `peer0.provider.example.com` (Port `9447`)
+  - `orderer.example.com` (Port `9443`)
+- Added health targets for `clinical-agent`, `history-agent`, and `governance-agent`.
+- Achieved 100% (12/12) `OK` status on the Observatory Dashboard.
+
+### First-time clone automation and resilience
+- Updated `setup.sh` to auto-populate `.env` files from `.env.example` templates across all subprojects.
+- Added dependency installation for `dashboard-api` and `dashboard-portal` in `setup.sh`.
+- Made `env_file:` declarations optional in `docker-compose.yaml` (`required: false`) to ensure fail-safe execution on any new developer clone.
+- Conducted full end-to-end integration test validating Auth $\rightarrow$ Patient $\rightarrow$ Vitals $\rightarrow$ RAG $\rightarrow$ Lab Review $\rightarrow$ Integrity Recheck $\rightarrow$ Real-Time Dashboard.
