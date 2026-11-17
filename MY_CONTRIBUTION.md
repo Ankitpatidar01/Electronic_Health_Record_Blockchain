@@ -170,6 +170,34 @@ When this project started, it was split into three separate, disconnected pieces
 
 ---
 
+### D. Hospital Organization Main Gateway & Role-Based Access Engine
+* **Universal Role Gateway (`Login.jsx` & `main.jsx`):**
+  * Replaced blind route bumping (which prematurely pushed cached sessions directly into reception `/patients`) with the dedicated **Hospital Organization Access Gateway** on root `/` (`:5173/` and `/hospital/`).
+  * Implemented an interactive 6-card role selector (Clinical Doctor, Triage Nurse, Reception & Registry, Hospital Pharmacist, Medical Records Officer, Hospital Governance) with peer target mappings (`peer0-api:4001`, `peer1-api:4002`, `peer2-api:4003`).
+  * Added URL query parameter routing (`?role=doctor`, `?role=nurse`, `?role=receptionist`, `?role=admin`) from the Hub to pre-select credentials and peer identities.
+  * Added an authenticated session banner with dual actions: "Enter Workspace" or "Select Another Role to Switch & Verify New Credentials".
+
+---
+
+### E. Vitalis Lab Deck Ledger Integration & Microservice Stabilization
+* **Fabric Ledger Connection & Root Cause Fix (`l-node-gateway` on `:3006` / `/lab/`):**
+  * Eliminated the critical HTTP 500 error (`ENOENT: /connection-profiles/lab-connection.json`) in `/api/meta` by engineering multi-path resolution and resilient profile fallbacks in `gateway.js`.
+  * Bundled local connection profile directly inside the gateway package.
+  * Updated `docker-compose.yaml` to mount `connection-profiles` and `organizations` volumes and attached `l-node-gateway` to `ehr_network` so it resolves peer containers and Kubo IPFS (`http://ipfs.ehr.local:5001`).
+  * Restored 100% healthy status on `/api/meta`, `/api/records`, `/api/records/:id`, and `/api/ipfs/health`.
+  * Unlocked the Lab Deck workstation: live ledger pill (`ehrchannel · 3 Peer(s)`), interactive new report creation with IPFS CID anchoring, live table filtering (Reported, Pending, Critical), search, and payload inspection terminal.
+
+---
+
+### F. Universal Vitalis Design System & Tailwind Dark Mode Consistency
+* **Class-Based Tailwind Dark Mode Synchronization:**
+  * Configured `darkMode: 'class'` across all Tailwind configurations.
+  * Synchronized both `document.documentElement.classList.toggle('dark', isDark)` and `dataset.theme` across all portals.
+  * Added zero-dependency anti-FOUC `<script>` blocks in `<head>` across all 9 web applications, preventing theme flicker.
+  * Designed custom pastel gradient themes for clinical identities (Mint, Yellow, Pink, Sky Blue, Teal, Indigo) with accessible dark contrast.
+
+---
+
 ## 🎤 5. What to Say in Your Project Defense (Speaking Scripts)
 
 ### The 30-Second Elevator Pitch

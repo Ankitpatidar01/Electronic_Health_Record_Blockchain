@@ -337,9 +337,19 @@ services:
     working_dir: /app
     volumes:
       - ./orgs/lab/EHR-LABORG-main/client/node-gateway:/app
+      - ./orgs/lab/EHR-LABORG-main/connection-profiles:/connection-profiles:ro
+      - ./orgs/lab/EHR-LABORG-main/organizations:/organizations:ro
       - l-node-gateway-modules:/app/node_modules
+    environment:
+      - CONNECTION_PROFILE_PATH=/connection-profiles/lab-connection.json
+      - USER_MSP_DIR=/organizations/peerOrganizations/lab.example.com/users/User1@lab.example.com/msp
+      - IPFS_API_URL=http://ipfs.ehr.local:5001
+      - IPFS_GATEWAY_URL=http://localhost:8090/ipfs
     ports:
       - "3006:3000"
+    networks:
+      - default
+      - ehr_network
     command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run web"
     restart: unless-stopped
 

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   Activity,
@@ -113,14 +113,30 @@ const CLINICAL_ROLES = [
 ]
 
 export default function LoginPage() {
-  const [selectedRole, setSelectedRole] = useState(CLINICAL_ROLES[0]) // Default: Doctor
-  const [username, setUsername]         = useState(CLINICAL_ROLES[0].username)
-  const [password, setPassword]         = useState(CLINICAL_ROLES[0].hint)
+  const [searchParams]                  = useSearchParams()
+  const roleParam                       = searchParams.get('role')
+  const initialRole = CLINICAL_ROLES.find(r => r.value === roleParam) || CLINICAL_ROLES[0]
+
+  const [selectedRole, setSelectedRole] = useState(initialRole)
+  const [username, setUsername]         = useState(initialRole.username)
+  const [password, setPassword]         = useState(initialRole.hint)
   const [showPass, setShowPass]         = useState(false)
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState('')
-  const { login }                       = useAuth()
+  const { user, login }                 = useAuth()
   const navigate                        = useNavigate()
+
+  useEffect(() => {
+    if (roleParam) {
+      const matched = CLINICAL_ROLES.find(r => r.value === roleParam)
+      if (matched) {
+        setSelectedRole(matched)
+        setUsername(matched.username)
+        setPassword(matched.hint)
+        setError('')
+      }
+    }
+  }, [roleParam])
 
   const handleSelectRole = (r) => {
     setSelectedRole(r)
@@ -193,6 +209,43 @@ export default function LoginPage() {
               Select your clinical role to route directly into your workspace and verify cryptographic credentials with the respective Hyperledger Fabric peer.
             </p>
           </div>
+
+          {/* Active Session Notice if already logged in */}
+          {user && (
+            <div className="mb-6 p-4 rounded-2xl bg-teal-500/10 dark:bg-teal-950/40 border border-teal-500/30 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm">
+                  {user.role?.[0] || 'U'}
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                    Active Session: <span className="text-teal-600 dark:text-teal-400 font-mono">{user.username}</span> ({user.role})
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    You can return to your workspace directly or select any role below to verify new credentials.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const routes = {
+                    doctor: '/my-visits',
+                    nurse: '/my-visits',
+                    receptionist: '/patients',
+                    admin: '/patients',
+                    pharmacist: '/dispense',
+                    medrecordofficer: '/finalize',
+                  }
+                  navigate(routes[user.role] || '/patients')
+                }}
+                className="btn-ink-pill py-2 px-4 text-xs font-bold cursor-pointer"
+              >
+                <span>Enter {user.role} Workspace</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
+          )}
 
           {/* 6-Card Role Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 mb-8">
