@@ -126,6 +126,32 @@ async function readJsonFromIpfs(cid) {
   }
 }
 
+// Returns the exact bytes stored under a CID. Integrity checks must hash these
+// raw bytes: re-serialising parsed JSON can change the bytes and cause false mismatches.
+async function readRawFromIpfs(cid, options = {}) {
+  if (!cid) {
+    throw new Error('cid is required');
+  }
+
+  const { apiUrl } = getIpfsConfig();
+  const endpoint = `/api/v0/cat?arg=${encodeURIComponent(cid)}`;
+  const response = await fetch(`${apiUrl}${endpoint}`, {
+    method: 'POST',
+    signal: AbortSignal.timeout(options.timeoutMs || 15000),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`IPFS API ${endpoint} failed (${response.status}): ${text || response.statusText}`);
+  }
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
+function sha256Hex(buffer) {
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
 async function ipfsHealth() {
   try {
     const versionText = await callIpfsApi('/api/v0/version');
@@ -151,4 +177,6 @@ module.exports = {
   getIpfsConfig,
   ipfsHealth,
   readJsonFromIpfs,
+  readRawFromIpfs,
+  sha256Hex,
 };

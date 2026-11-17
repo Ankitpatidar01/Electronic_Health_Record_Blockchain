@@ -147,6 +147,34 @@
           </div>
         </section>
 
+        <section class="panel reveal" style="--delay: 275ms">
+          <div class="panel-header">
+            <h2>Ledger-Integrity Re-Check</h2>
+            <button id="integrityRunBtn" class="btn btn-secondary btn-sm" type="button">Run Check Now</button>
+          </div>
+          <p id="integrityMeta" class="integrity-meta">No check has run yet.</p>
+          <div class="integrity-counts">
+            <span class="status" style="background: #e5f6ee; color: #1d6b43; border: 1px solid #b7dfcb;">OK:&nbsp;<strong id="integrityOk">-</strong></span>
+            <span class="status" style="background: #fdeaea; color: #9e2d2d; border: 1px solid #f3b3b3;">Mismatch:&nbsp;<strong id="integrityMismatch">-</strong></span>
+            <span class="status" style="background: #fdf0de; color: #8a4a1f; border: 1px solid #efcba5;">Missing:&nbsp;<strong id="integrityMissing">-</strong></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Result ID</th>
+                  <th>Object</th>
+                  <th>Status</th>
+                  <th>Expected / Actual Digest</th>
+                </tr>
+              </thead>
+              <tbody id="integrityBody">
+                <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Waiting for first run...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="panel panel-output reveal" style="--delay: 300ms">
           <div class="panel-header">
             <h2>Transaction Output</h2>

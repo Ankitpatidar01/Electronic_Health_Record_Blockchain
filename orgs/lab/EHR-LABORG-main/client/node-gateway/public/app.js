@@ -434,6 +434,83 @@ updateStatusForm.addEventListener('submit', async (event) => {
   }
 });
 
+const integrityRunBtn = document.getElementById('integrityRunBtn');
+const integrityMeta = document.getElementById('integrityMeta');
+const integrityBody = document.getElementById('integrityBody');
+
+function shortDigest(value) {
+  return value ? `${value.slice(0, 16)}...` : '-';
+}
+
+function renderIntegrity(state) {
+  const report = state && state.lastReport;
+  const counts = (report && report.summary) || {};
+  document.getElementById('integrityOk').textContent = counts.ok ?? '-';
+  document.getElementById('integrityMismatch').textContent = counts.mismatch ?? '-';
+  document.getElementById('integrityMissing').textContent = counts.missing ?? '-';
+
+  if (!report) {
+    integrityMeta.textContent = state && state.running ? 'Check running...' : 'No check has run yet.';
+    return;
+  }
+
+  const every = state.intervalMs ? ` · runs every ${Math.round(state.intervalMs / 60000)} min` : '';
+  integrityMeta.textContent = report.ok
+    ? `Last run: ${new Date(report.finishedAt).toLocaleString()} (${report.trigger}) · ${counts.checked} IPFS-backed record(s), ${counts.skippedOnChain} on-chain only${every}`
+    : `Last run failed: ${report.error}`;
+
+  const rows = [];
+  for (const record of report.records || []) {
+    for (const check of record.checks) {
+      const style = check.status === 'OK'
+        ? 'background: #e5f6ee; color: #1d6b43; border: 1px solid #b7dfcb;'
+        : check.status === 'MISMATCH'
+          ? 'background: #fdeaea; color: #9e2d2d; border: 1px solid #f3b3b3;'
+          : 'background: #fdf0de; color: #8a4a1f; border: 1px solid #efcba5;';
+      const detail = check.status === 'MISSING'
+        ? escapeHtml(check.error || 'not retrievable')
+        : `${escapeHtml(shortDigest(check.expected))}<br/>${escapeHtml(shortDigest(check.actual))}`;
+      rows.push(`
+        <tr>
+          <td data-label="Result ID" style="font-family: var(--font-mono);">${escapeHtml(record.resultId || '')}</td>
+          <td data-label="Object">${escapeHtml(check.kind)}</td>
+          <td data-label="Status"><span class="status" style="${style}">${escapeHtml(check.status)}</span></td>
+          <td data-label="Digest" class="digest-cell">${detail}</td>
+        </tr>`);
+    }
+  }
+
+  integrityBody.innerHTML = rows.length
+    ? rows.join('')
+    : '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No IPFS-backed records to check.</td></tr>';
+}
+
+async function loadIntegrityStatus() {
+  try {
+    renderIntegrity(await apiRequest('/api/integrity/status'));
+  } catch (_error) {
+    // Status polling is best-effort; the Run button surfaces real errors.
+  }
+}
+
+integrityRunBtn.addEventListener('click', async () => {
+  toggleLoading(integrityRunBtn, true);
+  try {
+    const report = await apiRequest('/api/integrity/run', { method: 'POST' });
+    setOutput('POST /api/integrity/run', report);
+    await loadIntegrityStatus();
+    const s = report.summary;
+    showToast(report.ok ? `Integrity check: ${s.ok} OK, ${s.mismatch} mismatch, ${s.missing} missing` : report.error);
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    toggleLoading(integrityRunBtn, false);
+  }
+});
+
+loadIntegrityStatus();
+setInterval(loadIntegrityStatus, 15000);
+
 clearOutputBtn.addEventListener('click', () => {
   rawOutput.innerHTML = '<span style="color: var(--text-muted);">Awaiting transactions...</span>';
 });

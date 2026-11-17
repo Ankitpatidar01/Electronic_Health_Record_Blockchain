@@ -723,3 +723,21 @@ html[data-theme=dark] #themeToggle{border:1px solid rgba(84,241,220,.52);border-
 .hero-controls #refreshBtn{grid-column:2;grid-row:2;white-space:nowrap}
 .hero-controls #themeToggle{position:static!important;inset:auto!important;z-index:auto!important;grid-column:3;grid-row:2;white-space:nowrap}
 @media(max-width:760px){.hero-controls{grid-template-columns:1fr;grid-template-rows:auto}.hero-controls label,.hero-controls select,.hero-controls #refreshBtn,.hero-controls #themeToggle{grid-column:1;grid-row:auto}.hero-controls #refreshBtn,.hero-controls #themeToggle{width:100%}}
+.integrity-meta {
+  margin: 0 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.integrity-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.digest-cell {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  word-break: break-all;
+}

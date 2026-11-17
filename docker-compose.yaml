@@ -331,8 +331,22 @@ services:
     volumes:
       - ./orgs/lab/EHR-LABORG-main/client/node-gateway:/app
       - l-node-gateway-modules:/app/node_modules
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+    environment:
+      IPFS_API_URL: http://ipfs.ehr.local:5001
+      IPFS_GATEWAY_URL: http://ipfs.ehr.local:8080
+      # Lab joins the shared ehrchannel as the Diagnostics organization.
+      LAB_MSP_ID: DiagnosticsMSP
+      LAB_PEER_ENDPOINT: peer0.diagnostic.example.com:8051
+      LAB_PEER_TLS_CA: /ehr-network/organizations/peerOrganizations/diagnostic.example.com/peers/peer0.diagnostic.example.com/tls/ca.crt
+      LAB_IDENTITY_MSP_DIR: /ehr-network/organizations/peerOrganizations/diagnostic.example.com/users/labtechnician/msp
+      LAB_CHANNEL: ehrchannel
+      LAB_CHAINCODE: labresults
     ports:
       - "3006:3000"
+    networks:
+      - default
+      - ehr_network
     command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run web"
     restart: unless-stopped
 

@@ -8,7 +8,7 @@ const { connect, signers } = require('@hyperledger/fabric-gateway');
 
 const ROOT_DIR = path.resolve(__dirname, '..', '..');
 const CCP_PATH = path.join(ROOT_DIR, 'connection-profiles', 'lab-connection.json');
-const USER_MSP_DIR = path.join(
+const USER_MSP_DIR = process.env.LAB_IDENTITY_MSP_DIR || path.join(
   ROOT_DIR,
   'organizations',
   'peerOrganizations',
@@ -18,8 +18,35 @@ const USER_MSP_DIR = path.join(
   'msp'
 );
 
+// Defaults target the standalone Lab network (LabMSP). In the unified stack these
+// point the gateway at the shared ehrchannel as DiagnosticsMSP instead.
+const MSP_ID = process.env.LAB_MSP_ID || 'LabMSP';
+const CHANNEL_NAME = process.env.LAB_CHANNEL || 'ehrchannel';
+const CHAINCODE_NAME = process.env.LAB_CHAINCODE || 'labresults';
+const PEER_ENDPOINT = process.env.LAB_PEER_ENDPOINT;
+const PEER_TLS_CA = process.env.LAB_PEER_TLS_CA;
+
 function loadConnectionProfile() {
+  if (PEER_ENDPOINT && PEER_TLS_CA) {
+    return {
+      peers: {
+        [resolvePeerName()]: {
+          url: `grpcs://${PEER_ENDPOINT}`,
+          tlsCACerts: { pem: fs.readFileSync(PEER_TLS_CA, 'utf8') },
+        },
+      },
+    };
+  }
   return JSON.parse(fs.readFileSync(CCP_PATH, 'utf8'));
+}
+
+function getLedgerConfig() {
+  return {
+    defaultPeer: resolvePeerName(),
+    channel: CHANNEL_NAME,
+    chaincode: CHAINCODE_NAME,
+    mspId: MSP_ID,
+  };
 }
 
 function listGatewayPeers() {
@@ -65,7 +92,10 @@ function resolvePeerName(peerName) {
     return peerName;
   }
 
-  return process.env.GATEWAY_PEER || 'peer0.lab.example.com';
+  if (process.env.GATEWAY_PEER) {
+    return process.env.GATEWAY_PEER;
+  }
+  return PEER_ENDPOINT ? PEER_ENDPOINT.split(':')[0] : 'peer0.lab.example.com';
 }
 
 function newGrpcConnection(peerName, connectionProfile) {
@@ -78,8 +108,10 @@ function newGrpcConnection(peerName, connectionProfile) {
   const tlsRootCert = Buffer.from(peer.tlsCACerts.pem);
   const credentials = grpc.credentials.createSsl(tlsRootCert);
 
-  // If host is an internal Fabric domain name not mapped in local DNS, dial 127.0.0.1
-  const targetHost = (endpoint.hostname.endsWith('.example.com') || endpoint.hostname === 'localhost')
+  // If host is an internal Fabric domain name not mapped in local DNS, dial 127.0.0.1.
+  // Inside Docker on ehr_network the peer hostname resolves, so dial it directly.
+  const dialByName = PEER_ENDPOINT && process.env.LAB_PEER_DIAL_LOCALHOST !== 'true';
+  const targetHost = !dialByName && (endpoint.hostname.endsWith('.example.com') || endpoint.hostname === 'localhost')
     ? `127.0.0.1:${endpoint.port || 7051}`
     : endpoint.host;
 
@@ -93,16 +125,26 @@ function newGrpcConnection(peerName, connectionProfile) {
   );
 }
 
+function findSignCert() {
+  const signDir = path.join(USER_MSP_DIR, 'signcerts');
+  if (!fs.existsSync(signDir)) {
+    return null;
+  }
+  // cryptogen names it User1@lab.example.com-cert.pem, Fabric CA names it cert.pem.
+  const file = fs.readdirSync(signDir).find((name) => name.endsWith('.pem'));
+  return file ? path.join(signDir, file) : null;
+}
+
 function newIdentity() {
-  const certPath = path.join(USER_MSP_DIR, 'signcerts', 'User1@lab.example.com-cert.pem');
-  if (!fs.existsSync(certPath)) {
+  const certPath = findSignCert();
+  if (!certPath) {
     return {
-      mspId: 'LabMSP',
+      mspId: MSP_ID,
       credentials: Buffer.from(''),
     };
   }
   return {
-    mspId: 'LabMSP',
+    mspId: MSP_ID,
     credentials: fs.readFileSync(certPath),
   };
 }
@@ -152,8 +194,8 @@ async function withContract(peerName, callback) {
   });
 
   try {
-    const network = gateway.getNetwork('ehrchannel');
-    const contract = network.getContract('labresults');
+    const network = gateway.getNetwork(CHANNEL_NAME);
+    const contract = network.getContract(CHAINCODE_NAME);
     return await callback(contract, selectedPeer);
   } finally {
     gateway.close();
@@ -223,6 +265,20 @@ async function submitTransaction(peerName, functionName, args = []) {
       }
       return { peer: selectedPeer, result: newRecord };
     }
+    if (functionName === 'UpdateLabResult') {
+      const [resultId, patientId, testCode, collectedAt, status, resultDataJson] = args;
+      const record = localRecords.find(r => r.resultId === resultId);
+      if (!record) throw new Error(`Lab result ${resultId} not found`);
+      Object.assign(record, {
+        patientId,
+        testCode,
+        collectedAt,
+        status,
+        resultData: parseResult(resultDataJson),
+        updatedAt: new Date().toISOString(),
+      });
+      return { peer: selectedPeer, result: record };
+    }
     if (functionName === 'UpdateLabStatus') {
       const [resultId, status] = args;
       const record = localRecords.find(r => r.resultId === resultId);
@@ -289,11 +345,29 @@ async function updateLabStatus(resultId, status, options = {}) {
   return submitTransaction(options.peerName, 'UpdateLabStatus', [resultId, status]);
 }
 
+async function updateLabResult(record, options = {}) {
+  const { resultId, patientId, testCode, collectedAt, status, resultData } = record || {};
+  if (!resultId) {
+    throw new Error('resultId is required');
+  }
+
+  return submitTransaction(options.peerName, 'UpdateLabResult', [
+    resultId,
+    patientId,
+    testCode,
+    collectedAt,
+    status,
+    typeof resultData === 'string' ? resultData : JSON.stringify(resultData || {}),
+  ]);
+}
+
 module.exports = {
   createLabResult,
+  getLedgerConfig,
   getAllLabResults,
   getLabResultsByPatient,
   listGatewayPeers,
   readLabResult,
+  updateLabResult,
   updateLabStatus,
 };
