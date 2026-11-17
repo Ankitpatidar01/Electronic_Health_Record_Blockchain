@@ -1,10 +1,39 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Component } from 'react'
 import './index.css'
 import Dashboard from './Dashboard'
 import CreateRecord from './CreateRecord'
 import { ShieldCheck, User, LogOut, Pill } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import { API_BASE_URL } from './config'
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Error caught by boundary:", error, errorInfo)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="glass-card" style={{ padding: '2rem', textAlign: 'center', margin: '2rem 0' }}>
+          <h2 style={{ color: '#ef4444', marginBottom: '0.5rem' }}>View Error</h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1rem' }}>
+            {this.state.error?.message || 'An unexpected error occurred.'}
+          </p>
+          <button className="btn btn-primary" onClick={() => this.setState({ hasError: false })}>
+            Retry View
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 function App() {
   const [view, setView] = useState('dashboard');
@@ -57,15 +86,17 @@ function App() {
       </nav>
 
       <main className="app-container">
-        {view === 'dashboard' ? (
-          <Dashboard onAddRecord={() => setView('create')} currentUser={currentUser} />
-        ) : (
-          <CreateRecord 
-            onCancel={() => setView('dashboard')} 
-            onSave={() => setView('dashboard')} 
-            currentUser={currentUser}
-          />
-        )}
+        <ErrorBoundary>
+          {view === 'dashboard' ? (
+            <Dashboard onAddRecord={() => setView('create')} currentUser={currentUser} />
+          ) : (
+            <CreateRecord 
+              onCancel={() => setView('dashboard')} 
+              onSave={() => setView('dashboard')} 
+              currentUser={currentUser}
+            />
+          )}
+        </ErrorBoundary>
       </main>
 
       <footer style={{ textAlign: 'center', padding: '4rem', color: '#64748b', fontSize: '0.8rem' }}>

@@ -16,7 +16,7 @@ export default function DoctorCard({
 }) {
   return (
     <div
-      className={`bento-card p-5 bg-white dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-3xl transition-all duration-200 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between ${className}`}
+      className={`bento-card p-5 bg-gradient-to-br from-white via-sky-50/40 to-cyan-50/50 dark:from-slate-900/95 dark:via-sky-950/20 dark:to-cyan-950/30 border border-slate-200/90 dark:border-slate-800/80 rounded-3xl transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-teal-500/40 dark:hover:border-teal-400/40 flex flex-col justify-between ${className}`}
     >
       <div>
         {/* Top Header Row: Rating */}

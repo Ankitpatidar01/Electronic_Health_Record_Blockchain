@@ -16,12 +16,12 @@ import VerifiedBadge from '../../ui-kit/components/VerifiedBadge'
 import DataSourceTag from '../../ui-kit/components/DataSourceTag'
 
 const NAV_ITEMS = [
-  { to: '/overview',   icon: Heart,       label: 'Health Home',   badge: null },
-  { to: '/visits',     icon: Calendar,    label: 'My Visits',     badge: null },
-  { to: '/ehr',        icon: FileText,    label: 'Record Vault',  badge: null },
-  { to: '/access',     icon: ShieldCheck, label: 'Consent Centre', badge: null },
+  { to: '/overview', icon: Heart, label: 'Health Home', badge: null },
+  { to: '/visits', icon: Calendar, label: 'My Visits', badge: null },
+  { to: '/ehr', icon: FileText, label: 'Record Vault', badge: null },
+  { to: '/access', icon: ShieldCheck, label: 'Consent Centre', badge: null },
   { to: '/signatures', icon: Fingerprint, label: 'On-Chain Proof', badge: null },
-  { to: '/profile',    icon: User,        label: 'My Profile',    badge: null },
+  { to: '/profile', icon: User, label: 'My Profile', badge: null },
 ]
 
 export default function Layout({ children }) {
@@ -104,11 +104,10 @@ export default function Layout({ children }) {
                 <Link
                   key={to}
                   to={to}
-                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-medium transition-all ${
-                    active
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800/60'
-                  }`}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-medium transition-all ${active
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800/60'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon size={18} className={active ? 'text-teal-400 dark:text-teal-600' : 'text-slate-400'} />
@@ -149,11 +148,10 @@ export default function Layout({ children }) {
               <Link
                 key={to}
                 to={to}
-                className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all ${
-                  active
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold shadow-xs'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-                }`}
+                className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all ${active
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold shadow-xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
+                  }`}
               >
                 <Icon size={18} />
                 <span className="text-[10px] mt-0.5 tracking-tight">{label.split(' ')[0]}</span>

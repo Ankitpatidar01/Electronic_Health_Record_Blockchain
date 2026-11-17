@@ -15,19 +15,29 @@ export default function StaffCard({
   className = '',
 }) {
   const roleBadges = {
-    doctor: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/30',
-    nurse: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30',
-    receptionist: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
-    pharmacist: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30',
-    medrecordofficer: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30',
-    admin: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
+    doctor: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-400/40',
+    nurse: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-400/40',
+    receptionist: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-400/40',
+    pharmacist: 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-400/40',
+    medrecordofficer: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-400/40',
+    admin: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-400/40',
+  }
+
+  const roleGradients = {
+    doctor: 'bg-gradient-to-br from-sky-500/10 via-cyan-500/5 to-blue-500/10 dark:from-sky-950/40 dark:via-cyan-950/20 dark:to-blue-950/40 border-sky-200/90 dark:border-sky-800/60',
+    nurse: 'bg-gradient-to-br from-purple-500/10 via-fuchsia-500/5 to-pink-500/10 dark:from-purple-950/40 dark:via-fuchsia-950/20 dark:to-pink-950/40 border-purple-200/90 dark:border-purple-800/60',
+    receptionist: 'bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-green-500/10 dark:from-emerald-950/40 dark:via-teal-950/20 dark:to-green-950/40 border-emerald-200/90 dark:border-emerald-800/60',
+    pharmacist: 'bg-gradient-to-br from-teal-500/10 via-cyan-500/5 to-emerald-500/10 dark:from-teal-950/40 dark:via-cyan-950/20 dark:to-emerald-950/40 border-teal-200/90 dark:border-teal-800/60',
+    medrecordofficer: 'bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-yellow-500/10 dark:from-amber-950/40 dark:via-orange-950/20 dark:to-yellow-950/40 border-amber-200/90 dark:border-amber-800/60',
+    admin: 'bg-gradient-to-br from-indigo-500/10 via-blue-500/5 to-violet-500/10 dark:from-indigo-950/40 dark:via-blue-950/20 dark:to-violet-950/40 border-indigo-200/90 dark:border-indigo-800/60',
   }
 
   const badgeClass = roleBadges[role.toLowerCase()] || 'bg-slate-100 text-slate-700 border-slate-200'
+  const gradientClass = roleGradients[role.toLowerCase()] || 'bg-white dark:bg-slate-900/90 border-slate-200/90 dark:border-slate-800'
 
   return (
     <div
-      className={`bento-card p-5 bg-white dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-3xl transition-all duration-200 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between ${className}`}
+      className={`bento-card p-5 border rounded-3xl transition-all duration-200 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between ${gradientClass} ${className}`}
     >
       <div>
         <div className="flex items-center justify-between mb-3">

@@ -25,8 +25,8 @@ export default function OverviewPage() {
   const { api, patient } = useAuth()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
-  const [visits, setVisits]   = useState([])
-  const [ehr, setEhr]         = useState(null)
+  const [visits, setVisits] = useState([])
+  const [ehr, setEhr] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -57,8 +57,8 @@ export default function OverviewPage() {
   }
 
   const activeVisit = visits.find(v => !['DISCHARGED'].includes(v.status))
-  const allergies   = ehr?.allergies || []
-  const conditions  = ehr?.chronicConditions || []
+  const allergies = ehr?.allergies || []
+  const conditions = ehr?.chronicConditions || []
   const latestVitals = activeVisit?.vitals || visits[visits.length - 1]?.vitals || null
 
   return (
@@ -67,7 +67,7 @@ export default function OverviewPage() {
       <div className="bento-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/90 dark:from-slate-900/90 dark:to-slate-900/70 relative overflow-hidden">
         {/* Soft decorative backdrop */}
         <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-15 dark:opacity-10 pointer-events-none bg-no-repeat bg-right-top"
-             style={{ backgroundImage: 'radial-gradient(circle at 100% 0%, #0d9488 0%, transparent 70%)' }} />
+          style={{ backgroundImage: 'radial-gradient(circle at 100% 0%, #0d9488 0%, transparent 70%)' }} />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>

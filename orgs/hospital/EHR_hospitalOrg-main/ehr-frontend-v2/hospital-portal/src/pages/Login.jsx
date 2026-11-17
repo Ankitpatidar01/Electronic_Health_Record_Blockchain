@@ -26,10 +26,14 @@ const CLINICAL_ROLES = [
     username: 'doctor',
     hint: 'docpw',
     peer: 'peer1-api (Port 4002)',
-    badge: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/30',
+    badge: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-400/40',
     icon: Stethoscope,
     desc: 'Patient encounters, clinical diagnosis, prescriptions & lab orders.',
     defaultPath: '/my-visits',
+    gradientUnselected: 'bg-gradient-to-br from-sky-500/10 via-cyan-500/5 to-blue-500/10 dark:from-sky-950/40 dark:via-cyan-950/20 dark:to-blue-950/40 border-sky-200/80 dark:border-sky-800/60 hover:border-sky-400 dark:hover:border-sky-600',
+    gradientSelected: 'bg-gradient-to-br from-sky-500/25 via-cyan-500/20 to-blue-600/25 dark:from-sky-900/60 dark:via-cyan-900/50 dark:to-blue-900/60 border-sky-500 dark:border-sky-400 ring-2 ring-sky-500/40 shadow-lg shadow-sky-500/15',
+    iconGradient: 'bg-gradient-to-tr from-sky-600 to-cyan-500 text-white shadow-md shadow-sky-500/30',
+    accentColor: 'text-sky-600 dark:text-sky-400',
   },
   {
     value: 'nurse',
@@ -37,10 +41,14 @@ const CLINICAL_ROLES = [
     username: 'nurse',
     hint: 'nursepw',
     peer: 'peer2-api (Port 4003)',
-    badge: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30',
+    badge: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-400/40',
     icon: Activity,
     desc: 'Patient intake, triage queues, unit-aware vitals recording.',
     defaultPath: '/my-visits',
+    gradientUnselected: 'bg-gradient-to-br from-purple-500/10 via-fuchsia-500/5 to-pink-500/10 dark:from-purple-950/40 dark:via-fuchsia-950/20 dark:to-pink-950/40 border-purple-200/80 dark:border-purple-800/60 hover:border-purple-400 dark:hover:border-purple-600',
+    gradientSelected: 'bg-gradient-to-br from-purple-500/25 via-fuchsia-500/20 to-pink-600/25 dark:from-purple-900/60 dark:via-fuchsia-900/50 dark:to-pink-900/60 border-purple-500 dark:border-purple-400 ring-2 ring-purple-500/40 shadow-lg shadow-purple-500/15',
+    iconGradient: 'bg-gradient-to-tr from-purple-600 to-fuchsia-600 text-white shadow-md shadow-purple-500/30',
+    accentColor: 'text-purple-600 dark:text-purple-400',
   },
   {
     value: 'receptionist',
@@ -48,10 +56,14 @@ const CLINICAL_ROLES = [
     username: 'receptionist',
     hint: 'recpw',
     peer: 'peer0-api (Port 4001)',
-    badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+    badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-400/40',
     icon: Users,
     desc: 'Patient check-in, ABHA demographic registry & opening clinical visits.',
     defaultPath: '/patients',
+    gradientUnselected: 'bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-green-500/10 dark:from-emerald-950/40 dark:via-teal-950/20 dark:to-green-950/40 border-emerald-200/80 dark:border-emerald-800/60 hover:border-emerald-400 dark:hover:border-emerald-600',
+    gradientSelected: 'bg-gradient-to-br from-emerald-500/25 via-teal-500/20 to-green-600/25 dark:from-emerald-900/60 dark:via-teal-900/50 dark:to-green-900/60 border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-500/40 shadow-lg shadow-emerald-500/15',
+    iconGradient: 'bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-500/30',
+    accentColor: 'text-emerald-600 dark:text-emerald-400',
   },
   {
     value: 'pharmacist',
@@ -59,10 +71,14 @@ const CLINICAL_ROLES = [
     username: 'pharmacist',
     hint: 'pharmpw',
     peer: 'peer2-api (Port 4003)',
-    badge: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30',
+    badge: 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-400/40',
     icon: Pill,
     desc: 'Medication fulfillment, dispensing queue & inventory ledger sync.',
     defaultPath: '/dispense',
+    gradientUnselected: 'bg-gradient-to-br from-teal-500/10 via-cyan-500/5 to-emerald-500/10 dark:from-teal-950/40 dark:via-cyan-950/20 dark:to-emerald-950/40 border-teal-200/80 dark:border-teal-800/60 hover:border-teal-400 dark:hover:border-teal-600',
+    gradientSelected: 'bg-gradient-to-br from-teal-500/25 via-cyan-500/20 to-emerald-600/25 dark:from-teal-900/60 dark:via-cyan-900/50 dark:to-emerald-900/60 border-teal-500 dark:border-teal-400 ring-2 ring-teal-500/40 shadow-lg shadow-teal-500/15',
+    iconGradient: 'bg-gradient-to-tr from-teal-600 to-cyan-600 text-white shadow-md shadow-teal-500/30',
+    accentColor: 'text-teal-600 dark:text-teal-400',
   },
   {
     value: 'medrecordofficer',
@@ -70,10 +86,14 @@ const CLINICAL_ROLES = [
     username: 'medrecordofficer',
     hint: 'medpw',
     peer: 'peer2-api (Port 4003)',
-    badge: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30',
+    badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-400/40',
     icon: FolderOpen,
     desc: 'Audit trail inspection, discharge checklists & record finalization.',
     defaultPath: '/finalize',
+    gradientUnselected: 'bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-yellow-500/10 dark:from-amber-950/40 dark:via-orange-950/20 dark:to-yellow-950/40 border-amber-200/80 dark:border-amber-800/60 hover:border-amber-400 dark:hover:border-amber-600',
+    gradientSelected: 'bg-gradient-to-br from-amber-500/25 via-orange-500/20 to-yellow-600/25 dark:from-amber-900/60 dark:via-orange-900/50 dark:to-yellow-900/60 border-amber-500 dark:border-amber-400 ring-2 ring-amber-500/40 shadow-lg shadow-amber-500/15',
+    iconGradient: 'bg-gradient-to-tr from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/30',
+    accentColor: 'text-amber-600 dark:text-amber-400',
   },
   {
     value: 'admin',
@@ -81,10 +101,14 @@ const CLINICAL_ROLES = [
     username: 'hospitaladmin',
     hint: 'hadminpw',
     peer: 'peer0-api (Port 4001)',
-    badge: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
+    badge: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-400/40',
     icon: ShieldCheck,
     desc: 'Hospital administrator, clinical staff credentialing & patient discharge.',
     defaultPath: '/patients',
+    gradientUnselected: 'bg-gradient-to-br from-indigo-500/10 via-blue-500/5 to-violet-500/10 dark:from-indigo-950/40 dark:via-blue-950/20 dark:to-violet-950/40 border-indigo-200/80 dark:border-indigo-800/60 hover:border-indigo-400 dark:hover:border-indigo-600',
+    gradientSelected: 'bg-gradient-to-br from-indigo-500/25 via-blue-500/20 to-violet-600/25 dark:from-indigo-900/60 dark:via-blue-900/50 dark:to-violet-900/60 border-indigo-500 dark:border-indigo-400 ring-2 ring-indigo-500/40 shadow-lg shadow-indigo-500/15',
+    iconGradient: 'bg-gradient-to-tr from-indigo-600 to-blue-700 text-white shadow-md shadow-indigo-500/30',
+    accentColor: 'text-indigo-600 dark:text-indigo-400',
   },
 ]
 
@@ -179,36 +203,36 @@ export default function LoginPage() {
                 <div
                   key={r.value}
                   onClick={() => handleSelectRole(r)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
-                    isSelected
-                      ? 'bg-white dark:bg-slate-900 border-teal-500 shadow-md ring-2 ring-teal-500/20'
-                      : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-900'
+                  className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+                    isSelected ? r.gradientSelected : r.gradientUnselected
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2.5">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isSelected ? 'bg-teal-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                        isSelected ? r.iconGradient : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 shadow-xs'
+                      }`}>
                         <Icon size={18} />
                       </div>
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${r.badge}`}>
                         {r.value}
                       </span>
                     </div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white transition-colors">
                       {r.label}
                     </h3>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 line-clamp-2 leading-relaxed">
                       {r.desc}
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                  <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                     <span className="flex items-center gap-1">
                       <Server size={10} />
                       {r.peer.split(' ')[0]}
                     </span>
                     {isSelected && (
-                      <span className="text-teal-600 dark:text-teal-400 font-bold flex items-center gap-1 font-sans">
+                      <span className={`${r.accentColor} font-bold flex items-center gap-1 font-sans`}>
                         <CheckCircle2 size={12} />
                         Active Selection
                       </span>
