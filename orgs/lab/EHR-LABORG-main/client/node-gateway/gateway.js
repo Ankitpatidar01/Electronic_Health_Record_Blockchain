@@ -223,6 +223,20 @@ async function submitTransaction(peerName, functionName, args = []) {
       }
       return { peer: selectedPeer, result: newRecord };
     }
+    if (functionName === 'UpdateLabResult') {
+      const [resultId, patientId, testCode, collectedAt, status, resultDataJson] = args;
+      const record = localRecords.find(r => r.resultId === resultId);
+      if (!record) throw new Error(`Lab result ${resultId} not found`);
+      Object.assign(record, {
+        patientId,
+        testCode,
+        collectedAt,
+        status,
+        resultData: parseResult(resultDataJson),
+        updatedAt: new Date().toISOString(),
+      });
+      return { peer: selectedPeer, result: record };
+    }
     if (functionName === 'UpdateLabStatus') {
       const [resultId, status] = args;
       const record = localRecords.find(r => r.resultId === resultId);
@@ -289,11 +303,28 @@ async function updateLabStatus(resultId, status, options = {}) {
   return submitTransaction(options.peerName, 'UpdateLabStatus', [resultId, status]);
 }
 
+async function updateLabResult(record, options = {}) {
+  const { resultId, patientId, testCode, collectedAt, status, resultData } = record || {};
+  if (!resultId) {
+    throw new Error('resultId is required');
+  }
+
+  return submitTransaction(options.peerName, 'UpdateLabResult', [
+    resultId,
+    patientId,
+    testCode,
+    collectedAt,
+    status,
+    typeof resultData === 'string' ? resultData : JSON.stringify(resultData || {}),
+  ]);
+}
+
 module.exports = {
   createLabResult,
   getAllLabResults,
   getLabResultsByPatient,
   listGatewayPeers,
   readLabResult,
+  updateLabResult,
   updateLabStatus,
 };
