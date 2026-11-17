@@ -331,8 +331,14 @@ services:
     volumes:
       - ./orgs/lab/EHR-LABORG-main/client/node-gateway:/app
       - l-node-gateway-modules:/app/node_modules
+    environment:
+      IPFS_API_URL: http://ipfs.ehr.local:5001
+      IPFS_GATEWAY_URL: http://ipfs.ehr.local:8080
     ports:
       - "3006:3000"
+    networks:
+      - default
+      - ehr_network
     command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run web"
     restart: unless-stopped
 
