@@ -182,6 +182,39 @@ app.get('/api/meta', (_req, res) => {
   });
 });
 
+app.get('/api/integrity/status', (_req, res) => {
+  res.json(integrityChecker.status());
+});
+
+app.post('/api/integrity/run', async (_req, res, next) => {
+  try {
+    res.json(await integrityChecker.runOnce('manual'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Demo-only: overwrites a record's on-chain CID or digest so the re-check can be
+// shown detecting tampering. Disabled unless INTEGRITY_DEMO_ENDPOINTS=true.
+if (parseBooleanValue(process.env.INTEGRITY_DEMO_ENDPOINTS, false)) {
+  app.post('/api/integrity/demo/tamper', async (req, res, next) => {
+    try {
+      const { resultId, field, value } = req.body || {};
+      if (!['cid', 'digest'].includes(field) || !trimmedField(value)) {
+        throw new Error('field (cid or digest) and value are required');
+      }
+      const { result: record } = await readLabResult(trimmedField(resultId), { peerName: selectedPeer(req) });
+      if (!record.resultData || record.resultData.storage !== 'ipfs') {
+        throw new Error(`An IPFS-backed record is required; ${resultId} is stored on-chain`);
+      }
+      record.resultData[field] = trimmedField(value);
+      res.json(await updateLabResult(record, { peerName: selectedPeer(req) }));
+    } catch (error) {
+      next(error);
+    }
+  });
+}
+
 app.get('/api/ipfs/health', async (_req, res) => {
   const health = await ipfsHealth();
   if (!health.ok) {
@@ -537,39 +570,6 @@ app.get('/api/records/:resultId/resolve-data', async (req, res, next) => {
     next(error);
   }
 });
-
-app.get('/api/integrity/status', (_req, res) => {
-  res.json(integrityChecker.status());
-});
-
-app.post('/api/integrity/run', async (_req, res, next) => {
-  try {
-    res.json(await integrityChecker.runOnce('manual'));
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Demo-only: overwrites a record's on-chain CID or digest so the re-check can be
-// shown detecting tampering. Disabled unless INTEGRITY_DEMO_ENDPOINTS=true.
-if (parseBooleanValue(process.env.INTEGRITY_DEMO_ENDPOINTS, false)) {
-  app.post('/api/integrity/demo/tamper', async (req, res, next) => {
-    try {
-      const { resultId, field, value } = req.body || {};
-      if (!['cid', 'digest'].includes(field) || !trimmedField(value)) {
-        throw new Error('field (cid or digest) and value are required');
-      }
-      const { result: record } = await readLabResult(trimmedField(resultId), { peerName: selectedPeer(req) });
-      if (!record.resultData || record.resultData.storage !== 'ipfs') {
-        throw new Error(`An IPFS-backed record is required; ${resultId} is stored on-chain`);
-      }
-      record.resultData[field] = trimmedField(value);
-      res.json(await updateLabResult(record, { peerName: selectedPeer(req) }));
-    } catch (error) {
-      next(error);
-    }
-  });
-}
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
