@@ -39,6 +39,7 @@ const {
   approveWorkflowRun,
   getWorkflowState,
 } = require('./orchestrator/orchestrator');
+const { createIntegrityChecker } = require('./integrity-check');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
