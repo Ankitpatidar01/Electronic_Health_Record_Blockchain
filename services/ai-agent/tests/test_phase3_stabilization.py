@@ -14,6 +14,12 @@ import os
 import sys
 import json
 import py_compile
+import pytest
+
+@pytest.fixture
+def workspace():
+    """Pytest fixture providing the absolute workspace path."""
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 def test_syntax_compilation(workspace: str):
     print("\n[1/6] Testing Python Syntax Compilation:")
