@@ -262,6 +262,8 @@ services:
     ports:
       - "127.0.0.1:4010:4010"
     volumes:
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/src:/app/src
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/config:/app/config
       - h-dashboard-api-data:/app/orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/data
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/credentials:/app/orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/credentials:ro
     networks:

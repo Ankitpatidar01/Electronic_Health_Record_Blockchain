@@ -206,12 +206,12 @@ function createAggregationRouter(config) {
     const events = targetEvents(req, config);
     const metrics = req.dashboardPeer ? emptyPeerMetrics('24h', events.length > 0) : config.metrics.agentMetrics(req.dashboardAgent.id, events);
     const executions = groupExecutions(events, { offlineAgents: offlineAgentSet(config) }).slice(0, 10);
-    const visibleEvents = filterEventsForUser(req.dashboardUser, events, config.authorization).slice(-20).reverse();
+    const visibleEvents = filterEventsForUser(req.dashboardUser, events, config.authorization).slice(0, 20);
     res.json(success({
       agent,
       metrics,
       executions: { items: executions, status: eventsStatus(executions, config, agent.status.state === 'OK') },
-      events: { items: visibleEvents.map((event) => ({ eventId: event.eventId, type: event.severity, severity: event.severity, eventType: event.eventType, message: safeEventMessage(event), timestamp: event.timestamp, ...(event.mock ? { mock: true } : {}) })), status: eventsStatus(visibleEvents, config, agent.status.state === 'OK') },
+      events: { items: visibleEvents.map((event) => ({ eventId: event.eventId, type: event.severity, severity: event.severity, eventType: event.eventType, message: safeEventMessage(event), timestamp: event.timestamp, payload: event.payload, ...(event.mock ? { mock: true } : {}) })), status: eventsStatus(visibleEvents, config, agent.status.state === 'OK') },
     }));
   });
 

@@ -33,17 +33,42 @@ function KpiCard({ label, value }) {
   )
 }
 
+function formatEventTime(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  const now = new Date()
+  const isToday = d.toDateString() === now.toDateString()
+  if (isToday) {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  }
+  return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+}
+
 function ActivityFeed({ events }) {
   if (!events.length) return <p className="text-slate-500 dark:text-slate-400 text-sm">No recent activity events. Waiting for connected producer.</p>
   return (
     <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-      {events.slice(0, 10).map(ev => (
-        <li key={ev.eventId} className="py-2.5 flex items-start gap-3 text-sm">
-          <span className="text-slate-400 font-mono text-xs mt-0.5 shrink-0">{ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : '—'}</span>
-          <span className="text-slate-700 dark:text-slate-300">{ev.eventType?.replace(/_/g, ' ')}{ev.payload?.reasonCode ? ` · ${ev.payload.reasonCode}` : ''}</span>
-          {ev.mock && <span className="text-amber-600 dark:text-amber-400 text-xs font-semibold">MOCK</span>}
-        </li>
-      ))}
+      {events.slice(0, 10).map(ev => {
+        const isDown = ev.eventType?.includes('DOWN') || ev.severity === 'ERROR' || ev.payload?.status === 'DOWN'
+        const isUp = ev.eventType?.includes('STATUS_CHANGED') || ev.eventType?.includes('COMMITTED') || ev.payload?.status === 'UP' || ev.payload?.status === 'ONLINE'
+        return (
+          <li key={ev.eventId} className="py-2.5 flex items-start justify-between gap-3 text-sm">
+            <div className="flex items-center gap-3">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${isDown ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : isUp ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-blue-500'}`} />
+              <span className="text-slate-400 font-mono text-xs shrink-0">{formatEventTime(ev.timestamp)}</span>
+              <span className="text-slate-700 dark:text-slate-200 font-medium">
+                {ev.eventType?.replace(/_/g, ' ')}
+                {ev.payload?.reasonCode ? ` · ${ev.payload.reasonCode}` : ''}
+                {ev.payload?.status ? ` (${ev.payload.status})` : ''}
+              </span>
+              {ev.mock && <span className="text-amber-600 dark:text-amber-400 text-xs font-semibold">MOCK</span>}
+            </div>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${isDown ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300' : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'}`}>
+              {isDown ? 'Outage' : 'Healthy'}
+            </span>
+          </li>
+        )
+      })}
     </ul>
   )
 }
@@ -87,6 +112,8 @@ export function ClinicalAgentPage({ agentId, config }) {
   const metrics = data?.metrics?.metrics || {}
   const executions = data?.executions?.items || []
   const events = data?.events?.items || []
+  const substantiveEvents = events.filter(e => e.eventType !== 'AGENT_HEARTBEAT')
+  const displayEvents = substantiveEvents.length ? substantiveEvents : events
   const alertEvents = events.filter(e => ['TRANSACTION_FAILED', 'ACCESS_DENIED', 'CONSENT_REVOKED', 'AGENT_EXECUTION_FAILED'].includes(e.eventType))
 
   // Compute domain KPIs from metrics and events
@@ -159,7 +186,7 @@ export function ClinicalAgentPage({ agentId, config }) {
       {/* Activity feed */}
       <article className="premium-card p-6">
         <h2 className="font-bold text-slate-900 dark:text-white mb-4">Clinical Activity</h2>
-        <ActivityFeed events={events} />
+        <ActivityFeed events={displayEvents} />
         {!events.length && <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">Producer status: {data?.events?.status?.state || 'Active (Zero-PHI telemetry)'}</p>}
       </article>
 

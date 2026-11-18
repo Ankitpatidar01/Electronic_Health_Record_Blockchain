@@ -8,9 +8,9 @@ export function useDashboardData(path) {
   return { data, error, loading }
 }
 
-export function StatusPill({ state, label }) {
-  const raw = String(label || state || '—')
-  const isOk = raw === 'OK' || raw === 'ONLINE' || raw === 'CONNECTED' || raw === 'UP' || raw.includes('COMMITTED')
+export function StatusPill({ state, label, status }) {
+  const raw = String(label || state || status || '—')
+  const isOk = raw === 'OK' || raw === 'ONLINE' || raw === 'CONNECTED' || raw === 'UP' || raw === 'COMPLETED' || raw.includes('COMMITTED')
   const isDanger = raw === 'DOWN' || raw === 'ERROR' || raw === 'FAILED' || raw === 'CRITICAL'
   const pillClass = isOk ? 'is-ok' : isDanger ? 'is-danger' : 'is-warn'
   return (

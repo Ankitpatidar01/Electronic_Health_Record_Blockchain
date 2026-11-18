@@ -25,7 +25,7 @@ export function Layout({ user, onLogout }) {
           <img src="/logo.svg" alt="CareGrid NITW" className="h-8 w-8 object-contain" />
           <div><div className="font-bold tracking-tight text-slate-900 dark:text-white">CareGrid <span className="text-blue-600 dark:text-blue-400">Observatory</span></div><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-slate-400">NIT Warangal Health Center</div></div>
         </div>
-        <nav className="dashboard-nav flex flex-1 items-center gap-1 overflow-x-auto" aria-label="Dashboard navigation">
+        <nav className="dashboard-nav flex flex-1 items-center gap-1 overflow-x-auto no-scrollbar" aria-label="Dashboard navigation">
           {navItems.filter(item => allowedViews(user?.role).includes(item.key)).map(item => <NavLink key={item.path} to={item.path} className={({ isActive }) => `dashboard-nav-link ${isActive ? 'is-active' : ''}`}><item.icon size={16}/><span>{item.label}</span></NavLink>)}
         </nav>
         <div className="dashboard-user flex items-center gap-3">
