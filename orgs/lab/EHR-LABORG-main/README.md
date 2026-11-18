@@ -1,112 +1,122 @@
-# 🧪 Lab Organization Module
+# Diagnostics Lab Gateway & Multi-Agent Subsystem
 
-![Docker](https://img.shields.io/badge/Docker-Engine-2496ED?logo=docker&style=for-the-badge) ![Hyperledger Fabric](https://img.shields.io/badge/Hyperledger%20Fabric-v2.5-2F3134?logo=hyperledger&style=for-the-badge) ![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=nodedotjs&style=for-the-badge) ![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&style=for-the-badge) ![Gemini AI](https://img.shields.io/badge/Gemini-Agentic%20AI-8E75B2?logo=google-gemini&style=for-the-badge)
-
-## 📌 Executive Summary
-
-The **Lab Organization Module** operates a highly sophisticated `1 peer org + 1 orderer org` Fabric sub-network spanning three dedicated machines. It ingests test requests from the hospital, performs asynchronous OCR (Tesseract.js) and Gemini Agentic AI analysis on clinical PDFs, pins the encrypted payloads to IPFS, and securely commits immutable diagnostic metadata to the blockchain.
+Autonomous Multi-Agent Diagnostic Pipeline, Human-in-the-Loop Clinical Review, IPFS Storage, and Scheduled Ledger Integrity Verification for the EHR Blockchain Consortium.
 
 ---
 
-## 🧬 Network Architecture & AI Triaging
+## 🎯 Architecture & Capabilities
 
-The architecture splits governance, inference, and ledger committing across three physical/virtual nodes for high availability and strict auditability.
+The Lab Organization operates the `l-node-gateway` service (port `3006`), reverse-proxied at `http://localhost/lab/` and `http://localhost/api/lab/`. It is connected to the shared Hyperledger Fabric network on `ehrchannel` under **`DiagnosticsMSP`** and to the shared **Kubo IPFS node** (`ipfs.ehr.local:5001`).
 
 ```mermaid
-graph TD
-    subgraph Machine_1 [Machine 1: Control Plane & Triage]
-        M1_Peer[peer0.lab.example.com]
-        M1_Orderer[orderer.example.com]
-        IPFS[IPFS Kubo Node]
-        AI_A[Module A: OCR & Gemini Triage]
+flowchart TB
+  subgraph Ingress ["Web & Ingress Layer"]
+    User["Clinician / Technician"] --> Nginx["Nginx Reverse Proxy (:80)"]
+    Nginx --> ConsoleUI["Lab Web Console (/lab/ → :3006)"]
+    Nginx --> LabAPI["Lab REST API (/api/lab/ → :3006)"]
+  end
+
+  subgraph NodeGateway ["Node.js Gateway Subsystem (server.js)"]
+    ConsoleUI --> ExpressApp["Express Server (:3006)"]
+    LabAPI --> ExpressApp
+
+    subgraph AgentPipeline ["Multi-Agent Orchestration Pipeline"]
+      LabAgent["Lab Report Agent (lab-agent.js)<br/>Biomarker Parsing & Out-of-Range Flags"]
+      HistoryAgent["Longitudinal History Agent (history-agent.js)<br/>Multi-Visit Trend Deltas"]
+      Orchestrator["Human-in-the-Loop Orchestrator (orchestrator.js)<br/>Review Deck & Approval State Machine"]
     end
 
-    subgraph Machine_2 [Machine 2: Clinical Context]
-        M2_Peer[peer1.lab.example.com]
-        AI_B[Module B: Historical Decision Support]
+    subgraph BackgroundEngine ["Background Integrity Engine"]
+      IntegrityCheck["Scheduled Ledger-Integrity Rechecker<br/>(4-Hour Raw-Byte SHA-256 vs Fabric)"]
     end
 
-    subgraph Machine_3 [Machine_3: Governance]
-        M3_Peer[peer2.lab.example.com]
-        AI_C[Module C: Policy Guardrails & VCAP]
-    end
+    ExpressApp --> LabAgent
+    ExpressApp --> HistoryAgent
+    ExpressApp --> Orchestrator
+    ExpressApp --> IntegrityCheck
+  end
 
-    M1_Peer <--> M1_Orderer
-    M1_Peer <--> |Gossip| M2_Peer
-    M2_Peer <--> |Gossip| M3_Peer
+  subgraph ConsortiumLayer ["Decentralized Infrastructure"]
+    FabricPeer[("peer0.diagnostic :8051<br/>DiagnosticsMSP (ehrchannel)")]
+    KuboIPFS[("Kubo IPFS Node<br/>ipfs.ehr.local:5001 / :8090")]
+    Observatory["Dashboard API (:4010)<br/>Real-Time Telemetry"]
+  end
 
-    M1_Peer -.-> |Uploads PDF| IPFS
-    AI_A --> |Context| AI_B
-    AI_B --> |Decision| AI_C
-    AI_C --> |Final Commit| M1_Peer
+  Orchestrator -->|Pin Approved Diagnostic Reports| KuboIPFS
+  Orchestrator -->|Anchor Multihash CID & Digest| FabricPeer
+  IntegrityCheck -.->|Fetch Raw Bytes| KuboIPFS
+  IntegrityCheck -.->|Verify Against Ledger Hash| FabricPeer
+  ExpressApp -.->|Heartbeat /health| Observatory
 ```
 
 ---
 
-## 📦 Folder Structure
+## 🧩 Multi-Agent Subsystem Components
 
-```text
-EHR-LABORG-main/
-├── chaincode/
-│   └── lab-results/      # 📜 Smart Contract for Lab Result transactions
-├── client/
-│   └── node-gateway/     # 🌐 React Dashboard & Express API (Gemini/IPFS logic)
-├── config/               # ⚙️ Fabric configtx.yaml & crypto-config.yaml
-├── docker/               # 🐳 Docker Compose templates per machine
-├── env/                  # 🔐 Dynamic environment variables (machine1.env, etc.)
-├── scripts/              # 🚀 Chaincode lifecycle and channel join scripts
-└── templates/
-    └── hosts.final       # 🌐 Dynamic DNS host mappings (${MACHINE1_IP}, etc.)
-```
+### 1. Lab Report Analysis Agent (`agents/lab-agent.js`)
+- Parses unstructured laboratory text or structured JSON payloads.
+- Extracts biomarkers: Hemoglobin, White Blood Cells (WBC), Platelets, Fasting Blood Glucose, Serum Creatinine, Total Bilirubin, and AST/ALT liver enzymes.
+- Evaluates values against standard reference ranges and categorizes out-of-range flags (`CRITICAL_HIGH`, `HIGH`, `NORMAL`, `LOW`, `CRITICAL_LOW`).
+
+### 2. Longitudinal History Agent (`agents/history-agent.js`)
+- Queries historical records for a patient identifier across preceding visits.
+- Calculates trend velocity (e.g. rising Creatinine over 3 months indicating renal deterioration).
+- Generates clinical trajectory alerts feeding the clinician review deck.
+
+### 3. Human-in-the-Loop Orchestrator (`orchestrator/orchestrator.js`)
+- Manages diagnostic job lifecycle:
+  `SUBMITTED` $\rightarrow$ `ANALYZED` $\rightarrow$ `PENDING_REVIEW` $\rightarrow$ `APPROVED` / `REJECTED` $\rightarrow$ `ANCHORED`.
+- Strictly enforces human clinician review: reports **cannot** be anchored to the Fabric ledger without authenticated clinician sign-off.
+- On approval: pins report to IPFS, receives CID, computes SHA-256 digest, and submits transaction to `ehrchannel` under `DiagnosticsMSP`.
+
+### 4. Scheduled Ledger-Integrity Recheck Engine (`integrity-check.js`)
+- Runs as an automated background daemon every 4 hours.
+- Traverses all anchored diagnostic records on the ledger.
+- Streams raw payload bytes directly from IPFS (`http://ipfs.ehr.local:5001/api/v0/cat?arg=<CID>`).
+- Computes `SHA256(RawBytes)` in memory and confirms exact equality with the cryptographic digest recorded on Fabric.
+- Emits real-time verification status via `GET /api/integrity/status` and manual recheck trigger via `POST /api/integrity/run`.
 
 ---
 
-## ⚙️ Updated Implementation Details
+## 📡 REST API Reference
 
-* **Asynchronous Background Processing for IPFS/OCR**: Replaced the legacy synchronous `POST /api/records/ipfs` route. Heavy Tesseract.js PDF extractions and IPFS pinning now execute in an asynchronous background queue, returning `202 Accepted` to guarantee zero UI blocking.
-* **Dynamic Environment Variables in Docker Swarm (`hosts.final`)**: `127.0.0.1` hardcoded IPs have been fully migrated to dynamic variables (`${MACHINE1_IP}`, `${MACHINE2_IP}`, `${MACHINE3_IP}`). The module auto-resolves across distributed environments seamlessly.
-* **Missing Binaries Auto-Fetch**: Upgraded `common.sh` to automatically download missing Hyperledger Fabric binaries instead of hard-failing during startup.
-* **Agentic Peer Role (Lab)**: Operates the dedicated Lab Agent role in the 4-peer network architecture. Responsible for securely bridging raw clinical evidence (PDFs) with the immutable ledger.
-* **Roadmap: VCAP and FHIR R4 Interoperability**: Lab payloads are actively being transitioned to the FHIR R4 standard. We are also integrating Verifiable Clinical AI Provenance (VCAP) into Machine 3 (Module C) to cryptographically trace all Gemini-generated clinical decision support prompts and outputs.
+All routes are mounted at `/api/lab` through Nginx or directly at `http://localhost:3006`:
+
+| Method | Endpoint | Description |
+|:---|:---|:---|
+| `GET` | `/api/health` | Health check & system diagnostics (Monitored by Dashboard as `lab-gateway`) |
+| `GET` | `/api/meta` | Runtime metadata, channel info, and IPFS status |
+| `GET` | `/api/records` | List all anchored laboratory diagnostic records |
+| `GET` | `/api/records/:resultId` | Retrieve single diagnostic record by ID |
+| `POST` | `/api/records` | Submit new diagnostic record |
+| `POST` | `/api/orchestrator/jobs` | Submit diagnostic payload to the Multi-Agent pipeline |
+| `GET` | `/api/orchestrator/jobs/:jobId` | Retrieve pipeline status and agent analysis outputs |
+| `POST` | `/api/orchestrator/jobs/:jobId/approve` | Clinician sign-off: approves job, pins to IPFS, and anchors to Fabric |
+| `POST` | `/api/orchestrator/jobs/:jobId/reject` | Clinician rejects diagnostic report with review notes |
+| `GET` | `/api/history-agent/patients/:id` | Fetch longitudinal historical trend trajectory for a patient |
+| `GET` | `/api/integrity/status` | Current ledger integrity status and last recheck timestamp |
+| `POST` | `/api/integrity/run` | Trigger immediate on-demand ledger integrity recheck |
 
 ---
 
-## 🚀 Quick Start (Universal Orchestrator)
+## 🎨 Web Console Interface
 
-If deploying the entire federated network, simply execute the global orchestrator from the project root:
+Access the console at [http://localhost/lab/](http://localhost/lab/):
+- **Obsidian Dark Mode:** Consistent with the Vitalis and CareGrid design systems.
+- **Radiant Gradient Cards:** Cards feature subtle glowing gradients spreading from opposite corners (`rgba(56, 189, 248, 0.12)` to `rgba(168, 85, 247, 0.12)`).
+- **Human-in-the-Loop Review Deck:** Real-time table of pending reports with out-of-range biomarker highlights, historical trajectory deltas, and 1-click Approve / Reject controls.
+- **Ledger Integrity Status Badge:** Live indicator displaying total verified records, pass/fail state, and last verification timestamp.
+
+---
+
+## 🧪 Automated Test Suite
+
+Run the full Jest test suite:
 ```bash
-bash start-all.sh
+cd orgs/lab/EHR-LABORG-main/client/node-gateway
+npm test
 ```
-
-### Standalone Distributed Deployment
-
-To run the Lab network across 3 distinct VMs/machines:
-
-**1. Machine 1 (Control Plane)**
-```bash
-./scripts/download-fabric.sh
-./scripts/generate-artifacts.sh
-./scripts/start-machine1.sh
-./scripts/create-channel.sh
-```
-*Copy the repository to Machine 2 and 3 after generation.*
-
-**2. Machine 2 (Context Peer)**
-```bash
-./scripts/download-fabric.sh
-./scripts/start-machine2.sh
-./scripts/join-channel.sh peer1
-```
-
-**3. Machine 3 (Governance Peer)**
-```bash
-./scripts/download-fabric.sh
-./scripts/start-machine3.sh
-./scripts/join-channel.sh peer2
-```
-
-### Accessing the Portals
-Once the Node.js Gateway is active:
-* **Lab Gateway Dashboard**: `http://localhost:3000` (or your Machine 1 IP)
-* **Hyperledger Explorer**: `http://localhost:8081`
-* **IPFS Gateway**: `http://localhost:8080/ipfs`
+**Results:** **24 unit tests passing** across 3 test suites:
+- `agents/lab-agent.test.js`: 10 passed
+- `agents/history-agent.test.js`: 8 passed
+- `integrity-check.test.js`: 6 passed

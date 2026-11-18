@@ -6,6 +6,7 @@ const {
   getLabResultsByPatient,
   listGatewayPeers,
   readLabResult,
+  updateLabResult,
   updateLabStatus,
 } = require('./gateway');
 
@@ -53,6 +54,23 @@ async function main() {
       printResult(response.result);
       break;
     }
+    case 'tamper': {
+      // Demo/test helper for the integrity re-check: corrupts the on-chain digest
+      // or CID of an IPFS-backed record so the next re-check flags it.
+      const [resultId, field = 'digest'] = args;
+      const { result: record } = await readLabResult(resultId);
+      if (!record.resultData || record.resultData.storage !== 'ipfs') {
+        throw new Error(`${resultId} is not an IPFS-backed record`);
+      }
+      if (field === 'cid') {
+        record.resultData.cid = 'bafkreiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      } else {
+        record.resultData.digest = '0'.repeat(64);
+      }
+      const response = await updateLabResult(record);
+      printResult(response.result);
+      break;
+    }
     case 'peers': {
       printResult(listGatewayPeers());
       break;
@@ -80,6 +98,7 @@ function printUsage() {
   node index.js create <resultId> <patientId> <testCode> <collectedAt> <status> <resultDataJson>
   node index.js updateStatus <resultId> <status>
   node index.js peers
+  node index.js tamper <resultId> [digest|cid]   (demo: corrupt on-chain digest/CID)
 
 Examples:
   node index.js getAll

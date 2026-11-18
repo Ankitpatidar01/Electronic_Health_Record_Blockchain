@@ -35,18 +35,19 @@ export async function loginUser(username, password) {
   throw new Error('Invalid credentials')
 }
 
+// Tone classes for the shared .status-pill component.
 export const STATUS_COLORS = {
-  OPEN:              'bg-slate-100 text-slate-700',
-  WITH_DOCTOR:       'bg-blue-100 text-blue-700',
-  WITH_NURSE:        'bg-violet-100 text-violet-700',
-  WITH_LAB:          'bg-amber-100 text-amber-700',
-  VISIT_FINALIZED:   'bg-emerald-100 text-emerald-700',
-  RECORD_FINALIZED:  'bg-teal-100 text-teal-700',
-  CLAIM_SUBMITTED:   'bg-orange-100 text-orange-700',
-  CLAIM_UNDER_AUDIT: 'bg-yellow-100 text-yellow-700',
-  CLAIM_APPROVED:    'bg-green-100 text-green-700',
-  CLAIM_REJECTED:    'bg-red-100 text-red-700',
-  DISCHARGED:        'bg-gray-100 text-gray-500',
+  OPEN:              'is-neutral',
+  WITH_DOCTOR:       'is-info',
+  WITH_NURSE:        'is-violet',
+  WITH_LAB:          'is-warn',
+  VISIT_FINALIZED:   'is-ok',
+  RECORD_FINALIZED:  'is-ok',
+  CLAIM_SUBMITTED:   'is-warn',
+  CLAIM_UNDER_AUDIT: 'is-warn',
+  CLAIM_APPROVED:    'is-ok',
+  CLAIM_REJECTED:    'is-danger',
+  DISCHARGED:        'is-neutral',
 }
 
 export const STATUS_LABELS = {

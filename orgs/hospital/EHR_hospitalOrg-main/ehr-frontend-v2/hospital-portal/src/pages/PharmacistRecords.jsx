@@ -50,7 +50,7 @@ export function PharmacistPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: 'Fraunces, serif' }}>Pharmacy</h1>
+          <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Pharmacy</h1>
           <p className="text-sm text-slate-500 mt-0.5">Verify prescription and dispense medication</p>
         </div>
         {!visit && <Button variant="secondary" onClick={loadAll} loading={listLoading}>Refresh</Button>}
@@ -63,7 +63,7 @@ export function PharmacistPage() {
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Filter by Visit ID or Patient ID..."
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </Card>
 
@@ -115,7 +115,7 @@ export function PharmacistPage() {
                 <StatusBadge status={visit.status} />
               </div>
               {canDispense && (
-                <Button className="bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                <Button className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
                   onClick={() => setModal(true)}>
                   <Pill size={14} /> Dispense Medication
                 </Button>
@@ -140,8 +140,8 @@ export function PharmacistPage() {
                     </div>
                     <div className="space-y-2">
                       {latest.medications?.map((m, i) => (
-                        <div key={i} className="flex items-center gap-3 bg-teal-50 border border-teal-100 rounded-lg px-3 py-2.5">
-                          <Pill size={14} className="text-teal-600 flex-shrink-0" />
+                        <div key={i} className="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5">
+                          <Pill size={14} className="text-blue-600 flex-shrink-0" />
                           <span className="text-sm font-medium text-slate-800">{m}</span>
                         </div>
                       ))}
@@ -201,12 +201,12 @@ function DispenseModal({ visit, clinical, api, onClose, onDone }) {
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-slate-700">Dispense Details</label>
           <textarea value={details} onChange={e => setDetails(e.target.value)} rows={3} required
-            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none" />
+            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
         </div>
         {error && <Alert type="error">{error}</Alert>}
         <div className="flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" className="bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 text-sm font-medium rounded-lg transition-colors" loading={loading}>
+          <Button type="submit" className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 text-sm font-medium rounded-lg transition-colors" loading={loading}>
             Confirm Dispense
           </Button>
         </div>
@@ -262,7 +262,7 @@ export function MedRecordsPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: 'Fraunces, serif' }}>Medical Records</h1>
+          <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Medical Records</h1>
           <p className="text-sm text-slate-500 mt-0.5">Review and finalize official patient records</p>
         </div>
         {!visit && <Button variant="secondary" onClick={loadAll} loading={listLoading}>Refresh</Button>}

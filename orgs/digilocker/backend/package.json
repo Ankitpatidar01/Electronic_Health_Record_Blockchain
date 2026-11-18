@@ -1,0 +1,22 @@
+{
+  "name": "ehr-digilocker-service",
+  "version": "1.0.0",
+  "description": "DigiLocker vault service — pulls issued documents with patient consent, encrypts them, pins the ciphertext to IPFS and anchors the hashes on Hyperledger Fabric",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js",
+    "test": "node --test test/service.test.js test/units.test.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.10.1",
+    "@hyperledger/fabric-gateway": "^1.4.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "express-rate-limit": "^7.2.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

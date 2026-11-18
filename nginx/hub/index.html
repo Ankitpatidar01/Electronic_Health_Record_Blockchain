@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f8fafc" />
+    <meta name="description" content="CareGrid NITW — Smart care, absolute privacy—your health records, decentralized and immutable." />
+    <title>CareGrid NITW | NIT Warangal Health Center</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/hub.css?v=5" />
+    <script>
+      (function() {
+        try {
+          var cookie = document.cookie.match(/(?:^|; )ehr_appearance=(light|dark)/);
+          var theme = (cookie && cookie[1]) || localStorage.getItem('ehr_appearance') || 'light';
+          document.documentElement.dataset.theme = theme;
+          if (theme === 'dark') document.documentElement.classList.add('dark');
+          else document.documentElement.classList.remove('dark');
+        } catch (e) {}
+      })();
+    </script>
+    <script defer src="/hub.js?v=5"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to services</a>
+
+    <!-- Topbar Navigation matching reference design -->
+    <header class="topbar">
+      <a class="brand-wrap" href="/" aria-label="CareGrid NITW Home">
+        <div class="brand-icon">
+          <img src="/logo.svg" alt="CareGrid NITW Logo" />
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">CareGrid NITW</span>
+          <span class="brand-subtitle">NIT WARANGAL HEALTH CENTER</span>
+        </div>
+      </a>
+
+      <nav class="topbar-nav" aria-label="Consortium Navigation">
+        <a href="#overview" class="nav-link active">Overview</a>
+        <a href="#care" class="nav-link">Portals</a>
+        <a href="/dashboard/" class="nav-link">Live Telemetry</a>
+        <a href="#security" class="nav-link">Security</a>
+      </nav>
+
+      <div class="topbar-right">
+        <button class="theme-toggle-pill" id="theme-toggle" type="button" aria-label="Toggle light or dark theme" aria-pressed="false">
+          <div class="toggle-switch-track">
+            <div class="toggle-switch-knob"></div>
+          </div>
+          <span class="toggle-label">Light Mode</span>
+        </button>
+
+        <div class="user-avatar-wrap" title="NIT Warangal Health Center Staff">
+          <img src="/assets/doctor-desk.jpg" alt="NITW Health Center Avatar" onerror="this.src='/favicon.svg'" />
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Shell -->
+    <main id="main" class="shell">
+      <!-- Centered Hero matching reference image -->
+      <section class="hero-section" id="overview" aria-labelledby="hero-title">
+        <h1 class="hero-brand" id="hero-title">CareGrid NITW</h1>
+        <h2 class="hero-tagline">
+          Smart care, absolute privacy—your health records, <span class="highlight-blue">decentralized and immutable.</span>
+        </h2>
+        <p class="hero-subtagline">
+          Empowering the NIT Warangal Health Center with next-gen Hyperledger Fabric security and AI-driven clinical intelligence.
+        </p>
+
+        <!-- Frosted Glass System Check Badge -->
+        <div class="system-check-pill" id="system-check">
+          <div class="system-check-label">SYSTEM CHECK</div>
+          <div class="system-check-status">
+            <span class="system-dot-live" id="system-dot"></span>
+            <span id="system-state-count">6 of 7 services responding</span>
+          </div>
+        </div>
+
+        <!-- Filter Tabs (Quick Nav) -->
+        <div class="filter-tabs" aria-label="Workspace Quick Filters">
+          <button class="tab-pill active" data-filter="care" type="button">
+            Care &amp; records <span class="pill-count">02</span>
+          </button>
+          <button class="tab-pill" data-filter="operations" type="button">
+            Operations <span class="pill-count">02</span>
+          </button>
+          <button class="tab-pill" data-filter="partners" type="button">
+            Partner services <span class="pill-count">03</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Category 1: Care & records -->
+      <section class="service-section-wrap" id="care" data-category="care" aria-label="Clinical Workspaces">
+        <div class="category-header">
+          <span class="category-eyebrow">CLINICAL WORKSPACES</span>
+        </div>
+
+        <div class="cards-grid">
+          <!-- Card 1: Hospital Main Gateway -->
+          <article class="hub-card">
+            <div>
+              <h3 class="hub-card-title">Hospital Main Gateway</h3>
+              <p class="hub-card-desc">
+                Multi-role clinical access: (Doctor, Nurse, Reception), Pharmacy, Records.
+              </p>
+            </div>
+            <div>
+              <div class="hub-card-middle">
+                <div class="role-badges">
+                  <a class="role-badge doctor" href="http://localhost:5173/?role=doctor" target="_blank" rel="noopener">Doctor</a>
+                  <a class="role-badge nurse" href="http://localhost:5173/?role=nurse" target="_blank" rel="noopener">Nurse</a>
+                  <a class="role-badge reception" href="http://localhost:5173/?role=receptionist" target="_blank" rel="noopener">Reception</a>
+                  <a class="role-badge admin" href="http://localhost:5173/?role=admin" target="_blank" rel="noopener">Admin</a>
+                </div>
+                <div class="vital-stat">
+                  <span class="heart-pulse-icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 16" fill="none" class="pulse-svg">
+                      <path d="M1 9h6l2-6 3 11 3-8 2 5 2-2h12" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  <div class="vital-text">
+                    <span class="vital-num">124</span>
+                    <span class="vital-unit">vital</span>
+                  </div>
+                </div>
+              </div>
+              <div class="hub-card-footer">
+                <span class="footer-note">Role-based Access</span>
+                <a href="http://localhost:5173/" target="_blank" rel="noopener" class="card-action-link">
+                  Open Hospital Gateway <span aria-hidden="true">→</span>
+                </a>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 2: Patient Portal -->
+          <article class="hub-card">
+            <div>
+              <h3 class="hub-card-title">Patient Portal</h3>
+              <p class="hub-card-desc">
+                Patient self-service, consent, and health timeline.
+              </p>
+            </div>
+            <div>
+              <div class="hub-card-middle">
+                <div class="role-badges">
+                  <span class="role-badge patient-access">Patient access</span>
+                </div>
+                <div class="vital-stat">
+                  <span class="heart-pulse-icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 16" fill="none" class="pulse-svg">
+                      <path d="M1 9h6l2-5 3 9 3-6 2 4 2-2h12" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  <div class="vital-text">
+                    <span class="vital-num">136</span>
+                    <span class="vital-unit">vital</span>
+                  </div>
+                </div>
+              </div>
+              <div class="hub-card-footer">
+                <span class="footer-note">Patient access</span>
+                <a href="http://localhost:5174/" target="_blank" rel="noopener" class="card-action-link">
+                  Open Patient Portal <span aria-hidden="true">→</span>
+                </a>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Category 2: Operations -->
+      <section class="service-section-wrap" id="operations" data-category="operations" aria-label="Monitoring & Infrastructure">
+        <div class="category-header">
+          <span class="category-eyebrow">MONITORING &amp; INFRASTRUCTURE</span>
+        </div>
+
+        <div class="cards-grid">
+          <!-- Card 3: System Dashboard -->
+          <article class="hub-card">
+            <div>
+              <div class="card-top-status">
+                <div class="card-icon-box blue-box" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3v18h18M7 16l4-5 4 3 6-8"/>
+                  </svg>
+                </div>
+                <span class="status-pill-live" data-check="dashboard">
+                  <span class="live-dot"></span><span>Responding</span>
+                </span>
+              </div>
+              <h3 class="hub-card-title">System Dashboard</h3>
+              <p class="hub-card-desc">
+                Real-time overview of service status, network activity, and events.
+              </p>
+            </div>
+            <div class="hub-card-footer">
+              <span class="footer-note">Operations view</span>
+              <a href="/dashboard/" class="card-action-link">
+                Open system dashboard <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </article>
+
+          <!-- Card 4: Document Service (IPFS & DigiLocker) -->
+          <article class="hub-card">
+            <div>
+              <div class="card-top-status">
+                <div class="card-icon-box purple-box" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 0v9m8-4.5-8 4.5m-8-4.5 8 4.5m0 0v9"/>
+                  </svg>
+                </div>
+                <span class="badge-tag purple-tag">DigiLocker</span>
+              </div>
+              <h3 class="hub-card-title">Document Service (IPFS &amp; DigiLocker)</h3>
+              <p class="hub-card-desc">
+                IPFS connection and document storage gateway.
+              </p>
+            </div>
+            <div class="hub-card-footer">
+              <span class="footer-note">Infrastructure</span>
+              <a href="http://localhost:8090/" target="_blank" rel="noopener" class="card-action-link">
+                Open IPFS gateway <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Category 3: Partner services -->
+      <section class="service-section-wrap" id="partners" data-category="partners" aria-label="Connected Partner Organizations">
+        <div class="category-header">
+          <span class="category-eyebrow">CONNECTED ORGANIZATIONS</span>
+        </div>
+
+        <div class="cards-grid three-col">
+          <!-- Card 5: Laboratory & Diagnostics -->
+          <article class="hub-card">
+            <div>
+              <div class="card-top-status">
+                <div class="card-icon-box green-box" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 3h6m-5 0v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3m-7 11h12"/>
+                  </svg>
+                </div>
+                <span class="status-pill-live" data-check="lab">
+                  <span class="live-dot"></span><span>Checking</span>
+                </span>
+              </div>
+              <h3 class="hub-card-title">Laboratory &amp; Diagnostics</h3>
+              <p class="hub-card-desc">
+                Diagnostic control deck with multi-disease AI clinical review.
+              </p>
+            </div>
+            <div class="hub-card-footer">
+              <span class="footer-note">Partner portal</span>
+              <a href="/lab/" target="_blank" rel="noopener" class="card-action-link">
+                Open lab service <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </article>
+
+          <!-- Card 6: Pharmacy Workspace -->
+          <article class="hub-card">
+            <div>
+              <div class="card-top-status">
+                <div class="card-icon-box amber-box" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 10h16v10H4zM3 10l2-6h14l2 6M12 13v4m-2-2h4"/>
+                  </svg>
+                </div>
+                <span class="status-pill-live" data-check="pharmacy">
+                  <span class="live-dot"></span><span>Checking</span>
+                </span>
+              </div>
+              <h3 class="hub-card-title">Pharmacy Workspace</h3>
+              <p class="hub-card-desc">
+                Medication services, inventory, and decentralized dispensing.
+              </p>
+            </div>
+            <div class="hub-card-footer">
+              <span class="footer-note">Separate pharmacy access</span>
+              <a href="http://localhost:5175/" target="_blank" rel="noopener" class="card-action-link">
+                Open pharmacy portal <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </article>
+
+          <!-- Card 7: DigiLocker Vault -->
+          <article class="hub-card">
+            <div>
+              <div class="card-top-status">
+                <div class="card-icon-box purple-box" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <span class="status-pill-live" data-check="digilocker">
+                  <span class="live-dot"></span><span>Checking</span>
+                </span>
+              </div>
+              <h3 class="hub-card-title">DigiLocker Vault</h3>
+              <p class="hub-card-desc">
+                Pull issued documents, encrypt to IPFS and anchor fingerprints on the ledger.
+              </p>
+            </div>
+            <div class="hub-card-footer">
+              <span class="footer-note">Patient access</span>
+              <a href="http://localhost:5174/digilocker" target="_blank" rel="noopener" class="card-action-link">
+                Open document vault <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </article>
+        </div>
+
+        <!-- More pharmacy workspaces collapsible drawer -->
+        <details class="more-services">
+          <summary>
+            More pharmacy workspaces <span>5 available</span>
+          </summary>
+          <div class="more-grid">
+            <a href="http://localhost:3001/" target="_blank" rel="noopener">Pharmacy manager <span>↗</span></a>
+            <a href="http://localhost:3002/" target="_blank" rel="noopener">Pharmacy employee <span>↗</span></a>
+            <a href="http://localhost:3003/" target="_blank" rel="noopener">Inventory <span>↗</span></a>
+            <a href="http://localhost:3004/" target="_blank" rel="noopener">Pharmacy patient <span>↗</span></a>
+            <a href="http://localhost:3005/" target="_blank" rel="noopener">Billing <span>↗</span></a>
+          </div>
+        </details>
+      </section>
+
+      <!-- Security & Privacy note -->
+      <aside class="privacy-note" id="security" aria-label="Security and Privacy Details">
+        <span class="privacy-icon" aria-hidden="true">✓</span>
+        <p>
+          <strong>Privacy by design · Zero-PHI Compliance</strong><br />
+          This Consortium Launchpad Hub verifies HTTP network health and service reachability only. Protected Health Information (PHI) is never loaded, cached, or rendered on this page.
+        </p>
+      </aside>
+    </main>
+
+    <!-- Global Footer -->
+    <footer>
+      <span>CareGrid NITW · NIT Warangal Health Center</span>
+      <span>NIT Warangal Campus Health Center · Hyperledger Fabric Network · Zero-PHI Architecture</span>
+    </footer>
+  </body>
+</html>

@@ -1,81 +1,75 @@
-# 🔐 Patient Digilocker Module
+# DigiLocker vault
 
-![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&style=for-the-badge) ![Hyperledger Fabric](https://img.shields.io/badge/Hyperledger%20Fabric-v2.5-2F3134?logo=hyperledger&style=for-the-badge) ![Cryptography](https://img.shields.io/badge/AES--256--GCM-Encryption-red?logo=letsencrypt&style=for-the-badge) ![IPFS](https://img.shields.io/badge/IPFS-Kubo-65C2CB?logo=ipfs&style=for-the-badge) ![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=nodedotjs&style=for-the-badge)
-
-## 📌 Executive Summary
-
-The **Patient Digilocker Module** enforces ultimate Patient Sovereignty by providing a Zero-Knowledge personal data vault. It guarantees that patient files are encrypted (via AES-256-GCM) on the client side before they ever touch decentralized IPFS storage. Cryptographic hashes and resulting CIDs are immutably anchored to the Hyperledger Fabric ledger, ensuring no single entity—not even the hospital—can alter or read the patient's records without explicit consent.
-
----
-
-## 🧬 Secure Data Vault Architecture
+Lets a patient bring documents issued to their DigiLocker (lab reports, prescriptions, discharge summaries) into their health record. The document is encrypted before it is stored, the ciphertext goes to IPFS, and only hashes and the CID are anchored on Hyperledger Fabric.
 
 ```mermaid
-graph TD
-    subgraph Patient_Browser [Client Device]
-        UI[Digilocker Portal]
-        Crypto[AES-256-GCM Encryptor]
-        Hash[SHA-256 Hasher]
-    end
-
-    subgraph Backend_Gateway
-        API[Digilocker API]
-    end
-
-    subgraph Decentralized_Storage
-        IPFS[IPFS Kubo Node]
-        Ledger[(Hyperledger Fabric Ledger)]
-    end
-
-    UI --> |Uploads PDF| Crypto
-    UI --> |Generates Hash| Hash
-    Crypto --> |Sends Ciphertext| API
-    Hash --> |Sends Hash & Meta| API
-    
-    API --> |Pins Ciphertext| IPFS
-    IPFS --> |Returns CID| API
-    API --> |Commits CID & Hash| Ledger
+flowchart LR
+  Portal["Patient portal\n/digilocker"] -->|patient JWT| Svc["digilocker-service :4007"]
+  Svc -->|OAuth 2.0 + PKCE| DL["DigiLocker\n(sandbox simulator or live)"]
+  Svc -->|AES-256-GCM envelope| IPFS["ipfs-service → Kubo"]
+  Svc -->|DigiLockerContract:AnchorDocument| Fabric["Fabric ehrchannel / ehr"]
+  Svc -.->|zero-PHI events| Dash["dashboard-api /internal/events"]
 ```
 
----
+## Parts
 
-## 📦 Folder Structure
+| Part | Location |
+| --- | --- |
+| Service (Express) | `orgs/digilocker/backend` |
+| Chaincode contract | `orgs/hospital/EHR_hospitalOrg-main/ehr-chaincode-v3/lib/digilockerContract.js` |
+| Patient UI | `orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/patient-portal/src/pages/DigiLocker.jsx` |
+| Gateway route | `nginx/nginx.conf` → `/api/digilocker/` |
 
-```text
-digilocker/
-├── chaincode/            # 📜 Smart Contracts anchoring CIDs, Hashes, and Consent
-├── backend/              # 🌐 Express API Gateway (IPFS bridging)
-└── frontend/             # 📱 React UI for patient access and local decryption
-```
+## Modes
 
----
+- **sandbox** (default): a built-in simulator stands in for DigiLocker. Its consent page says it is a simulator, and the five documents it serves are generated PDFs marked "SANDBOX SAMPLE". Encryption, IPFS storage and ledger anchoring are the real code paths.
+- **live**: the real DigiLocker OAuth 2.0 + PKCE flow. Needs `DIGILOCKER_CLIENT_ID` and `DIGILOCKER_CLIENT_SECRET` issued to a registered DigiLocker partner, and `<DIGILOCKER_PUBLIC_URL>/link/callback` registered as the redirect URI. This path has not been exercised against DigiLocker; the endpoints are configurable in `.env` because DigiLocker versions them.
 
-## ⚙️ Updated Implementation Details
+## Before first use
 
-* **Asynchronous Processing**: Inherits the ecosystem's background async workers for IPFS pinning, preventing blocking timeouts on the patient portal.
-* **Orchestration**: Natively compatible with the `start-all.sh` global boot sequence. 
-* **Dynamic Docker Swarm Env**: Compatible with the ecosystem's dynamic DNS / environment variable approach (`hosts.final`) for zero-friction cloud deployment.
-* **Agentic Role Isolation**: Digilocker is functionally isolated from the 4 primary clinical agentic roles (Doctor, Nurse, Pharmacist, Lab). It represents the *Patient* as the ultimate root authority of ABAC grants.
-* **Roadmap: FHIR R4 & VCAP**: Moving forward, the Digilocker will natively parse FHIR R4 JSON schemas. The UI will also expose Verifiable Clinical AI Provenance (VCAP) logs, allowing the patient to transparently see when and how Gemini AI interacted with their anonymized records during hospital visits.
+1. `node scripts/init-env.js` at the repository root (creates `.env` with `JWT_SECRET`, `IPFS_SERVICE_KEY`, `DIGILOCKER_VAULT_KEY`, `DASHBOARD_SERVICE_KEY`).
+2. Upgrade the `ehr` chaincode so the new `DigiLockerContract` is on the channel. Use the next free sequence number:
 
----
+   ```bash
+   cd orgs/hospital/EHR_hospitalOrg-main/ehr-network
+   bash scripts/deployChaincode.sh --channel ehrchannel --chaincode-name ehr \
+     --chaincode-path ../ehr-chaincode-v3 --version 3.1 --sequence <current + 1>
+   ```
 
-## 🚀 Quick Start
+   Until this is done the vault page reports that anchoring failed.
+3. `./start.sh` starts `h-digilocker-service` with the other services.
 
-> **Note:** If you are running `start-all.sh`, the Digilocker stack is automatically orchestrated.
+## API
 
-To develop on the Digilocker independently:
+All routes except `/health`, `/link/callback` and `/sandbox/*` require the patient portal's bearer token.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/health` | Service, IPFS and Fabric status |
+| GET | `/status` | Is this patient's locker linked |
+| POST | `/link/start` | Returns the consent URL to open |
+| GET | `/link/callback` | OAuth redirect target; returns to the portal |
+| DELETE | `/link` | Unlink |
+| GET | `/documents` | Documents issued to the linked locker, with anchored state |
+| POST | `/documents/pull` | Pull → encrypt → IPFS → anchor one document |
+| GET | `/vault` | Anchored documents (from the ledger) |
+| GET | `/vault/:docId/verify` | Re-hash the stored copy and compare with the ledger |
+| GET | `/vault/:docId/download` | Decrypt and download |
+| GET | `/vault/:docId/history` | Ledger history of the anchor |
+| DELETE | `/vault/:docId` | Withdraw (marks REVOKED on-chain, unpins from IPFS) |
+
+## Security model
+
+- Each document has its own key: HKDF-SHA256 over `DIGILOCKER_VAULT_KEY` with a random per-document salt, bound to the patient and document id as authenticated data. Ciphertext on IPFS is useless without the vault key.
+- **The vault key is held by the service, not by the patient.** Whoever operates the service can decrypt. Losing the key makes every stored document unrecoverable; rotating it is not implemented.
+- On-chain: document type, issuer id, SHA-256 of the plaintext and of the ciphertext, CID, a hash of the DigiLocker URI, timestamps. No names, no document content.
+- OAuth tokens are sealed at rest; name, date of birth and gender returned by DigiLocker are discarded.
+- Reads on-chain are limited to the patient (via the `patientService` identity), admins, and doctors or nurses holding the patient's active EHR consent grant.
+- Largest document: 3 MB (`DIGILOCKER_MAX_DOCUMENT_BYTES`).
+
+## Tests
 
 ```bash
-# 1. Start the backend
-cd backend
-npm install
-npm run dev
-
-# 2. Start the frontend
-cd ../frontend
-npm install
-npm run dev
+cd orgs/digilocker/backend && npm install && npm test            # service: 10 tests, Fabric and IPFS faked
+cd orgs/hospital/EHR_hospitalOrg-main/ehr-chaincode-v3 && node --test test/digilockerContract.test.js   # contract: 3 tests, in-memory stub
 ```
-
-The Patient Portal will be available locally via your specified Vite port (defaults to `5176` based on network architecture mappings).

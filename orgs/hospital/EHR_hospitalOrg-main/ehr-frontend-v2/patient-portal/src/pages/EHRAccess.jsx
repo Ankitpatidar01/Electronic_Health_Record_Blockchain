@@ -105,7 +105,7 @@ export function EHRPage() {
             <Download size={14} /> Download PDF
           </button>
           <button onClick={openEdit}
-            className="flex items-center gap-1.5 text-sm text-teal-600 font-semibold hover:text-teal-700">
+            className="flex items-center gap-1.5 text-sm text-blue-600 font-semibold hover:text-blue-700">
             <Edit size={14} /> Edit Contact
           </button>
         </div>
@@ -115,9 +115,9 @@ export function EHRPage() {
 
       {/* IPFS Badge */}
       {cid && (
-        <div className="flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-xl px-4 py-2.5">
-          <Shield size={14} className="text-teal-600 flex-shrink-0" />
-          <p className="text-xs text-teal-700 font-mono truncate">{cid}</p>
+        <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5">
+          <Shield size={14} className="text-blue-600 flex-shrink-0" />
+          <p className="text-xs text-blue-700 font-mono truncate">{cid}</p>
         </div>
       )}
 
@@ -157,7 +157,7 @@ export function EHRPage() {
           <Card className="p-5">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Emergency Contact</p>
-              <button onClick={openEdit} className="text-xs text-teal-600 font-semibold"><Edit size={12} /></button>
+              <button onClick={openEdit} className="text-xs text-blue-600 font-semibold"><Edit size={12} /></button>
             </div>
             {ehr.emergencyContact?.name ? (
               <div className="grid grid-cols-2 gap-3">
@@ -171,7 +171,7 @@ export function EHRPage() {
             ) : (
               <div className="text-center py-3">
                 <p className="text-sm text-slate-400">No emergency contact set</p>
-                <button onClick={openEdit} className="text-xs text-teal-600 font-semibold mt-1">Add now →</button>
+                <button onClick={openEdit} className="text-xs text-blue-600 font-semibold mt-1">Add now →</button>
               </div>
             )}
           </Card>
@@ -192,7 +192,7 @@ export function EHRPage() {
             emptyMsg="None recorded" />
 
           {/* Immunizations */}
-          <EHRSection icon={Syringe} title="Immunizations" color="text-teal-500" items={ehr.immunizations}
+          <EHRSection icon={Syringe} title="Immunizations" color="text-blue-500" items={ehr.immunizations}
             renderItem={i => typeof i === 'string' ? i : `${i.vaccine} (${formatDate(i.date)})`}
             emptyMsg="None recorded" />
 
@@ -206,7 +206,7 @@ export function EHRPage() {
                   <span className="bg-slate-100 text-slate-500 text-xs font-medium px-2 py-0.5 rounded-full">{ehr.medicalHistory.length}</span>
                 )}
               </div>
-              <button onClick={() => setOcrModal(true)} className="flex items-center gap-1.5 text-xs text-teal-600 font-bold hover:bg-teal-50 px-2 py-1.5 rounded-lg transition-colors">
+              <button onClick={() => setOcrModal(true)} className="flex items-center gap-1.5 text-xs text-blue-600 font-bold hover:bg-blue-50 px-2 py-1.5 rounded-lg transition-colors">
                 <UploadCloud size={14} /> OCR Import
               </button>
             </div>
@@ -236,8 +236,8 @@ export function EHRPage() {
                       )}
                       {item.sourceType === 'ocr' && (
                         <div className="mt-3 flex items-center gap-1.5">
-                          <CheckCircle2 size={12} className="text-teal-500" />
-                          <span className="text-[10px] text-teal-600 font-bold">Verified OCR Import</span>
+                          <CheckCircle2 size={12} className="text-blue-500" />
+                          <span className="text-[10px] text-blue-600 font-bold">Verified OCR Import</span>
                           {item.sourceCid && (
                             <span className="text-[10px] text-slate-400 ml-auto font-mono">Source: {item.sourceCid.slice(0, 8)}...</span>
                           )}
@@ -281,7 +281,7 @@ export function EHRPage() {
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {[...history].reverse().map((h, i) => (
               <div key={i} className="flex items-start gap-3 py-3 border-b border-slate-50 last:border-0">
-                <div className="w-2 h-2 bg-teal-400 rounded-full mt-1.5 flex-shrink-0" />
+                <div className="w-2 h-2 bg-blue-400 rounded-full mt-1.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="font-mono text-xs text-slate-600 truncate">{h.cid}</p>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -313,7 +313,7 @@ export function EHRPage() {
           {error && <Alert type="error">{error}</Alert>}
           <div className="flex justify-end gap-3">
             <Button variant="secondary" size="sm" onClick={() => setEditModal(false)}>Cancel</Button>
-            <Button variant="teal" size="sm" loading={saving} onClick={saveContact}>Save Changes</Button>
+            <Button variant="accent" size="sm" loading={saving} onClick={saveContact}>Save Changes</Button>
           </div>
         </div>
       </Modal>
@@ -322,7 +322,7 @@ export function EHRPage() {
       <Modal open={ocrModal} onClose={() => { setOcrModal(false); setOcrFile(null); setOcrResult(null) }} title="Medical Doc OCR Import" size="md">
         {!ocrResult ? (
           <div className="space-y-4">
-            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center hover:border-teal-300 transition-colors bg-slate-50">
+            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center hover:border-blue-300 transition-colors bg-slate-50">
               <input type="file" id="ocr-upload" hidden accept="image/*,application/pdf"
                 onChange={e => setOcrFile(e.target.files[0])} />
               <label htmlFor="ocr-upload" className="cursor-pointer">
@@ -334,14 +334,14 @@ export function EHRPage() {
             {error && <Alert type="error">{error}</Alert>}
             <div className="flex justify-end gap-3">
               <Button variant="secondary" size="sm" onClick={() => { setOcrModal(false); setOcrFile(null) }}>Cancel</Button>
-              <Button variant="teal" size="sm" loading={ocrLoading} disabled={!ocrFile} onClick={handleOcrUpload}>Start OCR Process</Button>
+              <Button variant="accent" size="sm" loading={ocrLoading} disabled={!ocrFile} onClick={handleOcrUpload}>Start OCR Process</Button>
             </div>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="bg-teal-50 border border-teal-100 rounded-xl p-3 flex items-center gap-2">
-              <Microscope size={18} className="text-teal-600" />
-              <p className="text-xs text-teal-800 font-medium">Text successfully extracted. Please review and edit if necessary.</p>
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-center gap-2">
+              <Microscope size={18} className="text-blue-600" />
+              <p className="text-xs text-blue-800 font-medium">Text successfully extracted. Please review and edit if necessary.</p>
             </div>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {Object.keys(ocrResult.attributes).map(key => (
@@ -354,7 +354,7 @@ export function EHRPage() {
                       attributes: { ...ocrResult.attributes, [key]: e.target.value } 
                     })}
                     placeholder={`no ${key} detected`}
-                    className="w-full px-3 py-2 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    className="w-full px-3 py-2 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               ))}
@@ -364,7 +364,7 @@ export function EHRPage() {
               <textarea 
                 value={ocrResult.text}
                 onChange={e => setOcrResult({ ...ocrResult, text: e.target.value })}
-                className="w-full h-32 p-4 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none font-mono"
+                className="w-full h-32 p-4 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none font-mono"
               />
             </div>
             {error && <Alert type="error">{error}</Alert>}
@@ -372,7 +372,7 @@ export function EHRPage() {
               <span className="text-[10px] text-slate-400 font-mono">Source CID: {ocrResult.sourceCid?.slice(0, 10)}...</span>
               <div className="flex gap-3">
                 <Button variant="secondary" size="sm" onClick={() => setOcrResult(null)}>Try Another</Button>
-                <Button variant="teal" size="sm" loading={saving} onClick={saveOcrResult}>Save to History</Button>
+                <Button variant="accent" size="sm" loading={saving} onClick={saveOcrResult}>Save to History</Button>
               </div>
             </div>
           </div>
@@ -451,24 +451,19 @@ export function AccessPage() {
     } finally { setLoading(false) }
   }
 
-  // Load hospital staff for the grant dropdown.
-  // Calls the peer0 (admin) API which manages the user directory.
+  // Load the clinical staff a patient can grant access to (patient-api).
   const loadStaff = async () => {
     setStaffLoading(true)
     try {
-      const res = await fetch('http://localhost:4001/auth/staff', {
-        headers: { 'Content-Type': 'application/json' }
-      })
-      if (res.ok) {
-        const json = await res.json()
-        const clinical = json.data || []
-        setStaffList(clinical)
-        if (clinical.length > 0 && !selectedStaff) {
-          setSelectedStaff(clinical[0])
-        }
+      const res = await api().get('/access/staff')
+      const clinical = res.data.data || []
+      setStaffList(clinical)
+      if (clinical.length > 0 && !selectedStaff) {
+        setSelectedStaff(clinical[0])
       }
     } catch (_) {
-      // Staff list unavailable — patient can still type manually via fallback
+      // Staff list unavailable: the modal falls back to manual entry.
+      setStaffList([])
     } finally {
       setStaffLoading(false)
     }
@@ -539,7 +534,7 @@ export function AccessPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <SectionTitle>Access Control</SectionTitle>
-        <Button variant="teal" size="sm" onClick={openGrantModal}>
+        <Button variant="accent" size="sm" onClick={openGrantModal}>
           <Plus size={14} /> Grant Access
         </Button>
       </div>
@@ -548,10 +543,10 @@ export function AccessPage() {
       {error   && <Alert type="error">{error}</Alert>}
 
       {/* Info */}
-      <Card className="p-4 bg-teal-50 border-teal-200">
+      <Card className="p-4 bg-blue-50 border-blue-200">
         <div className="flex items-start gap-3">
-          <Shield size={16} className="text-teal-600 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-teal-800">
+          <Shield size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-blue-800">
             You control who can access your health records. Grant or revoke access at any time. All changes are permanently recorded on the blockchain.
           </p>
         </div>
@@ -596,7 +591,7 @@ export function AccessPage() {
                   </div>
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {g.sections.map(s => (
-                      <span key={s} className="text-xs bg-teal-50 text-teal-700 border border-teal-100 px-2 py-0.5 rounded-full font-medium">{s}</span>
+                      <span key={s} className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full font-medium">{s}</span>
                     ))}
                   </div>
                   <p className="text-xs text-slate-400 mt-2">
@@ -639,7 +634,7 @@ export function AccessPage() {
                     </div>
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {(r.sections || []).map(s => (
-                        <span key={s} className="text-xs bg-teal-50 text-teal-700 border border-teal-100 px-2 py-0.5 rounded-full font-medium">{s}</span>
+                        <span key={s} className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full font-medium">{s}</span>
                       ))}
                     </div>
                     {r.reason && <p className="text-xs text-slate-500 mt-2 italic">"{r.reason}"</p>}
@@ -757,7 +752,7 @@ export function AccessPage() {
               {SECTION_OPTIONS.map(s => (
                 <button key={s} type="button"
                   onClick={() => setSections(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-xl border transition-colors ${sections.includes(s) ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-600 border-slate-200 hover:border-teal-300'}`}>
+                  className={`px-3 py-1.5 text-sm font-medium rounded-xl border transition-colors ${sections.includes(s) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'}`}>
                   {s}
                 </button>
               ))}
@@ -771,7 +766,7 @@ export function AccessPage() {
           {error && <Alert type="error">{error}</Alert>}
           <div className="flex justify-end gap-3">
             <Button variant="secondary" size="sm" onClick={() => setModal(false)}>Cancel</Button>
-            <Button variant="teal" size="sm" loading={saving || staffLoading} onClick={grantAccess}>Grant Access</Button>
+            <Button variant="accent" size="sm" loading={saving || staffLoading} onClick={grantAccess}>Grant Access</Button>
           </div>
         </div>
       </Modal>
@@ -782,7 +777,7 @@ export function AccessPage() {
 // ── Signatures Page ───────────────────────────────────────────────────────────
 const ROLE_COLORS = {
   doctor:           'bg-blue-50 text-blue-700 border-blue-100',
-  nurse:            'bg-teal-50 text-teal-700 border-teal-100',
+  nurse:            'bg-blue-50 text-blue-700 border-blue-100',
   pharmacist:       'bg-violet-50 text-violet-700 border-violet-100',
   medrecordofficer: 'bg-amber-50 text-amber-700 border-amber-100',
   receptionist:     'bg-slate-50 text-slate-700 border-slate-100',
@@ -857,7 +852,7 @@ function AggregatePanel({ hash, txCount, verifyUrl, api }) {
         <p className="font-mono text-xs text-slate-700 break-all flex-1">{hash}</p>
         <button onClick={copyHash}
           className="flex-shrink-0 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors">
-          {copied ? <CheckCircle2 size={15} className="text-teal-500" /> : <Copy size={15} />}
+          {copied ? <CheckCircle2 size={15} className="text-blue-500" /> : <Copy size={15} />}
         </button>
       </div>
       {result && (
@@ -868,7 +863,7 @@ function AggregatePanel({ hash, txCount, verifyUrl, api }) {
         </Alert>
       )}
       <div className="flex justify-end">
-        <Button variant="teal" size="sm" loading={verifying} onClick={verify}>
+        <Button variant="accent" size="sm" loading={verifying} onClick={verify}>
           <CheckCircle size={13} /> Verify
         </Button>
       </div>
@@ -955,7 +950,7 @@ export function SignaturesPage() {
         <SigSection
           title="EHR Record"
           icon={FileText}
-          color="text-teal-600"
+          color="text-blue-600"
           txCount={data.ehr.txCount}
           hash={data.ehr.aggregateHash}
           verifyUrl="/signatures/verify/ehr"

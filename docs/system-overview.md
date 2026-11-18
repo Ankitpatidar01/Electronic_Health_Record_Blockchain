@@ -1,29 +1,78 @@
-# Comprehensive System Overview & Beginner's Guide
+# System Overview
 
-Welcome to the **Enterprise Blockchain Electronic Health Record (EHR) System**! If you are new to this project, this document explains every technology used, how the different components (Peers, Organizations) interact, what is currently implemented, and where everything lives in the folder structure.
-
----
-
-## 1. Core Technologies Explained
-
-### What is the Blockchain (Hyperledger Fabric)?
-Unlike Bitcoin or Ethereum where anyone can join anonymously (Public Blockchain), **Hyperledger Fabric** is a **Permissioned (Private) Blockchain**. This means only authorized hospitals, pharmacies, and labs can join the network. 
-* **Role in this project:** It acts as an immutable, tamper-proof ledger. Every time a patient grants consent, a doctor updates a record, or a lab submits a result, it is permanently recorded as a transaction on this blockchain. It ensures that no single hospital can secretly alter medical records without the entire network knowing.
-
-### What is IPFS (InterPlanetary File System)?
-Blockchains are terrible at storing large files (like 10MB PDF MRI scans) because every node has to copy that data, which is incredibly slow and expensive. **IPFS** is a decentralized file storage system.
-* **Role in this project:** When a doctor uploads a heavy clinical document, the actual file goes to IPFS. IPFS generates a tiny cryptographic "fingerprint" (called a CID or Content Identifier). We only store that tiny CID on the Fabric Blockchain. If the file is tampered with, its CID changes, and the blockchain will know it's a fake.
-
-### What is Digilocker?
-Currently, if a file is on IPFS, anyone who knows the CID can download and read it. For medical records, this is a massive privacy violation.
-* **Role in this project:** Digilocker is a highly secure digital vault module (currently waiting to be built by one of your groups!). Its job is to take medical files, **encrypt them** (Zero-Knowledge Encryption) using the patient's keys, and *then* upload them to IPFS. This ensures that even if someone finds the file on IPFS, it looks like gibberish unless they have the patient's cryptographic permission.
-
-### What is Agentic AI (Gemini)?
-* **Role in this project:** Modern hospitals generate massive amounts of unstructured data (doctors' handwritten notes, complex lab PDFs). The system uses Gemini (Google's LLM) to act as an autonomous agent. When a lab report is uploaded, the AI reads the PDF, extracts the critical text, and flags abnormal values (Clinical Decision Support) for the doctor automatically.
+This repository contains an Electronic Health Record (EHR) Consortium workspace built on Hyperledger Fabric 2.5, Kubo IPFS, containerized microservices, autonomous AI intelligence agents, and React/Vite frontends. It federates three healthcare organizations—**Hospital**, **Diagnostics Lab**, and **Pharmacy**—under a shared cryptographic channel (`ehrchannel`) while maintaining sovereign microservices, role-based access control, and zero-PHI observability.
 
 ---
 
-## 2. Network Architecture (How the "Peers" work together)
+## 🏛️ Consortium Organizations & Components
+
+### 1. Hyperledger Fabric Blockchain Network
+- **Channel:** `ehrchannel` shared across all consortium members.
+- **Consensus:** Crash Fault Tolerant (CFT) Raft consensus via `orderer.example.com` on port `7050` (operations `/healthz` on port `9443`).
+- **Organizations:**
+  - `HospitalMSP`: Governs core hospital operations with `peer0.hospital` (`:7051`), `peer1.hospital` (`:9051`), and `peer2.hospital` (`:10051`).
+  - `DiagnosticsMSP`: Governs laboratory diagnostic reports with `peer0.diagnostic` (`:8051`).
+  - `ProviderMSP`: Governs billing claims and external provider audits with `peer0.provider` (`:11051`).
+- **Smart Contracts (8 deployed contracts in `ehr-chaincode-v3`):**
+  - `PatientContract`, `VisitContract`, `ForwardContract`, `ClinicalContract`, `LabContract`, `ClaimsContract`, `EhrContract`, `AccessContract`.
+
+### 2. Clinical AI Agent & Medical RAG Microservice (`services/ai-agent`)
+- **Runtime:** Containerized Python 3.11 FastAPI microservice (`clinical-ai-agent:8000`), reverse-proxied at `http://localhost/ai-agent/`.
+- **Clinical Governance:** Evaluates vitals in real time against clinical thresholds (Hypertensive Crisis, Hypoxia $SpO_2 < 90\%$, Hypoglycemia, Tachycardia) and calculates historical trajectory deltas.
+- **Medical RAG:** Hybrid semantic and keyword retrieval over curated PubMed clinical literature (`medical_data/pubmed_articles.json`) with scientific citations and confidence scores.
+- **Verification:** 20 passing unit and integration tests (`pytest`).
+
+### 3. Lab Multi-Agent Subsystem & Gateway (`orgs/lab/EHR-LABORG-main`)
+- **Runtime:** Node.js Express gateway on host port `3006`, reverse-proxied at `http://localhost/lab/`.
+- **Lab Report Analysis Agent (`agents/lab-agent.js`):** Extracts clinical biomarkers (CBC, metabolic panels) from unstructured diagnostic reports.
+- **Longitudinal History Agent (`agents/history-agent.js`):** Synthesizes multi-visit historical trajectory and correlates chronic trends.
+- **Human-in-the-Loop Orchestrator (`orchestrator/orchestrator.js`):** Enforces mandatory review and sign-off by a licensed clinician before anchoring diagnostic reports on-chain.
+- **Scheduled Ledger-Integrity Recheck Engine (`integrity-check.js`):** Background 4-hour verification loop comparing raw IPFS multihashes against on-chain Fabric digests.
+- **Consortium Anchoring:** Connected directly to `ehrchannel` as `DiagnosticsMSP` and to the shared Kubo IPFS node.
+- **Verification:** 24 passing Jest unit tests.
+
+### 4. Pharmacy Organization & CarePoint Portals (`orgs/pharmacy/fabric-network-swarm`)
+- **Runtime:** Node.js Express API (`p-backend:3000`) and 6 separate frontends (`:5175`, `:3001`–`:3005`).
+- **Persistent Storage (`store.js`):** Resilient file-backed JSON store with seeded medications, patient records (`PAT-001`, `PAT-014`, `PAT-021`, `testuser`), initial bills, and staff roles.
+- **Automatic Stock Deduction:** Deducts inventory units in real time upon prescription fulfillment.
+- **IPFS Receipt Pinning:** Prescription bills pinned to Kubo IPFS (`http://localhost:8090/ipfs/<CID>`).
+- **CarePoint Interactive Patient Portal (`:3004`):** Active patient switcher, prescription table, dispensing timeline, IPFS billing receipts, and patient consent self-governance (grant/revoke staff access).
+
+### 5. Hospital Applications & Peer APIs (`orgs/hospital/EHR_hospitalOrg-main`)
+- **Portals:** Hospital Staff Portal (`:5173`) and Patient Portal (`:5174`) styled with the CareGrid Soft Glass Bento design system.
+- **Peer APIs:** Six Express microservices on ports `4001`–`4006` (`peer0-api`, `peer1-api`, `peer2-api`, `extorg-api`, `patient-api`, `ipfs-service`).
+
+### 6. Group 1 Real-Time Observatory Dashboard (`dashboard-api` & `dashboard-portal`)
+- **Runtime:** `dashboard-api:4010` and `dashboard-portal:5176` (served at `http://localhost/dashboard/`).
+- **Telemetry Coverage:** **12/12 Live Consortium Targets Reporting `OK`** (Fabric orderer, 4 peer operations `/healthz`, Clinical AI agent, Lab agents, IPFS, and microservices).
+- **Zero-PHI Compliance:** Strict Common Event Envelope scrubbing all patient-identifiable data into keyed HMAC hashes (`patientIdHash`).
+- **Real-Time Streaming:** High-throughput WebSocket (`/ws`) and SSE (`/stream`) with single-use stream tickets.
+- **Luxury Obsidian Glass UI:** Deep Obsidian theme (`#0B0F17`), radiant opposite-corner gradient card glows, interactive Block Stream Inspector with 1-click clipboard copy, 5 clinical agent views, and real-time threshold alert engine.
+- **Verification:** 76 passing automated backend test suites.
+
+### 7. Unified Ingress Gateway (`nginx/nginx.conf`)
+- Central reverse proxy on Port 80 routing all traffic cleanly to prevent browser CORS issues:
+  - `/` $\rightarrow$ Workspace Hub
+  - `/hospital/` $\rightarrow$ Hospital Staff Portal (`:5173`)
+  - `/patient/` $\rightarrow$ Patient Portal (`:5174`)
+  - `/dashboard/` $\rightarrow$ System Dashboard (`:5176`)
+  - `/pharmacy/*` $\rightarrow$ Pharmacy Portals (`:5175`, `:3001`–`:3005`)
+  - `/lab/` $\rightarrow$ Lab Web Console (`:3006`)
+  - `/ai-agent/` $\rightarrow$ Clinical AI Agent & Swagger Docs (`:8000`)
+  - `/api/*` $\rightarrow$ Respective microservice backends
+
+### 8. Digilocker (Proposed Module Only)
+- Inventory item for future patient-controlled encrypted document vaults. Contains no runnable backend or frontend in this workspace.
+
+---
+
+## 🚀 Running the System
+
+1. **First-time clone setup:** Run `./setup.sh` to install dependencies and initialize `.env` configuration files.
+2. **Start all services:** Run `./start.sh` from the repository root. All 20 services will launch cleanly and be reachable at [http://localhost/](http://localhost/).
+3. **Stop all services:** Run `./stop.sh` to gracefully stop containers and free ports without deleting persistent Docker volume data.
+
+---
 
 In Hyperledger Fabric, the network is divided into **Organizations**. Each Organization has multiple computers/servers called **Peers**. Each Peer represents a specific department or role, running its own API and UI.
 

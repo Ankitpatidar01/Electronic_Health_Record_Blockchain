@@ -12,7 +12,7 @@ const routes    = require('./routes');
 const { requireApiKey, errorHandler } = require('./middleware');
 
 const app  = express();
-const PORT = process.env.PORT || 3006;
+const PORT = process.env.PORT || 4006;
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 

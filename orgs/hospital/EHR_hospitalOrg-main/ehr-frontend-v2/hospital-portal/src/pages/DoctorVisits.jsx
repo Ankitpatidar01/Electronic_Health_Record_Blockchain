@@ -66,7 +66,7 @@ export default function DoctorVisitsPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: 'Fraunces, serif' }}>Doctor Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Doctor Dashboard</h1>
           <p className="text-sm text-slate-500 mt-0.5">Clinical management — diagnosis, prescriptions, lab orders</p>
         </div>
         {!visit && <Button variant="secondary" onClick={loadAll} loading={listLoading}>Refresh</Button>}

@@ -55,18 +55,39 @@ function loadEnvFile(filePath) {
 }
 
 function loadGatewayEnvironment() {
-  const rootDir = path.resolve(__dirname, '..', '..');
-  loadEnvFile(path.join(rootDir, 'env', 'network.env'));
-
-  const optionalMachineEnv = String(process.env.GATEWAY_MACHINE_ENV || '').trim();
-  if (!optionalMachineEnv) {
-    return;
+  const candidateDirs = [
+    path.resolve(__dirname, '..', '..', 'env'),
+    path.resolve(__dirname, 'env'),
+    path.resolve('/env'),
+  ];
+  for (const dir of candidateDirs) {
+    const netEnv = path.join(dir, 'network.env');
+    if (fs.existsSync(netEnv)) {
+      loadEnvFile(netEnv);
+      break;
+    }
   }
 
-  const machineEnvFile = optionalMachineEnv.endsWith('.env')
-    ? optionalMachineEnv
-    : `${optionalMachineEnv}.env`;
-  loadEnvFile(path.join(rootDir, 'env', machineEnvFile));
+  const optionalMachineEnv = String(process.env.GATEWAY_MACHINE_ENV || '').trim();
+  if (optionalMachineEnv) {
+    const machineEnvFile = optionalMachineEnv.endsWith('.env')
+      ? optionalMachineEnv
+      : `${optionalMachineEnv}.env`;
+    for (const dir of candidateDirs) {
+      const target = path.join(dir, machineEnvFile);
+      if (fs.existsSync(target)) {
+        loadEnvFile(target);
+        break;
+      }
+    }
+  }
+
+  if (!process.env.IPFS_API_URL) {
+    process.env.IPFS_API_URL = 'http://ipfs.ehr.local:5001';
+  }
+  if (!process.env.IPFS_GATEWAY_URL) {
+    process.env.IPFS_GATEWAY_URL = 'http://localhost:8090/ipfs';
+  }
 }
 
 module.exports = {

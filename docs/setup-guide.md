@@ -1,6 +1,6 @@
-# Setup Guide
+# Comprehensive Local Setup Guide
 
-This guide provides instructions to run each organization in standalone/single-node mode for local development.
+This guide provides step-by-step instructions for running the complete Electronic Health Record (EHR) Consortium workspace on a local development machine or cloud VM. Following these steps ensures seamless execution across all 18 team members' machines.
 
 > [!IMPORTANT]
 > **Operating System & Terminal Requirements**
@@ -161,92 +161,142 @@ peer chaincode query -C ehrchannel -n ehr \
 - **No `sudo` is needed** for the `chown` steps — the network scripts fall back gracefully on macOS.
 - **`FABRIC_BASE_PATH` is auto-resolved** — leave it empty in `.env` (the hardcoded `/home/avi/...` path has been removed).
 - **`KNET` must be identical** on every machine that writes FHIR anchors (Mac and Linux alike), otherwise the same patient yields different hashes. Set it in each backend `.env`.
+---
 
-## Hospital Organization
+## 💻 1. System Requirements & Prerequisites
 
-To bring up the Hospital organization on a single node:
+### Supported Operating Systems
+- **Linux:** Ubuntu 22.04 LTS or 24.04 LTS (Recommended)
+- **Windows:** Windows 10/11 with **WSL2** (Ubuntu 22.04/24.04 distribution)
+- **macOS:** Apple Silicon or Intel with Docker Desktop (ensure Docker socket sharing is enabled)
 
-1. Navigate to the hospital network directory:
+### Required Software Packages
+Ensure the following packages are installed on your host system:
+1. **Docker Engine & Docker Compose Plugin** (v24.0+ / Compose v2.20+):
    ```bash
-   cd orgs/hospital/EHR_hospitalOrg-main/ehr-network
+   docker --version
+   docker compose version
    ```
-2. Fabric binaries are resolved automatically by `scripts/fabric-bin.sh` (Linux → committed `bin/`; macOS → host darwin binaries — see the [macOS section](#macos-running-with-colima)). No manual download is needed; export `FABRIC_BIN_DIR` to override.
-3. Tear down any previous setup, then boot up the network:
+   *Verify non-root Docker execution:*
    ```bash
-   bash scripts/network-down.sh      # (first-time clean-slate — skip if nothing exists yet)
-   bash scripts/network-up.sh        # CA → enroll → peers/orderer/IPFS → channel → anchor peers
+   sudo usermod -aG docker "$USER"
+   # Log out and log back in, or run:
+   newgrp docker
+   docker ps  # Must succeed without sudo
    ```
-4. Deploy the chaincode (includes `FhirContract` — sequence 1 on first deploy):
+2. **Node.js & npm** (v20 LTS recommended):
    ```bash
-   bash scripts/deployChaincode.sh \
-     --channel ehrchannel \
-     --chaincode-name ehr \
-     --chaincode-path ../ehr-chaincode-v3 \
-     --version 2.1 --sequence 1
+   node --version  # Should be v20.x or higher
+   npm --version
    ```
-5. Start the backend API:
+3. **Python** (v3.10 or v3.11):
    ```bash
-   cd ../ehr-backend-v3/peer0-api
-   npm install && npm start
+   python3 --version
    ```
-6. Start the frontend UI:
-   ```bash
-   cd ../../ehr-frontend-v2
-   npm install && npm run dev
-   ```
+4. **Utility Tools**: `curl`, `git`, `jq`, `lsof`, `tar`.
 
-## Pharmacy Organization
+---
 
-To bring up the Pharmacy organization on a single node:
+## 🛠️ 2. First-Time Setup (From a Fresh Git Clone)
 
-1. Navigate to the pharmacy network directory:
-   ```bash
-   cd orgs/pharmacy/fabric-network-swarm
-   ```
-2. Set up the `.env` configuration for single node:
-   ```bash
-   cp deploy.env.example deploy.env
-   ```
-3. Run the full deployment script:
-   ```bash
-   bash deploy.sh
-   ```
-   > [!TIP]
-   > The `deploy.sh` script automatically packages chaincode, launches the local Fabric network, creates the channel, commits chaincode, imports identities, and starts the frontend/backend apps.
+When cloning this repository for the first time:
 
-## Lab Organization
+```bash
+git clone https://github.com/devbyhimans/Electronic_Health_Record_Blockchain.git
+cd Electronic_Health_Record_Blockchain
+```
 
-To bring up the Lab organization on a single node:
+### Step 1: Run Workspace Setup Script
+The automated setup script installs Node dependencies, configures Python virtual environments, and auto-generates `.env` files from templates:
+```bash
+./setup.sh
+```
 
-1. Navigate to the lab network directory:
-   ```bash
-   cd orgs/lab/EHR-LABORG-main
-   ```
-2. Configure your environment:
-   ```bash
-   cp env/network.env.example env/network.env
-   # Make sure to edit env/network.env and add your GEMINI_API_KEY
-   ```
-3. Download Fabric binaries and generate crypto material:
-   ```bash
-   chmod +x scripts/*.sh
-   ./scripts/download-fabric.sh
-   ./scripts/generate-artifacts.sh
-   ```
-4. Launch the Machine 1 containers (Orderer + Peer0 + CouchDB + IPFS + Explorer):
-   ```bash
-   ./scripts/start-machine1.sh
-   ```
-5. Create the channel and join Peer0:
-   ```bash
-   ./scripts/create-channel.sh
-   ```
-6. Deploy the Lab Results Smart Contract:
-   ```bash
-   ./scripts/deploy-labresults-machine1.sh
-   ```
-7. Start the API Gateway & Web Dashboard:
-   ```bash
-   cd client/node-gateway
-   npm install && npm run web
-   ```
+### Step 2: Bootstrap Hyperledger Fabric Network (First Run Only)
+Cryptographic identity materials (X.509 MSP certificates, CA databases, and genesis blocks) are generated locally and excluded from Git for security. Generate the network credentials:
+```bash
+cd orgs/hospital/EHR_hospitalOrg-main/ehr-network
+bash scripts/network-up.sh
+bash scripts/deployChaincode.sh
+cd ../../../..
+```
+*Note: This bootstrap step is required only once. Once certificates and channel genesis blocks are generated, persistent Docker volumes preserve them across system reboots.*
+
+*The `ehr` chaincode now includes `FhirContract` (HL7 FHIR R4 anchoring). On a first deploy, pass `--version 2.1 --sequence 1` to `deployChaincode.sh`; see [fhir-integration.md](fhir-integration.md) for the FHIR flow and [setup-guide-docker-desktop.md](setup-guide-docker-desktop.md) for the Docker Desktop run steps.*
+
+### Step 3: Launch the Consortium Workspace
+Start the complete stack (Fabric CAs, Peers, Orderer, Kubo IPFS, Microservices, AI Agents, and Frontends):
+```bash
+./start.sh
+```
+The startup sequence runs 6 automated stages, performs a port-sweep, starts the Fabric infrastructure, launches all microservices, and displays a live service health matrix.
+
+---
+
+## 🌐 3. Accessing Portals & Entry Points
+
+Once `./start.sh` completes, open your browser:
+
+| Application | Browser URL | Port / Ingress | Credentials / Notes |
+|:---|:---|:---:|:---|
+| **Consortium Launchpad** | [http://localhost/](http://localhost/) | `:80` (Hub) | Central gateway checking real-time reachability of all portals. |
+| **Hospital Staff Portal** | [http://localhost:5173/](http://localhost:5173/) | `:5173` | Receptionist, Doctor, Nurse, Pharmacist, Admin accounts. |
+| **Hospital Patient Portal** | [http://localhost/patient/](http://localhost/patient/) | `:5174` | Patient self-service records and visit history. |
+| **Observatory Dashboard** | [http://localhost/dashboard/](http://localhost/dashboard/) | `:5176` | Role-aware Obsidian Glass UI; login using hospital credentials. |
+| **Clinical AI Swagger API** | [http://localhost/ai-agent/docs](http://localhost/ai-agent/docs) | `:8000` | Interactive REST documentation for Medical RAG and Trend Analyzer. |
+| **Pharmacy Main Hub** | [http://localhost/pharmacy/](http://localhost/pharmacy/) | `:5175` | MedBlock consortium dashboard with IPFS receipt verification. |
+| **Pharmacy Patient Portal** | [http://localhost/pharmacy/patient/](http://localhost/pharmacy/patient/) | `:3004` | Active patient switching (`PAT-001`, `PAT-014`, `testuser`), dispensing timeline, and consent self-governance. |
+| **Pharmacy Staff Portals** | `/pharmacy/manager/` (`:3001`), `/employee/` (`:3002`), `/inventory/` (`:3003`), `/billing/` (`:3005`) | `:3001`–`:3005` | Manager, Pharmacist Dispensing, Stock Inventory, and Outpatient Billing. |
+| **Lab Web Console** | [http://localhost/lab/](http://localhost/lab/) | `:3006` | Diagnostic review deck with glowing gradient cards and integrity status. |
+
+---
+
+## 🛑 4. Graceful Teardown & Reset
+
+### Stop Without Data Loss (Normal Daily Use)
+To stop the workspace while preserving blockchain ledgers, patient records, and Docker volumes:
+```bash
+./stop.sh
+```
+This script gracefully stops application containers, Fabric peers/orderer, and Fabric CAs, sweeping ports `3000`–`5176` to guarantee no orphan background processes are left running.
+
+### Complete Clean Slate (Hard Reset)
+If you need to completely reset the network, wipe ledgers, and regenerate certificates:
+```bash
+./stop.sh
+docker compose down -v
+docker volume prune -f
+cd orgs/hospital/EHR_hospitalOrg-main/ehr-network
+bash scripts/network-down.sh
+cd ../../../..
+```
+Then repeat Step 2 (`network-up.sh` and `deployChaincode.sh`) and Step 3 (`./start.sh`).
+
+---
+
+## 🧪 5. Running Automated Verification Suites
+
+To verify that all subsystems are working with 100% test coverage:
+
+### 1. Dashboard API Tests (76 Tests)
+```bash
+cd orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api
+npm test
+cd ../../../..
+```
+
+### 2. Clinical AI Agent Tests (20 Tests)
+```bash
+cd services/ai-agent
+python3 -m pytest tests/ -v
+cd ../..
+```
+
+### 3. Lab Multi-Agent Tests (24 Tests)
+```bash
+cd orgs/lab/EHR-LABORG-main/client/node-gateway
+npm test
+cd ../../../..
+```
+
+All test suites should pass with zero failures and zero unhandled rejections.

@@ -45,7 +45,7 @@ class LabResultsContract extends Contract {
     ];
 
     for (const record of seedRecords) {
-      const payload = this._buildRecord(record);
+      const payload = this._buildRecord(ctx, record);
       await ctx.stub.putState(record.resultId, Buffer.from(JSON.stringify(payload)));
     }
 
@@ -62,7 +62,7 @@ class LabResultsContract extends Contract {
       throw new Error(`Lab result ${resultId} already exists`);
     }
 
-    const record = this._buildRecord({
+    const record = this._buildRecord(ctx, {
       resultId,
       patientId,
       testCode,
@@ -89,7 +89,7 @@ class LabResultsContract extends Contract {
       throw new Error(`Lab result ${resultId} does not exist`);
     }
 
-    const record = this._buildRecord({
+    const record = this._buildRecord(ctx, {
       resultId,
       patientId,
       testCode,
@@ -143,7 +143,7 @@ class LabResultsContract extends Contract {
     return JSON.stringify(filtered);
   }
 
-  _buildRecord({ resultId, patientId, testCode, collectedAt, status, resultData }) {
+  _buildRecord(ctx, { resultId, patientId, testCode, collectedAt, status, resultData }) {
     return {
       docType: 'labResult',
       resultId,
@@ -152,7 +152,9 @@ class LabResultsContract extends Contract {
       collectedAt,
       status,
       resultData,
-      ownerOrg: 'LabMSP',
+      // The submitting organization: LabMSP on the standalone lab network,
+      // DiagnosticsMSP on the shared ehrchannel.
+      ownerOrg: ctx.clientIdentity.getMSPID(),
       updatedByTx: null,
     };
   }

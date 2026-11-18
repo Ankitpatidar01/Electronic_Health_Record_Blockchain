@@ -1,68 +1,60 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
-  Users, Calendar, FlaskConical, FileText,
-  LogOut, Activity, Stethoscope, Pill, FolderOpen,
-  ChevronRight, Menu, X, ShieldCheck
+  Users, Calendar, FileText, LogOut, Activity,
+  Stethoscope, Pill, FolderOpen, ChevronRight, Menu, X
 } from 'lucide-react'
 import { useState } from 'react'
+import ThemeToggle from '../ThemeToggle'
+import { getApiBase } from '../../utils/api'
+import { useServiceHealth, HEALTH_PILL } from '../../hooks/useServiceHealth'
+import Avatar from '../../design-system/components/Avatar'
+import BRAND from '../../design-system/brand.config'
 
 const ROLE_CONFIG = {
   receptionist: {
-    label: 'Reception',
-    color: 'bg-slate-900',
-    accent: 'text-slate-200',
+    label: 'Reception & Registry',
     nav: [
-      { to: '/patients',       icon: Users,     label: 'Patients' },
-      { to: '/visits',         icon: Calendar,  label: 'Visits' },
-      { to: '/register',       icon: Users,     label: 'Register Patient' },
-      { to: '/open-visit',     icon: Calendar,  label: 'Open Visit' },
+      { to: '/patients',   icon: Users,    label: 'Patients' },
+      { to: '/visits',     icon: Calendar, label: 'Active Visits' },
+      { to: '/register',   icon: Users,    label: 'Register Patient' },
+      { to: '/open-visit', icon: Calendar, label: 'Open New Visit' },
     ],
   },
   admin: {
-    label: 'Administration',
-    color: 'bg-slate-900',
-    accent: 'text-slate-200',
+    label: 'Hospital Governance',
     nav: [
-      { to: '/patients',       icon: Users,     label: 'Patients' },
-      { to: '/staff',          icon: Users,     label: 'Clinical Staff' },
-      { to: '/visits',         icon: Calendar,  label: 'Visits' },
-      { to: '/register',       icon: Users,     label: 'Register Patient' },
-      { to: '/open-visit',     icon: Calendar,  label: 'Open Visit' },
-      { to: '/discharge',      icon: LogOut,    label: 'Discharge' },
+      { to: '/patients',   icon: Users,    label: 'Patients' },
+      { to: '/staff',      icon: Users,    label: 'Doctors & Staff' },
+      { to: '/visits',     icon: Calendar, label: 'Encounters' },
+      { to: '/register',   icon: Users,    label: 'Register Patient' },
+      { to: '/open-visit', icon: Calendar, label: 'Open Visit' },
+      { to: '/discharge',  icon: LogOut,   label: 'Discharge' },
     ],
   },
   doctor: {
-    label: 'Doctor',
-    color: 'bg-blue-950',
-    accent: 'text-blue-200',
+    label: 'Clinical Physician',
     nav: [
-      { to: '/my-visits',      icon: Stethoscope, label: 'My Visits' },
-      { to: '/visit-detail',   icon: FileText,    label: 'Visit Detail' },
+      { to: '/my-visits',    icon: Stethoscope, label: 'Doctor Queue' },
+      { to: '/visit-detail', icon: FileText,    label: 'Clinical Chart' },
     ],
   },
   nurse: {
-    label: 'Nurse',
-    color: 'bg-violet-950',
-    accent: 'text-violet-200',
+    label: 'Nursing & Triage',
     nav: [
-      { to: '/my-visits',      icon: Activity,  label: 'My Visits' },
+      { to: '/my-visits', icon: Activity, label: 'Triage & Vitals' },
     ],
   },
   pharmacist: {
-    label: 'Pharmacy',
-    color: 'bg-teal-950',
-    accent: 'text-teal-200',
+    label: 'Clinical Pharmacy',
     nav: [
-      { to: '/dispense',       icon: Pill,      label: 'Dispense' },
+      { to: '/dispense', icon: Pill, label: 'Dispense Queue' },
     ],
   },
   medrecordofficer: {
-    label: 'Medical Records',
-    color: 'bg-emerald-950',
-    accent: 'text-emerald-200',
+    label: 'Medical Records Audit',
     nav: [
-      { to: '/finalize',       icon: FolderOpen, label: 'Finalize Records' },
+      { to: '/finalize', icon: FolderOpen, label: 'Finalize & Archive' },
     ],
   },
 }
@@ -72,6 +64,7 @@ export default function Layout({ children }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const health = useServiceHealth(user ? `${getApiBase(user.role)}/health` : null)
 
   if (!user) return null
 
@@ -84,95 +77,109 @@ export default function Layout({ children }) {
   }
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="p-6 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-            <ShieldCheck size={16} className="text-white" />
+    <div className="flex flex-col h-full p-4 select-none">
+      <div className="flex items-center gap-3 mb-6 px-1">
+        <img src="/logo.svg" alt="" className="h-9 w-9 object-contain" />
+        <div className="min-w-0">
+          <div className="font-bold tracking-tight text-slate-900 dark:text-white">
+            {BRAND.name} <span className="text-blue-600 dark:text-sky-400">Clinical</span>
           </div>
-          <div>
-            <p className="text-white font-semibold text-sm font-display">EHR Chain</p>
-            <p className={`text-xs ${cfg.accent}`}>{cfg.label}</p>
-          </div>
+          <div className="text-[10px] font-semibold uppercase tracking-[.16em] text-slate-400 truncate">{cfg.label}</div>
         </div>
       </div>
 
-      {/* User */}
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-white/10">
-          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-medium">{user.username?.[0]?.toUpperCase()}</span>
-          </div>
-          <div className="min-w-0">
-            <p className="text-white text-sm font-medium truncate">{user.username}</p>
-            <p className={`text-xs ${cfg.accent} capitalize`}>{user.role}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 p-4 space-y-1">
-        {cfg.nav.map(({ to, icon: Icon, label }) => (
-          <Link
-            key={to}
-            to={to}
-            onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-              isActive(to)
-                ? 'bg-white/20 text-white font-medium'
-                : `text-white/60 hover:text-white hover:bg-white/10`
-            }`}
-          >
-            <Icon size={16} />
-            {label}
-            {isActive(to) && <ChevronRight size={14} className="ml-auto" />}
-          </Link>
-        ))}
+      <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-thin" aria-label="Workspace navigation">
+        <p className="eyebrow px-3 !mb-2">Navigation</p>
+        {cfg.nav.map(({ to, icon: Icon, label }) => {
+          const active = isActive(to)
+          return (
+            <Link
+              key={to}
+              to={to}
+              onClick={() => setMobileOpen(false)}
+              aria-current={active ? 'page' : undefined}
+              className={`dashboard-nav-link ${active ? 'is-active' : ''}`}
+            >
+              <Icon size={16} />
+              <span>{label}</span>
+              {active && <ChevronRight size={14} className="ml-auto opacity-70" />}
+            </Link>
+          )
+        })}
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-white/10">
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all w-full"
-        >
-          <LogOut size={16} />
-          Sign out
+      <div className="pt-4 mt-4 obs-divider space-y-3">
+        <div className="flex items-center gap-3 px-1">
+          <Avatar id={user.username} name={user.username} size={36} status="online" ring={false} />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{user.username}</p>
+            <p className="text-[10px] capitalize text-slate-500 dark:text-slate-400 truncate">{user.role}</p>
+          </div>
+        </div>
+        <button type="button" onClick={handleLogout} className="dashboard-logout w-full justify-center">
+          <LogOut size={14} />
+          <span>Switch role / sign out</span>
         </button>
       </div>
     </div>
   )
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      {/* Desktop Sidebar */}
-      <aside className={`hidden md:flex w-56 flex-shrink-0 ${cfg.color} flex-col`}>
-        <SidebarContent />
+    <div className="dashboard-shell flex h-screen overflow-hidden">
+      <aside className="hidden lg:flex w-64 shrink-0 flex-col p-4 pr-0">
+        <div className="obs-rail flex-1 min-h-0"><SidebarContent /></div>
       </aside>
 
-      {/* Mobile Sidebar */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className={`absolute left-0 top-0 h-full w-64 ${cfg.color} flex flex-col`}>
-            <SidebarContent />
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute left-0 top-0 h-full w-72 p-3">
+            <div className="obs-rail h-full relative">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close navigation"
+                className="absolute right-3 top-3 p-1.5 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+              >
+                <X size={18} />
+              </button>
+              <SidebarContent />
+            </div>
           </aside>
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar (mobile) */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200">
-          <button onClick={() => setMobileOpen(true)}>
-            <Menu size={20} className="text-slate-700" />
-          </button>
-          <span className="font-semibold text-slate-900 font-display">EHR Chain</span>
-          <div className="w-5" />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <header className="dashboard-topbar m-4 mb-0 rounded-[1.25rem] border px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open navigation"
+              className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="min-w-0">
+              <p className="eyebrow !mb-0.5">{cfg.label}</p>
+              <h2 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white truncate">Hospital Operations</h2>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className={`status-pill ${HEALTH_PILL[health].tone} hidden sm:inline-flex`} role="status">
+              <span className="status-pill-dot" />
+              {HEALTH_PILL[health].label}
+            </span>
+            <ThemeToggle />
+            <button type="button" onClick={handleLogout} className="dashboard-logout" title="Return to the role gateway">
+              <Users size={14} />
+              <span className="hidden sm:inline">Switch role</span>
+            </button>
+          </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto scrollbar-thin p-4 md:p-6">
           {children}
         </main>
       </div>

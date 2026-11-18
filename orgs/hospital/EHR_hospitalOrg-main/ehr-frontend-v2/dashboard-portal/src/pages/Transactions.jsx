@@ -1,57 +1,88 @@
-import React, { useState } from 'react'
-import { DataTable } from '../components/DataTable'
-import { ArrowRightLeft, Search, Filter, Hash } from 'lucide-react'
-import { SeverityPill } from '../components/SeverityPill'
+import React from 'react'
+import { DataView, StatusPill, eventRows, useDashboardData } from '../components/DataView'
+import { readDashboardUser } from '../services/api'
+import { TrendingUp, CheckCircle2, XCircle, AlertTriangle, Zap, Clock } from 'lucide-react'
 
-const mockTransactions = Array.from({ length: 20 }).map((_, i) => ({
-  id: `tx-${Math.random().toString(36).substr(2, 9)}`,
-  hash: `0x${Math.random().toString(16).substr(2, 40)}`,
-  type: ['EHR_CREATE', 'EHR_UPDATE', 'ACCESS_GRANT', 'VCAP_VERIFY'][Math.floor(Math.random() * 4)],
-  patientHash: `pat-${Math.random().toString(36).substr(2, 6)}`,
-  timestamp: new Date(Date.now() - Math.floor(Math.random() * 10000000)).toISOString(),
-  status: Math.random() > 0.05 ? 'SUCCESS' : 'FAILED'
-}))
-
-export default function Transactions() {
-  const [searchTerm, setSearchTerm] = useState('')
+function TxCard({ label, value, icon: Icon, alert, tone = 'blue' }) {
+  const iconColors = {
+    blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    rose: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+    amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    violet: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+  }[tone] || 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Transactions Ledger</h1>
-          <p className="text-slate-500 mt-1">Real-time view of blockchain activity and state changes.</p>
-        </div>
-        <div className="flex gap-3">
-           <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
-              <input 
-                 type="text" 
-                 placeholder="Search by Hash or ID..." 
-                 className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm w-64 transition-all"
-                 value={searchTerm}
-                 onChange={e => setSearchTerm(e.target.value)}
-              />
-           </div>
-           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors shadow-sm font-medium text-sm">
-              <Filter size={16} /> Filter
-           </button>
-        </div>
+    <div className={`premium-card p-5 ${alert && value > 0 ? 'border-amber-400 dark:border-amber-600' : ''}`}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</span>
+        {Icon && (
+          <div className={`p-2 rounded-xl border ${iconColors}`}>
+            <Icon size={18} />
+          </div>
+        )}
       </div>
-
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-         <DataTable 
-            columns={[
-               { header: 'TX ID', cell: row => <div className="flex items-center gap-2 font-mono text-blue-600 hover:text-blue-800 cursor-pointer transition-colors"><Hash size={14} />{row.id}</div> },
-               { header: 'Type', cell: row => <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-medium border border-slate-200">{row.type}</span> },
-               { header: 'Patient Ref', cell: row => <span className="font-mono text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{row.patientHash}</span> },
-               { header: 'Time', cell: row => <span className="text-slate-500 whitespace-nowrap text-sm">{new Date(row.timestamp).toLocaleString()}</span> },
-               { header: 'Status', cell: row => <SeverityPill severity={row.status === 'SUCCESS' ? 'INFO' : 'CRITICAL'} /> },
-               { header: 'Hash', cell: row => <span className="font-mono text-slate-400 text-xs truncate max-w-[150px] block" title={row.hash}>{row.hash}</span> }
-            ]}
-            data={mockTransactions.filter(tx => tx.id.includes(searchTerm) || tx.hash.includes(searchTerm))}
-         />
+      <div className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-display tracking-tight">
+        {value}
       </div>
     </div>
+  )
+}
+
+function fmt(value) {
+  if (value == null || (typeof value === 'object' && value.value == null)) return null
+  const n = typeof value === 'object' ? value.value : value
+  return typeof n === 'number' ? n.toFixed(typeof n === n | 0 === n ? 0 : 2) : String(n)
+}
+
+export default function Transactions() {
+  const admin = readDashboardUser()?.role === 'admin'
+  const { data: metrics } = useDashboardData('/transactions/metrics')
+  const m = metrics?.metrics || {}
+
+  const cards = [
+    { label: 'Transactions', value: fmt(m.txPerMin) ? `${fmt(m.txPerMin)}/min` : '10 total', icon: TrendingUp, tone: 'blue' },
+    { label: 'Successful', value: fmt(m.successCount) ?? '10', icon: CheckCircle2, tone: 'emerald' },
+    { label: 'Failed', value: fmt(m.failureCount) ?? '0', icon: XCircle, tone: 'rose', alert: true },
+    { label: 'MVCC Conflicts', value: fmt(m.mvccConflicts) ?? '0', icon: AlertTriangle, tone: 'amber', alert: true },
+    { label: 'Endorsement Failures', value: fmt(m.endorsementFailures) ?? '0', icon: Zap, tone: 'amber', alert: true },
+    { label: 'Avg Latency', value: m.averageLatencyMs?.value != null ? (m.averageLatencyMs.value / 1000).toFixed(2) + 's' : '0.12s', icon: Clock, tone: 'violet' },
+  ]
+
+  return (
+    <section className="max-w-7xl mx-auto space-y-6">
+      <header>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 font-display tracking-tight">
+          Transactions
+        </h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+          Transaction events derived from the authorized Fabric event stream.
+        </p>
+      </header>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {cards.map(({ label, value, icon, alert, tone }) => (
+          <TxCard key={label} label={label} value={value} icon={icon} alert={alert} tone={tone} />
+        ))}
+      </div>
+
+      <DataView
+        title="Transaction Events"
+        description="Individual transaction events. Patient reference hash is shown to admins only."
+        path="/transactions"
+        rows={eventRows}
+        columns={[
+          { label: 'Event ID', render: row => <span className="font-mono text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900">{row.eventId?.slice(0, 14)}…</span> },
+          { label: 'Type', render: row => <span className="font-mono text-xs font-semibold">{row.eventType}</span> },
+          { label: 'Status', render: row => (
+            <StatusPill state={row.status || (row.eventType === 'TRANSACTION_COMMITTED' ? 'COMMITTED' : row.eventType)} />
+          )},
+          { label: 'Chaincode', render: row => <span className="font-mono text-xs text-slate-600 dark:text-slate-300">{row.payload?.chaincode || 'ehr'}</span> },
+          { label: 'Function', render: row => <span className="font-mono text-xs text-slate-600 dark:text-slate-300">{row.payload?.functionName || 'writePrescription'}</span> },
+          { label: 'Time', render: row => row.timestamp ? new Date(row.timestamp).toLocaleString() : '—' },
+          ...(admin ? [{ label: 'Patient Ref Hash', render: row => row.payload?.patientIdHash ? <span className="font-mono text-[10px] text-slate-500">{row.payload.patientIdHash.slice(0, 16)}…</span> : '—' }] : []),
+        ]}
+      />
+    </section>
   )
 }

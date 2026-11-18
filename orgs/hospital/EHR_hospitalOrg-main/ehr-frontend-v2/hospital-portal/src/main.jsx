@@ -12,6 +12,7 @@ import NurseVisits from './pages/NurseVisits'
 import { PharmacistPage, MedRecordsPage } from './pages/PharmacistRecords'
 import Staff from './pages/Staff'
 import './index.css'
+import './design-system/observatory-theme.css'
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useAuth()
@@ -33,23 +34,11 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/" element={<Login />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/gateway" element={<Login />} />
 
       {/* Protected routes with Layout */}
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Layout>
-            <Navigate to={
-              !user ? '/login' :
-              ['receptionist','admin'].includes(user.role) ? '/patients' :
-              ['doctor'].includes(user.role) ? '/my-visits' :
-              ['nurse'].includes(user.role) ? '/my-visits' :
-              user.role === 'pharmacist' ? '/dispense' : '/finalize'
-            } replace />
-          </Layout>
-        </ProtectedRoute>
-      } />
-
       {/* Receptionist / Admin */}
       <Route path="/patients" element={
         <ProtectedRoute allowedRoles={['receptionist','admin']}>

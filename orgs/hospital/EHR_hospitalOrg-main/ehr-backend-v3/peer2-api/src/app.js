@@ -20,7 +20,7 @@ const pharmacistRoutes = require('./routes/pharmacist');
 const recordRoutes     = require('./routes/records');
 
 const app  = express();
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 4003;
 
 app.use(cors({ origin: '*', credentials: true }))
 app.use(helmet({ crossOriginResourcePolicy: false }));

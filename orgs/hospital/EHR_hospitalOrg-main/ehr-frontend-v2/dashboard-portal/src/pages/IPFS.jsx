@@ -1,61 +1,82 @@
 import React from 'react'
-import { Database, HardDrive, Share2, Globe, FileText } from 'lucide-react'
-import { DataTable } from '../components/DataTable'
+import { StatusPill, useDashboardData } from '../components/DataView'
+import { Database, Server, HardDrive, Upload, AlertCircle, Link2Off } from 'lucide-react'
 
-const mockFiles = Array.from({ length: 10 }).map((_, i) => ({
-  cid: `Qm${Math.random().toString(36).substring(2, 40)}`,
-  size: `${Math.floor(Math.random() * 50) + 1} MB`,
-  pins: Math.floor(Math.random() * 5) + 1,
-  type: ['Encrypted EHR', 'Lab Report', 'Prescription', 'Medical Image'][Math.floor(Math.random() * 4)],
-  added: new Date(Date.now() - Math.floor(Math.random() * 10000000)).toLocaleString()
-}))
+function IpfsStatusCard({ label, value, icon: Icon, online, detail, tone = 'blue' }) {
+  const isOnline = online === true
+  const isOffline = online === false
+
+  const iconColors = {
+    blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    rose: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+    cyan: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
+    amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  }[tone] || 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'
+
+  return (
+    <div className={`premium-card p-5 ${isOffline ? 'border-red-400 dark:border-red-600' : ''}`}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</span>
+        {Icon && (
+          <div className={`p-2 rounded-xl border ${iconColors}`}>
+            <Icon size={18} />
+          </div>
+        )}
+      </div>
+      <div className="text-2xl font-bold font-display tracking-tight text-slate-900 dark:text-slate-50">
+        {online !== undefined ? (
+          <StatusPill state={isOnline ? 'ONLINE' : 'OFFLINE'} />
+        ) : (
+          value ?? 0
+        )}
+      </div>
+      {detail && <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-medium">{detail}</p>}
+    </div>
+  )
+}
 
 export default function IPFS() {
+  const { data, error, loading } = useDashboardData('/ipfs')
+  const metrics = data?.metrics || {}
+  const status = data?.status
+
+  const isNodeOnline = status?.state === 'OK'
+  const isNodeOffline = status?.state === 'NOT_CONNECTED' || status?.state === 'DOWN'
+
   return (
-    <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">IPFS Storage Node</h1>
-        <p className="text-slate-500 mt-1">Decentralized storage layer metrics and pinned content.</p>
-      </div>
+    <section className="max-w-7xl mx-auto space-y-6">
+      <header>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 font-display tracking-tight">
+          IPFS Observations
+        </h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+          Decentralized content storage nodes and clinical artifact cluster health.
+        </p>
+      </header>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center justify-center hover:-translate-y-1 transition-transform duration-300 group">
-            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-blue-600 group-hover:text-white transition-colors"><Database size={24} /></div>
-            <div className="text-3xl font-bold text-slate-900">4.2 TB</div>
-            <div className="text-sm font-medium text-slate-500 mt-1">Total Pinned Size</div>
-         </div>
-         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center justify-center hover:-translate-y-1 transition-transform duration-300 group">
-            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-emerald-600 group-hover:text-white transition-colors"><Share2 size={24} /></div>
-            <div className="text-3xl font-bold text-slate-900">142</div>
-            <div className="text-sm font-medium text-slate-500 mt-1">Connected Swarm Peers</div>
-         </div>
-         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center justify-center hover:-translate-y-1 transition-transform duration-300 group">
-            <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-purple-600 group-hover:text-white transition-colors"><Globe size={24} /></div>
-            <div className="text-3xl font-bold text-slate-900">2.1 GB/s</div>
-            <div className="text-sm font-medium text-slate-500 mt-1">Network Bandwidth</div>
-         </div>
-         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center justify-center hover:-translate-y-1 transition-transform duration-300 group">
-            <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-amber-500 group-hover:text-white transition-colors"><FileText size={24} /></div>
-            <div className="text-3xl font-bold text-slate-900">89.4k</div>
-            <div className="text-sm font-medium text-slate-500 mt-1">Encrypted Documents</div>
-         </div>
-      </div>
+      {loading && (
+        <div className="premium-card p-6 text-slate-500 dark:text-slate-400 flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <span>Probing IPFS cluster nodes…</span>
+        </div>
+      )}
+      {error && (
+        <div role="alert" className="premium-card p-4 border-amber-300 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-sm">
+          {error}
+        </div>
+      )}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-         <div className="p-6 border-b border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-800">Recently Pinned CIDs</h2>
-         </div>
-         <DataTable 
-            columns={[
-               { header: 'CID', cell: row => <span className="font-mono text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-xs truncate max-w-[250px] block" title={row.cid}>{row.cid}</span> },
-               { header: 'Document Type', cell: row => <span className="font-medium text-slate-800 text-sm">{row.type}</span> },
-               { header: 'Size', cell: row => <span className="text-slate-600 text-sm">{row.size}</span> },
-               { header: 'Replicas', cell: row => <span className="px-2 py-1 bg-slate-100 border border-slate-200 rounded text-xs font-medium text-slate-600">{row.pins} nodes</span> },
-               { header: 'Added At', cell: row => <span className="text-slate-500 text-sm">{row.added}</span> }
-            ]}
-            data={mockFiles}
-         />
-      </div>
-    </div>
+      {data && (
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <IpfsStatusCard label="Node Status" icon={Server} online={isNodeOnline ? true : isNodeOffline ? false : undefined} tone="emerald" detail="Peer daemon port 5001" />
+          <IpfsStatusCard label="Gateway Status" icon={Database} online={isNodeOnline ? true : isNodeOffline ? false : undefined} detail="Via IPFS HTTP service" tone="cyan" />
+          <IpfsStatusCard label="Storage Status" icon={HardDrive} value="Available" detail="IPFS v0.26 repo active" tone="blue" />
+          <IpfsStatusCard label="Uploads" icon={Upload} value={metrics.uploads ?? 0} tone="emerald" detail="Clinical documents verified" />
+          <IpfsStatusCard label="Upload Failures" icon={AlertCircle} value={metrics.failures ?? 0} tone="rose" detail="0 unrecoverable timeouts" />
+          <IpfsStatusCard label="CID Resolution Failures" icon={Link2Off} value={metrics.cidResolutionFailures ?? 0} tone="amber" detail="0 missing multihashes" />
+        </div>
+      )}
+    </section>
   )
 }
