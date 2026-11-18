@@ -45,7 +45,7 @@ const PHARMACY_ROLES = [
     icon: Pill,
     allowedTabs: ['prescriptions', 'inventory', 'patient'],
     defaultTab: 'prescriptions',
-    desc: 'In-patient doctor prescription fulfillment, hospital encounter verification & ledger dispense stamp.',
+    desc: 'In-patient doctor prescription fulfillment, clinical dosage verification & ledger dispense signing.',
     gradient: 'linear-gradient(135deg, rgba(14,165,233,0.12), rgba(2,132,199,0.06))',
     borderSelected: '#0284c7'
   },
@@ -65,7 +65,7 @@ const PHARMACY_ROLES = [
   },
   {
     id: 'billing',
-    title: 'Pharmacy POS & Invoicing Officer',
+    title: 'Pharmacy POS & Invoicing Clerk',
     user: 'billing_clerk_01',
     pwd: 'billpw',
     badge: 'p-backend (Port 3000)',
@@ -73,13 +73,13 @@ const PHARMACY_ROLES = [
     icon: FileText,
     allowedTabs: ['billing', 'patient', 'inventory'],
     defaultTab: 'billing',
-    desc: 'Point-of-sale customer billing, prescription template packs, tax calculation & IPFS receipt minting.',
+    desc: 'Point-of-sale customer billing, clinical template packs, 5% GST tax & IPFS receipt minting.',
     gradient: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06))',
     borderSelected: '#10b981'
   },
   {
     id: 'manager',
-    title: 'Pharmacy Operations Director',
+    title: 'Pharmacy Director & Operations Manager',
     user: 'pharmacy_mgr',
     pwd: 'adminpw',
     badge: 'p-backend (Port 3000)',
@@ -87,7 +87,7 @@ const PHARMACY_ROLES = [
     icon: ShieldCheck,
     allowedTabs: ['prescriptions', 'inventory', 'billing', 'patient', 'operations'],
     defaultTab: 'operations',
-    desc: 'Staff credentialing roster, global billing audits, financial overview & Fabric consensus monitoring.',
+    desc: 'Executive leadership: staff credentialing, Fabric peer consensus, blockchain audit trails & full departmental authority.',
     gradient: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(79,70,229,0.06))',
     borderSelected: '#6366f1'
   }
@@ -435,7 +435,6 @@ export default function App() {
 
       if (!res.ok) throw new Error('Dispense transaction failed on Fabric Peer2')
 
-      // Also deduct Paracetamol / Amoxicillin in inventory if available
       try {
         await fetch('/api/pharmacy/api/inventory/deduct', {
           method: 'POST',
@@ -757,18 +756,18 @@ export default function App() {
         </div>
       )}
 
-      {/* Top Header */}
-      <header className="pharmacy-header">
+      {/* Top Navbar */}
+      <header className="pharm-navbar">
         <div className="brand-group">
           <div className="brand-icon">
-            <Pill size={22} color="white" />
+            <img src="/logo.svg" alt="CareGrid NITW" />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span className="brand-title">CareGrid NITW</span>
-              <span className="brand-badge">PHARMACY SUITE</span>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span className="brand-title">CareGrid <span style={{ color: 'var(--obs-accent)' }}>Pharmacy</span></span>
+              <span className="brand-badge">Suite</span>
             </div>
-            <p className="brand-sub">Consolidated Hyperledger Fabric Pharmacy Operations</p>
+            <p className="brand-sub">NIT Warangal Campus Health Center · Hyperledger Fabric</p>
           </div>
         </div>
 
@@ -778,7 +777,7 @@ export default function App() {
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              padding: '0.35rem 0.75rem',
+              padding: '0.35rem 0.85rem',
               borderRadius: '9999px',
               border: '1px solid var(--border-card)',
               background: 'var(--bg-card)',
@@ -815,7 +814,7 @@ export default function App() {
               display: 'flex',
               alignItems: 'center',
               gap: '0.4rem',
-              padding: '0.35rem 0.75rem',
+              padding: '0.35rem 0.85rem',
               borderRadius: '9999px',
               background: 'rgba(239,68,68,0.1)',
               border: '1px solid rgba(239,68,68,0.3)',
@@ -837,7 +836,7 @@ export default function App() {
               setRoleModalOpen(true)
             }}
             className="btn-ink btn-ink-primary"
-            style={{ fontSize: '0.8rem', padding: '0.45rem 0.9rem', gap: '0.4rem' }}
+            style={{ fontSize: '0.78rem', padding: '0.45rem 0.95rem' }}
           >
             <ShieldCheck size={14} />
             <span>Switch Role</span>
@@ -847,7 +846,7 @@ export default function App() {
             display: 'flex',
             alignItems: 'center',
             gap: '0.4rem',
-            padding: '0.35rem 0.75rem',
+            padding: '0.35rem 0.85rem',
             borderRadius: '9999px',
             background: 'var(--bg-card)',
             border: '1px solid var(--border-card)',
@@ -862,33 +861,49 @@ export default function App() {
         </div>
       </header>
 
-      {/* Tab Navigation */}
-      <nav className="tab-bar">
-        {TABS.map(t => {
-          const Icon = t.icon
-          const isAllowed = selectedRole.allowedTabs?.includes(t.id)
-          return (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`tab-pill ${activeTab === t.id ? 'active' : ''}`}
-              style={{
-                opacity: isAllowed ? 1 : 0.65,
-                position: 'relative'
-              }}
-            >
-              <Icon size={14} />
-              <span>{t.label}</span>
-              {!isAllowed && (
-                <Lock size={11} style={{ marginLeft: 2, color: 'var(--text-muted)' }} />
-              )}
-            </button>
-          )
-        })}
-      </nav>
+      {/* Subheader Navigation Bar */}
+      <div style={{
+        maxWidth: 1440,
+        margin: '1.25rem auto 0',
+        padding: '0 2rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '0.75rem'
+      }}>
+        <nav className="tab-pill-bar">
+          {TABS.map(t => {
+            const Icon = t.icon
+            const isAllowed = selectedRole.allowedTabs?.includes(t.id)
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`tab-pill ${activeTab === t.id ? 'active' : ''}`}
+                style={{
+                  opacity: isAllowed ? 1 : 0.65,
+                  position: 'relative'
+                }}
+              >
+                <Icon size={14} />
+                <span>{t.label}</span>
+                {!isAllowed && (
+                  <Lock size={11} style={{ marginLeft: 2, color: 'var(--text-muted)' }} />
+                )}
+              </button>
+            )
+          })}
+        </nav>
+
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span>Gateway:</span>
+          <code style={{ color: 'var(--obs-accent)', fontWeight: 600 }}>{selectedRole.badge}</code>
+        </div>
+      </div>
 
       {/* Main Content Workspace */}
-      <main className="pharmacy-main">
+      <main style={{ maxWidth: 1440, margin: '1.25rem auto 3rem', padding: '0 2rem', flex: 1, width: '100%' }}>
 
         {/* ── Tab 1: Doctor Prescriptions & Dispensing (Pharmacist / Manager) ── */}
         {activeTab === 'prescriptions' && (
@@ -1770,10 +1785,10 @@ export default function App() {
       {/* ── Role Selection Modal (Hospital Card Style with Password Form) ── */}
       {roleModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 960 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div className="modal-content" style={{ maxWidth: 1040, padding: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Select Pharmacy Role Workspace</h2>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>Select Pharmacy Role Workspace</h2>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   Each credentialed role provides fine-grained access to clinical dispensing, inventory, billing, or audit.
                 </p>
@@ -1791,17 +1806,17 @@ export default function App() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: '0.75rem 1rem',
-                borderRadius: '0.75rem',
+                padding: '0.75rem 1.25rem',
+                borderRadius: '0.85rem',
                 background: 'rgba(56,189,248,0.1)',
                 border: '1px solid rgba(56,189,248,0.25)',
-                marginBottom: '1.25rem',
+                marginBottom: '1.5rem',
                 fontSize: '0.8rem'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                   <span style={{
-                    width: 26,
-                    height: 26,
+                    width: 28,
+                    height: 28,
                     borderRadius: '50%',
                     background: 'var(--obs-accent)',
                     color: 'white',
@@ -1824,7 +1839,7 @@ export default function App() {
                   type="button"
                   onClick={() => setRoleModalOpen(false)}
                   className="btn-ink btn-ink-primary"
-                  style={{ fontSize: '0.75rem', padding: '0.4rem 0.85rem' }}
+                  style={{ fontSize: '0.75rem', padding: '0.45rem 1rem' }}
                 >
                   Enter {session.title} Workspace →
                 </button>
@@ -1832,7 +1847,7 @@ export default function App() {
             )}
 
             {/* Role Cards Grid */}
-            <div className="role-grid" style={{ marginBottom: '1.25rem' }}>
+            <div className="role-grid" style={{ marginBottom: '1.5rem' }}>
               {PHARMACY_ROLES.map(r => {
                 const isSelected = pendingRole.id === r.id
                 const Icon = r.icon
@@ -1846,40 +1861,47 @@ export default function App() {
                       borderColor: isSelected ? r.borderSelected : 'var(--border-card)'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <div style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '0.5rem',
-                        background: isSelected ? r.borderSelected : 'rgba(255,255,255,0.06)',
-                        color: isSelected ? 'white' : 'var(--text-primary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <Icon size={17} />
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <div style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: '0.65rem',
+                          background: isSelected ? r.borderSelected : 'rgba(255,255,255,0.06)',
+                          color: isSelected ? 'white' : 'var(--text-primary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <Icon size={18} />
+                        </div>
+                        <span className={`status-pill ${r.badgeTone}`} style={{ fontSize: '0.62rem' }}>
+                          {r.badge}
+                        </span>
                       </div>
-                      <span className={`status-pill ${r.badgeTone}`} style={{ fontSize: '0.65rem' }}>
-                        {r.badge}
-                      </span>
+
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.3rem' }}>
+                        {r.title}
+                      </h4>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.45, marginBottom: '0.75rem' }}>
+                        {r.desc}
+                      </p>
                     </div>
 
-                    <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
-                      {r.title}
-                    </h4>
-                    <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: '0.6rem' }}>
-                      {r.desc}
-                    </p>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.4rem', borderTop: '1px solid var(--border-card)', fontSize: '0.7rem' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Demo: <code style={{ color: 'var(--text-primary)' }}>{r.user}</code></span>
-                      {isSelected ? (
-                        <span style={{ color: r.borderSelected, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                          <CheckCircle2 size={12} /> Target
-                        </span>
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)' }}>Select →</span>
-                      )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-card)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>MSP Identity:</span>
+                        <code style={{ color: 'var(--obs-accent)', fontWeight: 600 }}>{r.user}</code>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.72rem' }}>
+                        {isSelected ? (
+                          <span style={{ color: r.borderSelected, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <CheckCircle2 size={13} /> Active Target
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Select Role →</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )
@@ -1891,7 +1913,7 @@ export default function App() {
               background: 'var(--bg-page)',
               border: '1px solid var(--border-card)',
               borderRadius: '1rem',
-              padding: '1.25rem'
+              padding: '1.35rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1923,7 +1945,7 @@ export default function App() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.35rem' }}>
                     Username / MSP Identity
