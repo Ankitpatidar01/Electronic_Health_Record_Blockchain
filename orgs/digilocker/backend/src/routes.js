@@ -167,7 +167,7 @@ h1{font-size:20px;margin:14px 0 8px}p{color:#CBD5E1;margin:0 0 12px}ul{color:#CB
   // ── issued documents in the linked locker ───────────────────────────────────
   router.get('/documents', authenticate, wrap(async (req, res) => {
     const tokens = await sessionFor(req.patientId);
-    const issued = await provider.listIssued(tokens);
+    const issued = await provider.listIssued(tokens, req.patientId);
     let anchored = null;
     try {
       anchored = new Map((await fabric.list(req.patientId)).map(doc => [doc.docId, doc]));
@@ -202,7 +202,7 @@ h1{font-size:20px;margin:14px 0 8px}p{color:#CBD5E1;margin:0 0 12px}ul{color:#CB
     }
 
     const tokens = await sessionFor(patientId);
-    const file = await provider.fetchFile(tokens, uri);
+    const file = await provider.fetchFile(tokens, uri, patientId);
     if (!file.buffer?.length) throw fail(502, 'DigiLocker returned an empty document');
     if (file.buffer.length > config.maxDocumentBytes) {
       throw fail(413, `Document is larger than the ${Math.floor(config.maxDocumentBytes / 1024)} KB vault limit`);

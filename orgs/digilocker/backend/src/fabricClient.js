@@ -142,6 +142,17 @@ class FabricClient {
   revoke(patientId, docId, reason)      { return this.run('submit', 'RevokeDocument', [patientId, docId, reason || '']); }
   history(patientId, docId)             { return this.run('evaluate', 'GetDocumentHistory', [patientId, docId]).then(r => r || []); }
 
+  async getPatientVisits(patientId) {
+    try {
+      const contract = this.contract();
+      const bytes = await contract.evaluateTransaction('VisitContract:GetPatientVisitsFull', patientId);
+      return parse(bytes) || [];
+    } catch (err) {
+      this.logger?.warn('Could not fetch patient visits from Fabric', { patientId, error: err.message });
+      return [];
+    }
+  }
+
   async health() {
     try { this.contract(); return true; } catch (_) { return false; }
   }

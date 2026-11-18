@@ -18,10 +18,10 @@ const { createRouter }    = require('./routes');
 const { SandboxProvider } = require('./providers/sandbox');
 const { LiveProvider }    = require('./providers/live');
 
-function createProvider(config) {
+function createProvider(config, deps = {}) {
   if (config.mode === 'live') return new LiveProvider({ publicUrl: config.publicUrl, live: config.live });
   const signingKey = crypto.createHmac('sha256', config.vaultKey).update('ehr-digilocker:sandbox-signing').digest();
-  return new SandboxProvider({ publicUrl: config.publicUrl, signingKey });
+  return new SandboxProvider({ publicUrl: config.publicUrl, signingKey, fabric: deps.fabric, ipfs: deps.ipfs, logger: deps.logger });
 }
 
 function createApp(deps) {
@@ -74,9 +74,9 @@ function start() {
   }
 
   const store     = new JsonStore(config.dataDir);
-  const provider  = createProvider(config);
   const ipfs      = new IpfsClient({ ...config.ipfs, logger });
   const fabric    = new FabricClient({ fabric: config.fabric, logger });
+  const provider  = createProvider(config, { fabric, ipfs, logger });
   const telemetry = createTelemetry({ dashboard: config.dashboard, logger });
   const app = createApp({ config, store, provider, ipfs, fabric, telemetry, logger });
 
