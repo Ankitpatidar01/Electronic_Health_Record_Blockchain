@@ -716,7 +716,7 @@ def run_disease_tools(lab_result: Dict[str, Any], history_result: Dict[str, Any]
                 aggregated_risks.append(f"[{res['tool_name']}]: {res['risk_assessment']}")
             if res.get("recommended_actions"):
                 aggregated_actions.extend(res["recommended_actions"])
-            
+
             tool_sev = res.get("severity", "LOW")
             if severity_order.index(tool_sev) > severity_order.index(highest_severity):
                 highest_severity = tool_sev

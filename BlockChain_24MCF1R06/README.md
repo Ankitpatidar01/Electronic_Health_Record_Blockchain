@@ -1,8 +1,8 @@
 # Multi-Disease Clinical Decision Support Agent
-**Author:** Ankit Patidar  
-**Roll No:** 24MCF1R06  
-**Role:** Clinical Decision Support Agent Lead / Hospital Agent (Clinical Capability)  
-**System:** Blockchain-Based Electronic Health Record (EHR) System  
+**Author:** Ankit Patidar
+**Roll No:** 24MCF1R06
+**Role:** Clinical Decision Support Agent Lead / Hospital Agent (Clinical Capability)
+**System:** Blockchain-Based Electronic Health Record (EHR) System
 
 ---
 
