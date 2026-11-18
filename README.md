@@ -112,7 +112,6 @@ flowchart TB
     %% Blockchain Consensus
     PEER0 & PEER1 & PEER2 & PEER_DIAG & PEER_PROV --> ORDERER
 ```
-```
 
 ---
 

@@ -42,6 +42,7 @@ This milestone merges and smoothly integrates both upstream PRs (PR #12 Sushil T
 - Fixed container boot crash in `patient-api` caused by out-of-sync `better-sqlite3` bump in `package.json`.
 - Removed accidental 4,000-line terminal dump file from PR 11.
 - Total automated unit and integration tests passing: **54 / 54**.
+- Synchronized live DigiLocker ledger anchoring and enhanced section headers in the Patient Portal (`:5174/digilocker`) with status badges and descriptive subtitles.
 
 ---
 
