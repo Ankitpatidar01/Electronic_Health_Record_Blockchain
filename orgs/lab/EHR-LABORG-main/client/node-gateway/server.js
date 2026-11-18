@@ -11,6 +11,16 @@ const {
   getAiAgentConfig,
   runAgenticClinicalAnalysis,
 } = require('./ai-agent');
+
+const {
+  runPythonClinicalReview,
+} = require('./python-clinical-client');
+
+const {
+  runWorkflow,
+  approveWorkflowRun,
+  getWorkflowState,
+} = require('./orchestrator/orchestrator');
 const {
   createLabResult,
   getAllLabResults,
@@ -280,14 +290,24 @@ app.post('/api/ai/analyze', async (req, res, next) => {
     }
 
     const analysisStarted = Date.now();
-    const ai = await runAgenticClinicalAnalysis({
-      resultData: req.body.resultData,
-      testCode: req.body.testCode,
-      patientId: req.body.patientId,
-      patientHistory,
-      reportText: req.body.reportText,
-      reportTextSource: req.body.reportTextSource,
-    });
+    let ai;
+    try {
+      ai = await runPythonClinicalReview({
+        resultData: req.body.resultData,
+        patientId: req.body.patientId,
+        patientHistory,
+        reportText: req.body.reportText,
+      });
+    } catch (_err) {
+      ai = await runAgenticClinicalAnalysis({
+        resultData: req.body.resultData,
+        testCode: req.body.testCode,
+        patientId: req.body.patientId,
+        patientHistory,
+        reportText: req.body.reportText,
+        reportTextSource: req.body.reportTextSource,
+      });
+    }
     telemetry.traceStage('lab-agent', 'AGENT_PROCESSING', ai && ai.ok === false ? 'FAILED' : 'DONE', {
       durationMs: Date.now() - analysisStarted,
       model: telemetry.safeCode(ai && ai.model, 'unknown'),
@@ -486,16 +506,25 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
 
       traceStageName = 'AGENT_PROCESSING';
       const aiStarted = Date.now();
-      ai = await runAgenticClinicalAnalysis({
-        resultData: resultDataForAi,
-        testCode: req.body.testCode,
-        patientId: req.body.patientId,
-        patientHistory,
-        reportText: extractedReportText,
-        reportTextSource: reportFileIpfs
-          ? (req.file.originalname || reportFileIpfs.name)
-          : undefined,
-      });
+      try {
+        ai = await runPythonClinicalReview({
+          resultData: resultDataForAi,
+          patientId: req.body.patientId,
+          patientHistory,
+          reportText: extractedReportText,
+        });
+      } catch (_err) {
+        ai = await runAgenticClinicalAnalysis({
+          resultData: resultDataForAi,
+          testCode: req.body.testCode,
+          patientId: req.body.patientId,
+          patientHistory,
+          reportText: extractedReportText,
+          reportTextSource: reportFileIpfs
+            ? (req.file.originalname || reportFileIpfs.name)
+            : undefined,
+        });
+      }
       const aiModel = telemetry.safeCode(ai && ai.model, 'unknown');
       trace('AGENT_PROCESSING', ai && ai.ok === false ? 'FAILED' : 'DONE', {
         durationMs: Date.now() - aiStarted, model: aiModel,
@@ -504,6 +533,7 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
       if (ai && (ai.ok === false || ai.warning)) {
         telemetry.emit('AI_FALLBACK_USED', { agentId: 'lab-agent', status: 'FALLBACK', model: aiModel, fallbackUsed: true },
           { correlationId: traceId, severity: 'WARNING' });
+      }
       }
 
       aiIpfs = await addJsonToIpfs(ai, {

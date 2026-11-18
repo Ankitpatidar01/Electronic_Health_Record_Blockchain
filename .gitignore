@@ -17,6 +17,7 @@
 # Logs
 *.log
 **/logs/
+**/log.txt
 
 # OS files
 .DS_Store
@@ -41,5 +42,14 @@ Thumbs.db
 *.pptx
 repomix-output.xml
 base work/
-**/log.txt
+
+# Python virtual environments & bytecode
+.venv/
+.venv*/
+**/__pycache__/
+*.py[cod]
+
+# Temporary files and backups
+*.backup
+**/backups/
 .pids/
