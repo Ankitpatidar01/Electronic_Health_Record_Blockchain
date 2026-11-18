@@ -483,6 +483,7 @@ html.dark .dashboard-logout:hover {
 
 /* ==========================================================================
    OVERVIEW HERO SECTION & ORBITAL GRAPHICS
+   ========================================================================== */
 
 .eyebrow {
   margin: 0 0 9px;
@@ -523,8 +524,6 @@ html.dark .section-heading h2 {
   color: #94a3b8;
   font-size: 11px;
 }
-
-   ========================================================================== */
 html[data-theme="dark"] input,
 html[data-theme="dark"] select,
 html[data-theme="dark"] textarea,
