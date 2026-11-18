@@ -297,26 +297,54 @@ html.dark .toggle-switch-knob {
 .hero-showcase {
   position: relative;
   width: 100%;
-  margin: 0 0 32px 0;
+  margin: 0;
   padding: 0;
   border-radius: 0;
   border: none;
-  border-bottom: 1px solid var(--border-light);
   background-color: var(--bg-card);
   overflow: hidden;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
 }
 
 html[data-theme="dark"] .hero-showcase,
 html.dark .hero-showcase {
-  background-color: #0b1120;
-  border-bottom-color: rgba(30, 41, 59, 0.8);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  background-color: var(--bg-page);
+  border: none;
+  box-shadow: none;
+}
+
+/* Downward fading gradient at bottom of hero section instead of horizontal line */
+.hero-showcase::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 180px;
+  background: linear-gradient(
+    to bottom,
+    rgba(248, 250, 252, 0) 0%,
+    rgba(248, 250, 252, 0.35) 40%,
+    rgba(248, 250, 252, 0.85) 80%,
+    var(--bg-page) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+html[data-theme="dark"] .hero-showcase::after,
+html.dark .hero-showcase::after {
+  background: linear-gradient(
+    to bottom,
+    rgba(9, 13, 22, 0) 0%,
+    rgba(9, 13, 22, 0.35) 40%,
+    rgba(9, 13, 22, 0.85) 80%,
+    var(--bg-page) 100%
+  );
 }
 
 .hero-container {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   max-width: 1400px;
   margin: 0 auto;
   padding: 56px max(4vw, 24px) 36px;
@@ -365,27 +393,43 @@ html.dark .hero-showcase {
   inset: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    #f8fafc 0%,
-    rgba(248, 250, 252, 0.98) 35%,
-    rgba(248, 250, 252, 0.90) 50%,
-    rgba(248, 250, 252, 0.45) 75%,
-    rgba(248, 250, 252, 0.10) 100%
-  );
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 55%,
+      rgba(248, 250, 252, 0.45) 80%,
+      var(--bg-page) 100%
+    ),
+    linear-gradient(
+      90deg,
+      #f8fafc 0%,
+      rgba(248, 250, 252, 0.98) 35%,
+      rgba(248, 250, 252, 0.90) 50%,
+      rgba(248, 250, 252, 0.45) 75%,
+      rgba(248, 250, 252, 0.10) 100%
+    );
   pointer-events: none;
 }
 
 html[data-theme="dark"] .hero-bg-overlay,
 html.dark .hero-bg-overlay {
-  background: linear-gradient(
-    90deg,
-    #0b1120 0%,
-    rgba(11, 17, 32, 0.98) 35%,
-    rgba(11, 17, 32, 0.90) 50%,
-    rgba(11, 17, 32, 0.45) 75%,
-    rgba(11, 17, 32, 0.10) 100%
-  );
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 55%,
+      rgba(9, 13, 22, 0.5) 80%,
+      var(--bg-page) 100%
+    ),
+    linear-gradient(
+      90deg,
+      #090d16 0%,
+      rgba(9, 13, 22, 0.98) 35%,
+      rgba(9, 13, 22, 0.90) 50%,
+      rgba(9, 13, 22, 0.45) 75%,
+      rgba(9, 13, 22, 0.10) 100%
+    );
 }
 
 .hero-content {
