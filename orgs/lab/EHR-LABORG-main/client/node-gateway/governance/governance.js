@@ -23,7 +23,7 @@ async function checkGovernance(context, allResults) {
   let blocked = false;
 
   for (const agentId of REQUIRED_AGENTS) {
-    const entry = results[agentId];
+    const entry = results[agentId] || results[`${agentId}-v1`];
     if (!entry) {
       checks.push({ check: `${agentId}:present`, passed: false });
       safetyFlags.push(`${agentId} produced no result`);

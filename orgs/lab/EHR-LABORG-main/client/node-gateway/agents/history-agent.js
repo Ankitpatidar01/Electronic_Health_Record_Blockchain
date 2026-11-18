@@ -18,7 +18,7 @@
 
 const { randomUUID } = require('crypto');
 
-const AGENT_ID = 'history-agent-v1';
+const AGENT_ID = 'history-agent';
 
 /**
  * Emit non-blocking telemetry event to the Dashboard API if configured.
