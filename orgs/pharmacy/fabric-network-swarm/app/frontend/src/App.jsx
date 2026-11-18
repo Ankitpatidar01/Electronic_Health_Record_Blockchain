@@ -15,6 +15,7 @@ import {
   Receipt,
   Server,
   ArrowRight,
+  ArrowLeft,
   UserCheck,
   Trash2,
   DollarSign,
@@ -38,6 +39,7 @@ const PHARMACY_ROLES = [
   {
     id: 'pharmacist',
     title: 'Hospital Dispensing Pharmacist',
+    shortTitle: 'Dispensing Pharmacist',
     user: 'pharmacist',
     pwd: 'pharmpw',
     badge: 'peer2-api (Port 4003)',
@@ -52,6 +54,7 @@ const PHARMACY_ROLES = [
   {
     id: 'inventory',
     title: 'Pharmacy Stock & Inventory Officer',
+    shortTitle: 'Stock & Inventory',
     user: 'inventory_mgr_01',
     pwd: 'invpw',
     badge: 'p-backend (Port 3000)',
@@ -66,6 +69,7 @@ const PHARMACY_ROLES = [
   {
     id: 'billing',
     title: 'Pharmacy POS & Invoicing Clerk',
+    shortTitle: 'POS & Billing',
     user: 'billing_clerk_01',
     pwd: 'billpw',
     badge: 'p-backend (Port 3000)',
@@ -80,6 +84,7 @@ const PHARMACY_ROLES = [
   {
     id: 'manager',
     title: 'Pharmacy Director & Operations Manager',
+    shortTitle: 'Director & Operations',
     user: 'pharmacy_mgr',
     pwd: 'adminpw',
     badge: 'p-backend (Port 3000)',
@@ -141,23 +146,32 @@ const TABS = [
 ]
 
 export default function App() {
-  // Session & Role Auth State
+  // Session & Role Auth State (Zero-Trust: Null session requires role authentication)
   const [session, setSession] = useState(() => {
     try {
       const saved = localStorage.getItem('caregrid_pharmacy_session')
-      if (saved) return JSON.parse(saved)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        // Invalidate legacy mock auto-granted tokens
+        if (parsed.token && parsed.token !== 'init_token_pharm') {
+          return parsed
+        }
+        localStorage.removeItem('caregrid_pharmacy_session')
+      }
     } catch {}
-    return {
-      username: 'pharmacist',
-      role: 'pharmacist',
-      title: 'Hospital Dispensing Pharmacist',
-      token: 'init_token_pharm'
-    }
+    return null
   })
 
   const [selectedRole, setSelectedRole] = useState(() => {
-    const roleId = session?.role || 'pharmacist'
-    return PHARMACY_ROLES.find(r => r.id === roleId) || PHARMACY_ROLES[0]
+    try {
+      const saved = localStorage.getItem('caregrid_pharmacy_session')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        const match = PHARMACY_ROLES.find(r => r.id === parsed.role)
+        if (match) return match
+      }
+    } catch {}
+    return PHARMACY_ROLES[0]
   })
 
   const [roleModalOpen, setRoleModalOpen] = useState(false)
@@ -202,14 +216,16 @@ export default function App() {
       const data = await res.json()
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Invalid username or password for this role')
+        throw new Error(data.error || data.message || 'Invalid username or password for this role')
       }
 
+      const token = data.data?.token || data.token || 'jwt_session_' + Date.now()
       const newSession = {
         username: authUsername.trim(),
         role: pendingRole.id,
         title: pendingRole.title,
-        token: data.token || 'jwt_session_' + Date.now()
+        shortTitle: pendingRole.shortTitle,
+        token
       }
 
       setSession(newSession)
@@ -221,7 +237,7 @@ export default function App() {
         setActiveTab(pendingRole.defaultTab || 'inventory')
       }
 
-      showToast(`Authenticated as ${pendingRole.title} (${authUsername})`, 'success')
+      showToast(`Authenticated as ${pendingRole.title} (${authUsername.trim()})`, 'success')
     } catch (err) {
       setAuthError(err.message || 'Authentication failed. Please verify credentials.')
     } finally {
@@ -232,8 +248,8 @@ export default function App() {
   const handleSignOut = () => {
     localStorage.removeItem('caregrid_pharmacy_session')
     setSession(null)
-    setRoleModalOpen(true)
-    showToast('Signed out of Pharmacy Operations Suite.', 'info')
+    setRoleModalOpen(false)
+    showToast('Signed out of Pharmacy Operations Suite. Workspace locked.', 'info')
   }
 
   // Common Network Telemetry
@@ -390,13 +406,16 @@ export default function App() {
 
   useEffect(() => {
     fetchTelemetry()
-    fetchInventory()
-    fetchHospitalVisits()
-    fetchOpsData()
-    fetchPatientData(selectedPatientId)
-  }, [])
+    if (session) {
+      fetchInventory()
+      fetchHospitalVisits()
+      fetchOpsData()
+      fetchPatientData(selectedPatientId)
+    }
+  }, [session])
 
   useEffect(() => {
+    if (!session) return
     if (activeTab === 'patient') {
       fetchPatientData(selectedPatientId)
     } else if (activeTab === 'operations') {
@@ -406,7 +425,7 @@ export default function App() {
     } else if (activeTab === 'prescriptions') {
       fetchHospitalVisits()
     }
-  }, [activeTab, selectedPatientId])
+  }, [activeTab, selectedPatientId, session])
 
   // Dispense Handler
   const handleConfirmDispense = async () => {
@@ -730,13 +749,396 @@ export default function App() {
     </div>
   )
 
+  // ── Unauthenticated State: Role Authentication & Security Gate ──
+  if (!session) {
+    return (
+      <div className="pharmacy-app" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Toast Notification */}
+        {toast && (
+          <div style={{
+            position: 'fixed',
+            bottom: '1.5rem',
+            right: '1.5rem',
+            zIndex: 9999,
+            background: toast.type === 'error' ? 'rgba(239, 68, 68, 0.95)' : toast.type === 'info' ? 'rgba(2, 132, 199, 0.95)' : 'rgba(16, 185, 129, 0.95)',
+            color: '#ffffff',
+            padding: '0.75rem 1.25rem',
+            borderRadius: '0.75rem',
+            backdropFilter: 'blur(12px)',
+            fontWeight: 600,
+            fontSize: '0.85rem',
+            boxShadow: 'var(--shadow-lg)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            {toast.type === 'error' ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
+            <span>{toast.msg}</span>
+          </div>
+        )}
+
+        {/* Top Navbar (Auth Gate Mode) */}
+        <header className="pharm-navbar">
+          <div className="brand-group">
+            <div className="brand-icon">
+              <img src="/logo.svg" alt="CareGrid NITW" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <span className="brand-title">CareGrid <span style={{ color: 'var(--obs-accent)' }}>Pharmacy</span></span>
+                <span className="brand-badge">Suite</span>
+              </div>
+              <p className="brand-sub">NIT Warangal Campus Health Center · Hyperledger Fabric</p>
+            </div>
+          </div>
+
+          <div className="header-actions">
+            <a
+              href="http://localhost/"
+              className="btn-ink btn-ink-ghost"
+              style={{ fontSize: '0.78rem', padding: '0.45rem 0.95rem', gap: '0.4rem', textDecoration: 'none' }}
+            >
+              <ArrowLeft size={14} />
+              <span>Consortium Hub</span>
+            </a>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.35rem 0.85rem',
+              borderRadius: '9999px',
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              color: '#ef4444',
+              fontSize: '0.75rem',
+              fontWeight: 600
+            }}>
+              <Lock size={12} />
+              <span>Role Authentication Required</span>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.35rem 0.85rem',
+              borderRadius: '9999px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-card)',
+              fontSize: '0.75rem'
+            }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: networkStatus.ipfs === 'UP' ? '#10b981' : '#f59e0b' }} />
+              <span style={{ color: 'var(--text-muted)' }}>IPFS:</span>
+              <strong>{networkStatus.ipfs || 'UP'}</strong>
+            </div>
+
+            <ThemeToggle />
+          </div>
+        </header>
+
+        {/* Main Authentication Content */}
+        <main style={{ maxWidth: 1040, margin: '1.5rem auto 3rem', padding: '0 1.5rem', flex: 1, width: '100%' }}>
+          {/* Security Banner */}
+          <div className="pharmacy-glass" style={{
+            padding: '1rem 1.5rem',
+            borderRadius: '1rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            borderLeft: '4px solid var(--obs-accent)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{
+                width: 44,
+                height: 44,
+                borderRadius: '0.75rem',
+                background: 'rgba(14,165,233,0.12)',
+                color: 'var(--obs-accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <ShieldCheck size={24} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0 }}>
+                  CareGrid Pharmacy Role Authentication &amp; Access Gate
+                </h2>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0' }}>
+                  Zero-Trust Cryptographic Enforcement · Access to medication orders, patient records, inventory, and billing is restricted to verified MSP identities.
+                </p>
+              </div>
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.75rem',
+              padding: '0.35rem 0.85rem',
+              borderRadius: '9999px',
+              background: 'rgba(16,185,129,0.1)',
+              border: '1px solid rgba(16,185,129,0.25)',
+              color: '#10b981',
+              fontWeight: 600
+            }}>
+              <CheckCircle2 size={13} />
+              <span>Zero-PHI Protected</span>
+            </div>
+          </div>
+
+          {/* Role Cards Grid */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>1. Select Your Credentialed Role</h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  Choose the operational role that matches your hospital or pharmacy assignment.
+                </p>
+              </div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Target: <strong style={{ color: 'var(--obs-accent)' }}>{pendingRole.title}</strong>
+              </span>
+            </div>
+
+            <div className="role-grid">
+              {PHARMACY_ROLES.map(r => {
+                const isSelected = pendingRole.id === r.id
+                const Icon = r.icon
+                return (
+                  <div
+                    key={r.id}
+                    onClick={() => handleSelectPendingRole(r)}
+                    className={`role-card ${isSelected ? 'selected' : ''}`}
+                    style={{
+                      background: isSelected ? r.gradient : 'var(--bg-card)',
+                      borderColor: isSelected ? r.borderSelected : 'var(--border-card)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <div style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: '0.75rem',
+                          background: isSelected ? r.borderSelected : 'rgba(255,255,255,0.06)',
+                          color: isSelected ? 'white' : 'var(--text-primary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <Icon size={19} />
+                        </div>
+                        <span className={`status-pill ${r.badgeTone}`} style={{ fontSize: '0.62rem' }}>
+                          {r.badge}
+                        </span>
+                      </div>
+
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+                        {r.title}
+                      </h4>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.45, marginBottom: '0.75rem' }}>
+                        {r.desc}
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-card)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>MSP Identity:</span>
+                        <code style={{ color: 'var(--obs-accent)', fontWeight: 600 }}>{r.user}</code>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.72rem' }}>
+                        {isSelected ? (
+                          <span style={{ color: r.borderSelected, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <CheckCircle2 size={13} /> Active Target
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Select Role →</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Credential Verification Form */}
+          <form onSubmit={handleRoleAuthenticate} style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-card)',
+            borderRadius: '1.25rem',
+            padding: '1.75rem',
+            boxShadow: 'var(--shadow-sm)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <KeyRound size={20} color="var(--obs-accent)" />
+                <div>
+                  <h3 style={{ fontSize: '0.98rem', fontWeight: 800, margin: 0 }}>
+                    2. Authenticate &amp; Unlock Workspace for {pendingRole.title}
+                  </h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.2rem 0 0' }}>
+                    Enter the authorized cryptographic passphrase to sign in to the ledger workspace.
+                  </p>
+                </div>
+              </div>
+              <span className="status-pill pill-info" style={{ fontSize: '0.68rem' }}>
+                Gateway: {pendingRole.badge}
+              </span>
+            </div>
+
+            {authError && (
+              <div style={{
+                padding: '0.75rem 1.25rem',
+                borderRadius: '0.75rem',
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444',
+                fontSize: '0.8rem',
+                marginBottom: '1.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <AlertTriangle size={16} />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.4rem' }}>
+                  Username / MSP Identity
+                </label>
+                <input
+                  type="text"
+                  value={authUsername}
+                  onChange={e => setAuthUsername(e.target.value)}
+                  placeholder="e.g. pharmacist"
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem 0.95rem',
+                    borderRadius: '0.65rem',
+                    border: '1px solid var(--border-card)',
+                    background: 'var(--bg-page)',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.85rem',
+                    fontFamily: 'var(--font-mono)'
+                  }}
+                />
+                <div style={{ marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  <span>Demo identity:</span>
+                  <button
+                    type="button"
+                    onClick={() => setAuthUsername(pendingRole.user)}
+                    style={{ background: 'none', border: 'none', color: 'var(--obs-accent)', cursor: 'pointer', padding: 0, textDecoration: 'underline', fontFamily: 'var(--font-mono)' }}
+                  >
+                    {pendingRole.user}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.4rem' }}>
+                  Password / Passphrase
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showAuthPass ? 'text' : 'password'}
+                    value={authPassword}
+                    onChange={e => setAuthPassword(e.target.value)}
+                    placeholder="Enter password"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 2.4rem 0.7rem 0.95rem',
+                      borderRadius: '0.65rem',
+                      border: '1px solid var(--border-card)',
+                      background: 'var(--bg-page)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.85rem'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthPass(!showAuthPass)}
+                    style={{
+                      position: 'absolute',
+                      right: 10,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: '4px'
+                    }}
+                  >
+                    {showAuthPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <div style={{ marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  <span>Demo password:</span>
+                  <button
+                    type="button"
+                    onClick={() => setAuthPassword(pendingRole.pwd)}
+                    style={{ background: 'none', border: 'none', color: 'var(--obs-accent)', cursor: 'pointer', padding: 0, textDecoration: 'underline', fontFamily: 'var(--font-mono)' }}
+                  >
+                    {pendingRole.pwd}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <a
+                href="http://localhost/"
+                className="btn-ink btn-ink-ghost"
+                style={{ fontSize: '0.8rem', padding: '0.6rem 1.1rem', gap: '0.4rem', textDecoration: 'none' }}
+              >
+                <ArrowLeft size={14} />
+                <span>Cancel &amp; Return to Consortium Hub</span>
+              </a>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="btn-ink btn-ink-primary"
+                style={{ fontSize: '0.85rem', padding: '0.65rem 1.6rem', gap: '0.5rem' }}
+              >
+                {authLoading ? (
+                  <>
+                    <RefreshCw size={15} className="animate-spin" />
+                    <span>Verifying on Hyperledger Fabric...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck size={16} />
+                    <span>Authenticate &amp; Enter {pendingRole.title} Workspace →</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="pharmacy-app">
       {/* Toast Notification */}
       {toast && (
         <div style={{
           position: 'fixed',
-          top: '1.25rem',
+          bottom: '1.5rem',
           right: '1.5rem',
           zIndex: 9999,
           background: toast.type === 'error' ? 'rgba(239, 68, 68, 0.95)' : toast.type === 'info' ? 'rgba(2, 132, 199, 0.95)' : 'rgba(16, 185, 129, 0.95)',
@@ -772,60 +1174,27 @@ export default function App() {
         </div>
 
         <div className="header-actions">
-          {session ? (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.35rem 0.85rem',
-              borderRadius: '9999px',
-              border: '1px solid var(--border-card)',
-              background: 'var(--bg-card)',
-              fontSize: '0.75rem'
-            }}>
-              <span style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: '#10b981',
-                boxShadow: '0 0 8px #10b981'
-              }} />
-              <span>Session: <strong style={{ color: 'var(--obs-accent)' }}>{session.username}</strong></span>
-              <span style={{ color: 'var(--text-muted)' }}>({selectedRole.title})</span>
-              <button
-                onClick={handleSignOut}
-                title="Sign out / lock session"
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  padding: '2px 4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginLeft: '4px'
-                }}
-              >
-                <LogOut size={13} />
-              </button>
-            </div>
-          ) : (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.35rem 0.85rem',
-              borderRadius: '9999px',
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              color: '#ef4444',
-              fontSize: '0.75rem',
-              fontWeight: 600
-            }}>
-              <Lock size={12} />
-              <span>Locked · Sign In Required</span>
-            </div>
-          )}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            padding: '0.35rem 0.8rem',
+            borderRadius: '9999px',
+            border: '1px solid var(--border-card)',
+            background: 'var(--bg-card)',
+            fontSize: '0.74rem',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: '#10b981',
+              boxShadow: '0 0 6px #10b981'
+            }} />
+            <span><strong style={{ color: 'var(--obs-accent)' }}>{session.username}</strong></span>
+            <span style={{ color: 'var(--text-muted)' }}>· {session.shortTitle || selectedRole.shortTitle || selectedRole.title}</span>
+          </div>
 
           <button
             onClick={() => {
@@ -840,6 +1209,16 @@ export default function App() {
           >
             <ShieldCheck size={14} />
             <span>Switch Role</span>
+          </button>
+
+          <button
+            onClick={handleSignOut}
+            className="btn-ink btn-ink-ghost"
+            style={{ fontSize: '0.78rem', padding: '0.45rem 0.85rem', gap: '0.35rem', color: '#ef4444' }}
+            title="Lock workspace and sign out"
+          >
+            <LogOut size={13} />
+            <span>Sign Out</span>
           </button>
 
           <div style={{
