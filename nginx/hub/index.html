@@ -7,7 +7,7 @@
     <meta name="description" content="CareGrid NITW — Smart care, absolute privacy—your health records, decentralized and immutable." />
     <title>CareGrid NITW | NIT Warangal Health Center</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="stylesheet" href="/hub.css?v=5" />
+    <link rel="stylesheet" href="/hub.css?v=6" />
     <script>
       (function() {
         try {
@@ -19,7 +19,7 @@
         } catch (e) {}
       })();
     </script>
-    <script defer src="/hub.js?v=5"></script>
+    <script defer src="/hub.js?v=6"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to services</a>
@@ -65,16 +65,15 @@
       </div>
     </header>
 
-    <!-- Main Shell -->
-    <main id="main" class="shell">
-      <!-- Hero Showcase matching reference design with moving background -->
-      <section class="hero-showcase" id="overview" aria-labelledby="hero-title">
-        <!-- Animated Background Canvas -->
-        <div class="hero-bg-wrapper" aria-hidden="true">
-          <div class="hero-bg-image"></div>
-          <div class="hero-bg-overlay"></div>
-        </div>
+    <!-- Full-Width Edge-to-Edge Hero Banner -->
+    <section class="hero-showcase" id="overview" aria-labelledby="hero-title">
+      <!-- Animated Background Canvas -->
+      <div class="hero-bg-wrapper" aria-hidden="true">
+        <div class="hero-bg-image"></div>
+        <div class="hero-bg-overlay"></div>
+      </div>
 
+      <div class="hero-container">
         <!-- Left Hero Content -->
         <div class="hero-content">
           <div class="hero-badge-pill">
@@ -172,8 +171,11 @@
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
+    <!-- Main Shell for Workspaces & Services -->
+    <main id="main" class="shell">
       <!-- Filter Tabs (Quick Nav) -->
       <div class="filter-tabs" aria-label="Workspace Quick Filters">
         <button class="tab-pill" data-filter="all" type="button">

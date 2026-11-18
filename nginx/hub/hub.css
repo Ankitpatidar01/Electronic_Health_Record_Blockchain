@@ -286,26 +286,44 @@ html.dark .toggle-switch-knob {
 }
 
 /* ==========================================================================
-   MAIN SHELL & HERO SHOWCASE (WITH ANIMATED MOVING BACKGROUND)
+   MAIN SHELL & HERO SHOWCASE (EXPANDED TO BOTH ENDS / EDGE-TO-EDGE)
    ========================================================================== */
 .shell {
-  max-width: 1320px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 28px 24px 64px;
+  padding: 32px max(4vw, 24px) 64px;
 }
 
 .hero-showcase {
   position: relative;
+  width: 100%;
+  margin: 0 0 32px 0;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
+  background-color: var(--bg-card);
   overflow: hidden;
-  border-radius: 36px;
-  margin: 0 0 44px;
-  min-height: 580px;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+}
+
+html[data-theme="dark"] .hero-showcase,
+html.dark .hero-showcase {
+  background-color: #0b1120;
+  border-bottom-color: rgba(30, 41, 59, 0.8);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.hero-container {
+  position: relative;
+  z-index: 2;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 56px max(4vw, 24px) 36px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border: 1px solid var(--border-card);
-  background-color: var(--bg-card);
-  box-shadow: 0 24px 54px -14px rgba(15, 23, 42, 0.07);
+  min-height: 560px;
 }
 
 .hero-bg-wrapper {
@@ -320,12 +338,12 @@ html.dark .toggle-switch-knob {
 
 .hero-bg-image {
   position: absolute;
-  inset: -4%;
-  width: 108%;
-  height: 108%;
+  inset: -3%;
+  width: 106%;
+  height: 106%;
   background-image: url('/assets/hero-doctor-patient.jpg');
   background-size: cover;
-  background-position: right 14% center;
+  background-position: right 8% center;
   animation: heroDrift 28s ease-in-out infinite alternate;
   will-change: transform;
 }
@@ -335,10 +353,10 @@ html.dark .toggle-switch-knob {
     transform: scale(1) translate3d(0, 0, 0);
   }
   50% {
-    transform: scale(1.08) translate3d(-1.8%, -1.2%, 0);
+    transform: scale(1.06) translate3d(-1.5%, -1%, 0);
   }
   100% {
-    transform: scale(1.03) translate3d(0.8%, 0.8%, 0);
+    transform: scale(1.02) translate3d(0.6%, 0.6%, 0);
   }
 }
 
@@ -349,11 +367,11 @@ html.dark .toggle-switch-knob {
   height: 100%;
   background: linear-gradient(
     90deg,
-    #ffffff 0%,
-    rgba(255, 255, 255, 0.98) 42%,
-    rgba(255, 255, 255, 0.88) 54%,
-    rgba(255, 255, 255, 0.45) 75%,
-    rgba(255, 255, 255, 0.12) 100%
+    #f8fafc 0%,
+    rgba(248, 250, 252, 0.98) 35%,
+    rgba(248, 250, 252, 0.90) 50%,
+    rgba(248, 250, 252, 0.45) 75%,
+    rgba(248, 250, 252, 0.10) 100%
   );
   pointer-events: none;
 }
@@ -362,19 +380,19 @@ html[data-theme="dark"] .hero-bg-overlay,
 html.dark .hero-bg-overlay {
   background: linear-gradient(
     90deg,
-    #090d16 0%,
-    rgba(9, 13, 22, 0.98) 42%,
-    rgba(9, 13, 22, 0.88) 54%,
-    rgba(9, 13, 22, 0.55) 75%,
-    rgba(9, 13, 22, 0.22) 100%
+    #0b1120 0%,
+    rgba(11, 17, 32, 0.98) 35%,
+    rgba(11, 17, 32, 0.90) 50%,
+    rgba(11, 17, 32, 0.45) 75%,
+    rgba(11, 17, 32, 0.10) 100%
   );
 }
 
 .hero-content {
   position: relative;
   z-index: 2;
-  padding: 56px 48px 24px;
-  max-width: 650px;
+  padding: 0;
+  max-width: 660px;
   text-align: left;
 }
 
@@ -545,14 +563,14 @@ html.dark .hero-showcase .system-check-pill {
 .hero-stats-banner {
   position: relative;
   z-index: 3;
-  margin: 16px 28px 28px;
-  background: rgba(255, 255, 255, 0.95);
+  margin: 44px 0 0;
+  background: rgba(255, 255, 255, 0.90);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 26px;
+  border-radius: 20px;
   padding: 18px 24px;
-  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.07), 0 0 1px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.08), 0 0 1px rgba(0, 0, 0, 0.08);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
@@ -560,9 +578,9 @@ html.dark .hero-showcase .system-check-pill {
 
 html[data-theme="dark"] .hero-stats-banner,
 html.dark .hero-stats-banner {
-  background: rgba(17, 24, 39, 0.92);
-  border-color: rgba(30, 41, 59, 0.9);
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+  background: rgba(13, 19, 33, 0.82);
+  border-color: rgba(59, 130, 246, 0.22);
+  box-shadow: 0 20px 44px -10px rgba(0, 0, 0, 0.55);
 }
 
 .stat-col {
@@ -647,32 +665,34 @@ html[data-theme="dark"] .stat-icon-circle.emerald-circle {
 }
 
 @media (max-width: 960px) {
-  .hero-showcase {
+  .hero-container {
     min-height: auto;
+    padding: 36px 20px 24px;
   }
   .hero-content {
     max-width: 100%;
-    padding: 36px 24px 20px;
+    padding: 0;
   }
   .hero-bg-overlay {
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.95) 0%,
-      rgba(255, 255, 255, 0.9) 60%,
-      rgba(255, 255, 255, 0.8) 100%
+      rgba(248, 250, 252, 0.96) 0%,
+      rgba(248, 250, 252, 0.90) 55%,
+      rgba(248, 250, 252, 0.80) 100%
     );
   }
-  html[data-theme="dark"] .hero-bg-overlay {
+  html[data-theme="dark"] .hero-bg-overlay,
+  html.dark .hero-bg-overlay {
     background: linear-gradient(
       180deg,
-      rgba(9, 13, 22, 0.95) 0%,
-      rgba(9, 13, 22, 0.9) 60%,
-      rgba(9, 13, 22, 0.85) 100%
+      rgba(11, 17, 32, 0.96) 0%,
+      rgba(11, 17, 32, 0.90) 55%,
+      rgba(11, 17, 32, 0.80) 100%
     );
   }
   .hero-stats-banner {
     grid-template-columns: repeat(2, 1fr);
-    margin: 16px 16px 24px;
+    margin: 36px 0 0;
     gap: 16px;
   }
   .stat-col:nth-child(2) {
@@ -683,13 +703,17 @@ html[data-theme="dark"] .stat-icon-circle.emerald-circle {
 @media (max-width: 580px) {
   .hero-stats-banner {
     grid-template-columns: 1fr;
+    margin-top: 28px;
   }
   .stat-col {
     border-right: none;
     border-bottom: 1px solid var(--border-light);
-    padding-bottom: 12px;
+    padding: 10px 0;
   }
   .stat-col:last-child {
+    border-bottom: none;
+  }
+}
     border-bottom: none;
   }
   .hero-actions {
