@@ -281,7 +281,7 @@ services:
       VITE_ACCEPT_HOSPITAL_TOKEN: "true"
     ports:
       - "127.0.0.1:5176:5176"
-    command: /bin/sh -c "npm ci && npm run build && npm run preview -- --host 0.0.0.0 --port 5176 --strictPort"
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run build && npm run preview -- --host 0.0.0.0 --port 5176 --strictPort"
     restart: unless-stopped
 
   # ──────────────────────────────────────────────────────────
