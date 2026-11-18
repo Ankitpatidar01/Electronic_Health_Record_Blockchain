@@ -44,6 +44,14 @@
       </nav>
 
       <div class="topbar-right">
+        <a href="#care" class="topbar-cta-btn" aria-label="Go to Workspaces Hub">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect width="18" height="18" x="3" y="3" rx="2"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+          <span>Consortium Deck</span>
+        </a>
+
         <button class="theme-toggle-pill" id="theme-toggle" type="button" aria-label="Toggle light or dark theme" aria-pressed="false">
           <div class="toggle-switch-track">
             <div class="toggle-switch-knob"></div>
@@ -59,38 +67,128 @@
 
     <!-- Main Shell -->
     <main id="main" class="shell">
-      <!-- Centered Hero matching reference image -->
-      <section class="hero-section" id="overview" aria-labelledby="hero-title">
-        <h1 class="hero-brand" id="hero-title">CareGrid NITW</h1>
-        <h2 class="hero-tagline">
-          Smart care, absolute privacy—your health records, <span class="highlight-blue">decentralized and immutable.</span>
-        </h2>
-        <p class="hero-subtagline">
-          Empowering the NIT Warangal Health Center with next-gen Hyperledger Fabric security and AI-driven clinical intelligence.
-        </p>
+      <!-- Hero Showcase matching reference design with moving background -->
+      <section class="hero-showcase" id="overview" aria-labelledby="hero-title">
+        <!-- Animated Background Canvas -->
+        <div class="hero-bg-wrapper" aria-hidden="true">
+          <div class="hero-bg-image"></div>
+          <div class="hero-bg-overlay"></div>
+        </div>
 
-        <!-- Frosted Glass System Check Badge -->
-        <div class="system-check-pill" id="system-check">
-          <div class="system-check-label">SYSTEM CHECK</div>
-          <div class="system-check-status">
-            <span class="system-dot-live" id="system-dot"></span>
-            <span id="system-state-count">6 of 7 services responding</span>
+        <!-- Left Hero Content -->
+        <div class="hero-content">
+          <div class="hero-badge-pill">
+            <span class="badge-icon-heart" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                <path d="M12 5v14"/>
+                <path d="M5 12h14"/>
+              </svg>
+            </span>
+            <span>NIT Warangal Health Center · Absolute Privacy</span>
+          </div>
+
+          <h1 class="hero-tagline" id="hero-title">
+            Smart care, absolute privacy—your health records, <span class="highlight-blue">decentralized and immutable.</span>
+          </h1>
+
+          <p class="hero-subtagline">
+            Empowering the NIT Warangal Health Center with next-gen Hyperledger Fabric security and AI-driven clinical intelligence.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#care" class="btn-hero-primary">
+              <span>Explore Workspaces</span>
+              <span aria-hidden="true">→</span>
+            </a>
+            <a href="/dashboard/" class="btn-hero-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="18" height="18" x="3" y="3" rx="2"/>
+                <path d="M7 16l4-5 4 3 6-8"/>
+              </svg>
+              <span>Live Telemetry</span>
+            </a>
+
+            <!-- Frosted Glass System Check Badge -->
+            <div class="system-check-pill" id="system-check" title="Real-time health of consortium microservices">
+              <span class="system-dot-live" id="system-dot"></span>
+              <span id="system-state-count">6 of 7 services responding</span>
+            </div>
           </div>
         </div>
 
-        <!-- Filter Tabs (Quick Nav) -->
-        <div class="filter-tabs" aria-label="Workspace Quick Filters">
-          <button class="tab-pill active" data-filter="care" type="button">
-            Care &amp; records <span class="pill-count">02</span>
-          </button>
-          <button class="tab-pill" data-filter="operations" type="button">
-            Operations <span class="pill-count">02</span>
-          </button>
-          <button class="tab-pill" data-filter="partners" type="button">
-            Partner services <span class="pill-count">03</span>
-          </button>
+        <!-- Floating Metric Bento Bar at bottom of Hero -->
+        <div class="hero-stats-banner" aria-label="Consortium Network Metrics">
+          <div class="stat-col">
+            <div class="stat-icon-circle blue-circle" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-num">15+</div>
+              <div class="stat-label">Specialist Roles</div>
+            </div>
+          </div>
+
+          <div class="stat-col">
+            <div class="stat-icon-circle cyan-circle" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.28"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-num">25,000+</div>
+              <div class="stat-label">Zero-PHI Records</div>
+            </div>
+          </div>
+
+          <div class="stat-col">
+            <div class="stat-icon-circle indigo-circle" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 0v9m8-4.5-8 4.5m-8-4.5 8 4.5m0 0v9"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-num">7 Nodes</div>
+              <div class="stat-label">Consortium Services</div>
+            </div>
+          </div>
+
+          <div class="stat-col">
+            <div class="stat-icon-circle emerald-circle" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-num">100%</div>
+              <div class="stat-label">Ledger Integrity</div>
+            </div>
+          </div>
         </div>
       </section>
+
+      <!-- Filter Tabs (Quick Nav) -->
+      <div class="filter-tabs" aria-label="Workspace Quick Filters">
+        <button class="tab-pill" data-filter="all" type="button">
+          All workspaces
+        </button>
+        <button class="tab-pill active" data-filter="care" type="button">
+          Care &amp; records <span class="pill-count">02</span>
+        </button>
+        <button class="tab-pill" data-filter="operations" type="button">
+          Operations <span class="pill-count">02</span>
+        </button>
+        <button class="tab-pill" data-filter="partners" type="button">
+          Partner services <span class="pill-count">03</span>
+        </button>
+      </div>
 
       <!-- Category 1: Care & records -->
       <section class="service-section-wrap" id="care" data-category="care" aria-label="Clinical Workspaces">
