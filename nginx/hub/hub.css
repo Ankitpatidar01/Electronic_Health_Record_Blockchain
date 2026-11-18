@@ -57,7 +57,7 @@ html[data-theme="dark"], html.dark {
 }
 
 body {
-  margin: 0;
+  margin: 36px 0 0;
   min-width: 320px;
   background-color: var(--bg-page);
   color: var(--text-primary);
@@ -298,7 +298,7 @@ html.dark .toggle-switch-knob {
   position: relative;
   width: 100%;
   min-height: 680px;
-  margin: 0;
+  margin: 40px 0 0;
   padding: 0;
   border-radius: 0;
   border: none;
@@ -314,6 +314,33 @@ html.dark .hero-showcase {
 }
 
 /* Downward fading gradient at bottom of hero section instead of horizontal line */
+.hero-showcase::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: linear-gradient(
+    to bottom,
+    var(--bg-page) 0%,
+    rgba(248, 250, 252, 0.5) 30%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+html[data-theme="dark"] .hero-showcase::before,
+html.dark .hero-showcase::before {
+  background: linear-gradient(
+    to bottom,
+    var(--bg-page) 0%,
+    rgba(9, 13, 22, 0.5) 30%,
+    transparent 100%
+  );
+}
+
 .hero-showcase::after {
   content: '';
   position: absolute;
