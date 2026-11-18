@@ -145,6 +145,22 @@ const CLINICAL_ROLES = [
     iconGradient: 'bg-gradient-to-tr from-teal-600 to-emerald-500 text-white shadow-md shadow-teal-500/30',
     accentColor: 'text-teal-600 dark:text-teal-400',
   },
+  {
+    value: 'labsupervisor',
+    label: 'Lab Quality Supervisor',
+    username: 'labsupervisor',
+    hint: 'recpw',
+    mspId: 'DiagnosticsMSP',
+    peer: 'peer0.diagnostic (Port 4004)',
+    badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-400/40',
+    icon: ShieldCheck,
+    desc: 'Verify clinical test validity, oversee QA & authorize return to doctor.',
+    defaultPath: '/lab-queue',
+    gradientUnselected: 'bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-cyan-500/10 dark:from-emerald-950/40 dark:via-teal-950/20 dark:to-cyan-950/40 border-emerald-200/80 dark:border-emerald-800/60 hover:border-emerald-400 dark:hover:border-emerald-600',
+    gradientSelected: 'bg-gradient-to-br from-emerald-500/25 via-teal-500/20 to-cyan-600/25 dark:from-emerald-900/60 dark:via-teal-900/50 dark:to-cyan-900/60 border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-500/40 shadow-lg shadow-emerald-500/15',
+    iconGradient: 'bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-500/30',
+    accentColor: 'text-emerald-600 dark:text-emerald-400',
+  },
 ]
 
 export default function LoginPage() {

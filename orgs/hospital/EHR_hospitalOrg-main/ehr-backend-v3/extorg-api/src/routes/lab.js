@@ -6,6 +6,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { peerContext }  = require('../middleware/peerContext');
 const { wrap, parseResult } = require('../middleware/errorHandler');
 const { fetchByCID, pinJSON } = require('../fabric/ipfsClient');
+const { getContract } = require('../fabric/gatewayManager');
 const logger = require('../config/logger');
 
 const LAB_ROLES = ['labreceptionist', 'labtechnician', 'radiologist', 'labsupervisor', 'labadmin', 'admin'];
@@ -141,7 +142,12 @@ router.put('/visits/:id/request/:reqId/approve',
     const { id: visitId, reqId: labRequestId } = req.params;
     logger.info('ApproveLabResult', { visitId, labRequestId, userId: req.user.userId });
 
-    const { onChain, clinical } = await getVisitJson(req.contract, visitId);
+    // Use labsupervisor gateway if technician/admin is acting
+    const invokeContract = ['labsupervisor', 'labadmin'].includes(req.user.role)
+      ? req.contract
+      : getContract('labsupervisor');
+
+    const { onChain, clinical } = await getVisitJson(invokeContract, visitId);
     const idx = (clinical.labRequests || []).findIndex(r => r.labRequestId === labRequestId);
     if (idx === -1) return res.status(404).json({ success: false, error: `Lab request not found: ${labRequestId}` });
 
@@ -150,7 +156,7 @@ router.put('/visits/:id/request/:reqId/approve',
     clinical.labRequests[idx].approvedAt = new Date().toISOString();
     clinical.forwardingLog = clinical.forwardingLog || [];
     clinical.forwardingLog.push({
-      action: 'LAB_RESULT_APPROVED', from: req.user.userId, fromRole: 'labsupervisor',
+      action: 'LAB_RESULT_APPROVED', from: req.user.userId, fromRole: req.user.role,
       to: onChain.assignedDoctor, toRole: 'doctor',
       notes: `Approved results for ${clinical.labRequests[idx].tests.join(', ')}`,
       labRequestId, timestamp: new Date().toISOString(),
@@ -158,7 +164,7 @@ router.put('/visits/:id/request/:reqId/approve',
     clinical.updatedAt = new Date().toISOString();
     const newCID = await pinJSON(clinical, `visit-${visitId}-lab-approved.json`);
 
-    const result = await req.contract.submitTransaction(
+    const result = await invokeContract.submitTransaction(
       'LabContract:ApproveLabResult', visitId, labRequestId, newCID
     );
     return res.json({ success: true, data: parseResult(result) });
@@ -173,7 +179,12 @@ router.put('/visits/:id/request/:reqId/return',
     const { id: visitId, reqId: labRequestId } = req.params;
     logger.info('LabResultsBackToDoctor', { visitId, labRequestId, userId: req.user.userId });
 
-    const { onChain, clinical } = await getVisitJson(req.contract, visitId);
+    // Use labsupervisor gateway if technician/admin is acting
+    const invokeContract = ['labsupervisor', 'labadmin'].includes(req.user.role)
+      ? req.contract
+      : getContract('labsupervisor');
+
+    const { onChain, clinical } = await getVisitJson(invokeContract, visitId);
     clinical.forwardingLog = clinical.forwardingLog || [];
     clinical.forwardingLog.push({
       action: 'LAB_RESULTS_RETURNED', from: 'lab', fromRole: 'lab',
@@ -184,7 +195,7 @@ router.put('/visits/:id/request/:reqId/return',
     clinical.updatedAt = new Date().toISOString();
     const newCID = await pinJSON(clinical, `visit-${visitId}-lab-return.json`);
 
-    const result = await req.contract.submitTransaction(
+    const result = await invokeContract.submitTransaction(
       'ForwardContract:LabResultsBackToDoctor', visitId, labRequestId, newCID
     );
     return res.json({ success: true, data: parseResult(result) });
