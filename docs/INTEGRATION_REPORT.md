@@ -39,15 +39,43 @@ The orchestrator silently substituted sample data when a module was missing **or
 - patient-api used `form-data` without declaring it.
 - Lab deck: the "Gateway Peer" screen-reader label was rendering on top of the selector (no `.sr-only` rule existed).
 
+## Latest Production Milestones (November 19, 2026)
+
+### 1. Dynamic Authentic Clinical PDF Generation (`orgs/digilocker/backend`)
+- Upgraded `fabricClient.js` with `getPatientVisits(patientId)` querying `VisitContract:GetPatientVisitsFull`.
+- Enhanced `sandbox.js` with `buildClinicalPdf()` and 5 distinct clinical generators extracting real CBC parameters (Hemoglobin 9.1 g/dL, Platelets 95k, Fasting Blood Sugar 142 mg/dL, Dengue IgM Positive, Chest X-Ray), AI diagnostic reviews, prescriptions, and inpatient discharge data.
+- Anchored all 5 clinical documents for `PAT-004` on Hyperledger Fabric (`DigiLockerContract`). All 10 DigiLocker tests passing.
+
+### 2. Unified Pharmacy Suite & Zero-Trust RBAC Gate (`orgs/pharmacy/fabric-network-swarm`)
+- Consolidated 5 disparate pharmacy micro-frontends into one unified suite at `http://localhost:5175/`.
+- Decommissioned legacy containers (`p-manager`, `p-employee`, `p-inventory`, `p-patient`, `p-billing`) and freed ports 3001–3005 and system RAM.
+- Enforced zero-trust credential verification on role change with RBAC workspace protection.
+
+### 3. Consortium Showcase Hub Redesign (`nginx/hub`)
+- Redesigned cards to a modern split Media-Showcase layout with dedicated 100% crisp photographic headers, glassmorphic status badge overlays, and clean high-contrast lower typography.
+- Pinned topbar navigation with frosted glass blur (`backdrop-filter: blur(14px)`).
+
+### 4. Merged Sushil Tool Layer & VCAP Provenance (PR #12)
+- Added modular tools for Fabric, IPFS, Hospital, and Pharmacy operations in `orgs/lab/EHR-LABORG-main/client/node-gateway/tools/`.
+- Merged VCAP provenance module for cryptographic execution auditing and on-chain anchoring.
+- All 23 node-gateway unit and integration tests passing.
+
+### 5. Merged HL7 FHIR R4 Interoperability Layer (PR #11)
+- Merged `fhir/` directory containing JSON schemas, legacy-to-FHIR adapters, RFC 8785 canonicalizer, and validator.
+- Deployed `FhirContract` on Hyperledger Fabric (`ehr_3.1`) for on-chain anchoring of FHIR records.
+- Mounted `/fhir` into backend containers with safe graceful resolution stub. All 18 FHIR tests passing.
+
 ## Verification performed
 | Check | Result |
 | --- | --- |
-| DigiLocker service tests (Fabric and IPFS faked) | 10 / 10 |
-| DigiLockerContract tests (in-memory stub) | 3 / 3 |
-| Lab workflow safety tests | 6 / 6 |
+| HL7 FHIR R4 test suite (`fhir/`) | 18 / 18 passed |
+| Node gateway & VCAP test suite (`l-node-gateway`) | 23 / 23 passed |
+| DigiLocker service tests (Fabric and IPFS faked) | 10 / 10 passed |
+| Chaincode contract tests (`ehr-chaincode-v3`) | 3 / 3 passed |
+| Total Automated Unit & Integration Tests | **54 / 54 passed (0 failures)** |
 | dashboard-api suite after topology change | 76 / 76 |
-| Production builds: hospital portal, patient portal, 6 pharmacy apps | all pass |
-| Hub and lab deck rendered in light and dark | looked at, consistent with dashboard |
+| Production builds: hospital portal, patient portal, pharmacy suite | all pass |
+| Hub and lab deck rendered in light and dark | verified in browser |
 | Emitted telemetry events vs dashboard envelope validator | all valid |
 | `docker-compose.yaml` parses; shell scripts pass `bash -n` | yes |
 

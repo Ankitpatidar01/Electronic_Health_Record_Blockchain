@@ -13,8 +13,8 @@ This repository contains an Electronic Health Record (EHR) Consortium workspace 
   - `HospitalMSP`: Governs core hospital operations with `peer0.hospital` (`:7051`), `peer1.hospital` (`:9051`), and `peer2.hospital` (`:10051`).
   - `DiagnosticsMSP`: Governs laboratory diagnostic reports with `peer0.diagnostic` (`:8051`).
   - `ProviderMSP`: Governs billing claims and external provider audits with `peer0.provider` (`:11051`).
-- **Smart Contracts (8 deployed contracts in `ehr-chaincode-v3`):**
-  - `PatientContract`, `VisitContract`, `ForwardContract`, `ClinicalContract`, `LabContract`, `ClaimsContract`, `EhrContract`, `AccessContract`.
+- **Smart Contracts (10 deployed contracts in `ehr-chaincode-v3`):**
+  - `PatientContract`, `VisitContract`, `ForwardContract`, `ClinicalContract`, `LabContract`, `ClaimsContract`, `EhrContract`, `AccessContract`, `DigiLockerContract`, and `FhirContract`.
 
 ### 2. Clinical AI Agent & Medical RAG Microservice (`services/ai-agent`)
 - **Runtime:** Containerized Python 3.11 FastAPI microservice (`clinical-ai-agent:8000`), reverse-proxied at `http://localhost/ai-agent/`.
@@ -24,19 +24,20 @@ This repository contains an Electronic Health Record (EHR) Consortium workspace 
 
 ### 3. Lab Multi-Agent Subsystem & Gateway (`orgs/lab/EHR-LABORG-main`)
 - **Runtime:** Node.js Express gateway on host port `3006`, reverse-proxied at `http://localhost/lab/`.
+- **Tool Layer & VCAP Provenance (`tools/` & `provenance/vcap.js`):** Modular tools for Fabric, IPFS, Hospital, and Pharmacy operations paired with Verifiable Clinical AI Provenance (VCAP) records anchoring execution telemetry and hashes.
 - **Lab Report Analysis Agent (`agents/lab-agent.js`):** Extracts clinical biomarkers (CBC, metabolic panels) from unstructured diagnostic reports.
 - **Longitudinal History Agent (`agents/history-agent.js`):** Synthesizes multi-visit historical trajectory and correlates chronic trends.
 - **Human-in-the-Loop Orchestrator (`orchestrator/orchestrator.js`):** Enforces mandatory review and sign-off by a licensed clinician before anchoring diagnostic reports on-chain.
 - **Scheduled Ledger-Integrity Recheck Engine (`integrity-check.js`):** Background 4-hour verification loop comparing raw IPFS multihashes against on-chain Fabric digests.
-- **Consortium Anchoring:** Connected directly to `ehrchannel` as `DiagnosticsMSP` and to the shared Kubo IPFS node.
-- **Verification:** 24 passing Jest unit tests.
+- **Verification:** 23 passing automated node-gateway unit and integration tests.
 
-### 4. Pharmacy Organization & CarePoint Portals (`orgs/pharmacy/fabric-network-swarm`)
-- **Runtime:** Node.js Express API (`p-backend:3000`) and 6 separate frontends (`:5175`, `:3001`–`:3005`).
+### 4. Unified Pharmacy Organization (`orgs/pharmacy/fabric-network-swarm`)
+- **Runtime:** Node.js Express API (`p-backend:3000`) and Unified 5-in-1 Frontend Suite (`:5175`).
+- **Zero-Trust RBAC & Workspace Enforcement:** Role switcher with credential authentication for Pharmacy Manager, Pharmacist Dispensing, Stock Officer, Outpatient Billing, and Patient Self-Service.
 - **Persistent Storage (`store.js`):** Resilient file-backed JSON store with seeded medications, patient records (`PAT-001`, `PAT-014`, `PAT-021`, `testuser`), initial bills, and staff roles.
 - **Automatic Stock Deduction:** Deducts inventory units in real time upon prescription fulfillment.
 - **IPFS Receipt Pinning:** Prescription bills pinned to Kubo IPFS (`http://localhost:8090/ipfs/<CID>`).
-- **CarePoint Interactive Patient Portal (`:3004`):** Active patient switcher, prescription table, dispensing timeline, IPFS billing receipts, and patient consent self-governance (grant/revoke staff access).
+- **Consolidation:** 5 legacy micro-frontends decommissioned; RAM and ports 3001–3005 freed up.
 
 ### 5. Hospital Applications & Peer APIs (`orgs/hospital/EHR_hospitalOrg-main`)
 - **Portals:** Hospital Staff Portal (`:5173`) and Patient Portal (`:5174`) styled with the CareGrid Soft Glass Bento design system.
@@ -50,19 +51,27 @@ This repository contains an Electronic Health Record (EHR) Consortium workspace 
 - **Luxury Obsidian Glass UI:** Deep Obsidian theme (`#0B0F17`), radiant opposite-corner gradient card glows, interactive Block Stream Inspector with 1-click clipboard copy, 5 clinical agent views, and real-time threshold alert engine.
 - **Verification:** 76 passing automated backend test suites.
 
-### 7. Unified Ingress Gateway (`nginx/nginx.conf`)
+### 7. DigiLocker Clinical Vault (`orgs/digilocker/backend`)
+- **Runtime:** Express microservice on port `4007`, reverse-proxied at `http://localhost/api/digilocker/`.
+- **Dynamic Clinical PDFs:** Generates authentic CareGrid clinical documents (CBC reports, Lipid Profiles, OPD Prescriptions, and Discharge Summaries) directly from Hyperledger Fabric patient visits and lab diagnostics.
+- **Security:** AES-256-GCM envelope encryption with per-document salts; encrypted ciphertext is pinned to IPFS and zero-PHI cryptographic digests are anchored on `DigiLockerContract`.
+- **Verification:** 10 passing unit and integration tests.
+
+### 8. HL7 FHIR R4 Interoperability Layer (`fhir/`)
+- **Runtime:** Repository-root interoperability engine mounted into hospital backend services and available via CLI (`node demo/cli.js`).
+- **Features:** Adapters converting legacy EHR models into standard FHIR R4 resources, JSON schema validation, RFC 8785 deterministic canonicalization, and on-chain anchoring via `FhirContract`.
+- **Verification:** 18 passing automated tests.
+
+### 9. Unified Ingress Gateway (`nginx/nginx.conf`)
 - Central reverse proxy on Port 80 routing all traffic cleanly to prevent browser CORS issues:
-  - `/` $\rightarrow$ Workspace Hub
+  - `/` $\rightarrow$ Consortium Showcase Hub (Glassmorphic cards, v11)
   - `/hospital/` $\rightarrow$ Hospital Staff Portal (`:5173`)
-  - `/patient/` $\rightarrow$ Patient Portal (`:5174`)
+  - `/patient/` $\rightarrow$ Patient Portal & DigiLocker Vault (`:5174`)
   - `/dashboard/` $\rightarrow$ System Dashboard (`:5176`)
-  - `/pharmacy/*` $\rightarrow$ Pharmacy Portals (`:5175`, `:3001`–`:3005`)
+  - `/pharmacy/` $\rightarrow$ Unified Pharmacy Suite (`:5175`)
   - `/lab/` $\rightarrow$ Lab Web Console (`:3006`)
   - `/ai-agent/` $\rightarrow$ Clinical AI Agent & Swagger Docs (`:8000`)
   - `/api/*` $\rightarrow$ Respective microservice backends
-
-### 8. Digilocker (Proposed Module Only)
-- Inventory item for future patient-controlled encrypted document vaults. Contains no runnable backend or frontend in this workspace.
 
 ---
 

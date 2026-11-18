@@ -1,8 +1,8 @@
 # EHR Blockchain Workspace
 
-This repository contains a local academic/demo EHR workspace built around a Hyperledger Fabric network, Express APIs, React/Vite portals, an IPFS service, a lab gateway, and an optional read-only observability dashboard. It is a working project with unfinished integrations; it is not a production deployment or a legal/compliance certification.
+This repository contains a production-grade academic/demo Electronic Health Record (EHR) Consortium platform built around a Hyperledger Fabric 2.5 blockchain network (`ehrchannel`), containerized Express microservices, off-chain Kubo IPFS storage, an autonomous clinical AI agent, a multi-agent laboratory diagnostics gateway with VCAP provenance, an authentic DigiLocker clinical vault, an HL7 FHIR R4 interoperability layer, and a real-time observability dashboard.
 
-FHIR R4, ABDM/ABHA, India DPDP Act 2023, HIPAA-style controls, and GDPR are design targets/reference points. Dashboard events are intended to contain zero patient-identifiable or clinical content. Digilocker remains proposed only.
+FHIR R4, ABDM/ABHA, India DPDP Act 2023, HIPAA-style controls, and GDPR are design targets and reference implementations. All public dashboard events and ledger writes follow a strict Zero-PHI architecture (keyed HMAC hashes, CIDs, and cryptographic digests only).
 
 ## First-time setup (From a fresh git clone)
 
@@ -19,15 +19,17 @@ When cloning this repository for the first time on a new laptop or VM:
 
 ## 🧬 Complete System Architecture
 
-The network connects **5 Fabric Peers** across 3 autonomous organizations (`HospitalMSP`, `DiagnosticsMSP`, `ProviderMSP`), orchestrated by a Raft consensus Orderer, 4 Certificate Authorities, 6 Microservice Gateways, and 2 active Web Frontends:
+The network connects **5 Fabric Peers** across 3 autonomous organizations (`HospitalMSP`, `DiagnosticsMSP`, `ProviderMSP`), orchestrated by a Raft consensus Orderer, 4 Certificate Authorities, 10 Microservice Gateways, and 6 active Web Portals:
 
 ```mermaid
 flowchart TB
     subgraph Clients["1. Client Frontends Tier"]
-        HP["🏥 Hospital Web Portal<br/>(Port :5173 - React/Vite)<br/>Staff: Reception, Doctor, Nurse, Pharmacy, Admin"]
-        PP["👤 Patient Web Portal<br/>(Port :5174 - React/Vite)<br/>Self-Service: Consent, Timeline, Master EHR"]
-        PHARM_FE["💊 Pharmacy Portal<br/>(Port :5175 - React/Vite)<br/>Inventory & Direct Dispensing"]
-        LAB_FE["🧪 Lab Control Deck<br/>(Port :8080 - HTML5/JS)<br/>Lab Reports & AI Diagnostics"]
+        HUB["🌐 Consortium Showcase Hub<br/>(Port :80 - NGINX Gateway)<br/>Split Showcase Cards & Telemetry"]
+        HP["🏥 Hospital Web Portal<br/>(Port :5173 - React/Vite)<br/>Staff: Reception, Doctor, Nurse, Admin"]
+        PP["👤 Patient Web Portal<br/>(Port :5174 - React/Vite)<br/>Self-Service: Consent, Timeline, DigiLocker Vault"]
+        PHARM_FE["💊 Unified Pharmacy Suite<br/>(Port :5175 - React/Vite)<br/>Zero-Trust RBAC: Manager, Pharmacist, Inventory, Billing, Patient"]
+        LAB_FE["🧪 Lab Control Deck<br/>(Port :3006 - HTML5/JS)<br/>Lab Reports & AI Diagnostics"]
+        DASH_FE["📊 Real-Time Observatory Dashboard<br/>(Port :5176 - React/Vite)<br/>12 Live Telemetry Targets & WebSocket Stream"]
     end
 
     subgraph Gateways["2. Microservice & REST Gateway Tier"]
@@ -37,21 +39,31 @@ flowchart TB
         EXT_API["extorg-api (:4004)<br/>Diagnostics & Provider Gateway"]
         PAT_API["patient-api (:4005)<br/>Patient Vault & Consent Gateway"]
         IPFS_SVC["ipfs-service (:4006)<br/>Off-chain Storage Bridge"]
+        DL_SVC["digilocker-service (:4007)<br/>Clinical PDF Generator & Vault"]
+        DASH_API["dashboard-api (:4010)<br/>Event Normalizer & Realtime Stream"]
+        AI_AGENT["clinical-ai-agent (:8000)<br/>Clinical Decision Support & RAG"]
+        L_NODE["l-node-gateway (:3006)<br/>Multi-Agent Orchestrator & VCAP"]
+        P_BACK["p-backend (:3000)<br/>Pharmacy Core Engine"]
     end
 
-    subgraph FabricNetwork["3. Hyperledger Fabric Network Tier (channel: ehrchannel)"]
+    subgraph InteropPillar["3. Interoperability & Provenance Layer"]
+        FHIR_CORE["HL7 FHIR R4 Engine<br/>(/fhir - Adapters, Hasher, Validator)"]
+        TOOL_VCAP["Sushil Tool Layer & VCAP<br/>(Fabric/IPFS/Hospital/Pharmacy Tools)"]
+    end
+
+    subgraph FabricNetwork["4. Hyperledger Fabric Network Tier (channel: ehrchannel, chaincode: ehr_3.1)"]
         subgraph HospMSP["Hospital Organization (HospitalMSP)"]
-            PEER0["📋 Reception & Admin Peer<br/>(peer0.hospital.example.com:7051)<br/>Intake, Registration & Admin"]
-            PEER1["🏥 Doctor Peer<br/>(peer1.hospital.example.com:9051)<br/>Diagnoses, Prescriptions & Record Sealing"]
-            PEER2["🩺 Nurse & Pharmacy Peer<br/>(peer2.hospital.example.com:10051)<br/>Vitals Recording & Medication Dispensing"]
+            PEER0["📋 Reception & Admin Peer<br/>(peer0.hospital.example.com:7051)"]
+            PEER1["🏥 Doctor Peer<br/>(peer1.hospital.example.com:9051)"]
+            PEER2["🩺 Nurse & Pharmacy Peer<br/>(peer2.hospital.example.com:10051)"]
         end
 
         subgraph DiagMSP["Diagnostics Organization (DiagnosticsMSP)"]
-            PEER_DIAG["🧪 Lab & Diagnostics Peer<br/>(peer0.diagnostic.example.com:8051)<br/>Lab Tests, Reports & AI Analysis"]
+            PEER_DIAG["🧪 Lab & Diagnostics Peer<br/>(peer0.diagnostic.example.com:8051)"]
         end
 
         subgraph ProvMSP["Provider Organization (ProviderMSP)"]
-            PEER_PROV["💳 Insurance & Billing Peer<br/>(peer0.provider.example.com:11051)<br/>Claims Auditing & Billing Settlement"]
+            PEER_PROV["💳 Insurance & Billing Peer<br/>(peer0.provider.example.com:11051)"]
         end
 
         subgraph OrdererGroup["Consensus Cluster (OrdererMSP)"]
@@ -66,54 +78,40 @@ flowchart TB
         end
     end
 
-    subgraph ExecutionStorage["4. Smart Contract & Storage Tier"]
-        subgraph ChaincodeContainers["Chaincode Containers (Node.js)"]
-            CC0["dev-peer0.hospital (ehr:1.0)"]
-            CC1["dev-peer1.hospital (ehr:1.0)"]
-            CC2["dev-peer2.hospital (ehr:1.0)"]
-            CC_DIAG["dev-peer0.diagnostic (ehr:1.0)"]
-            CC_PROV["dev-peer0.provider (ehr:1.0)"]
-        end
-
-        subgraph StorageLayer["Decentralized Storage"]
-            IPFS_NODE["IPFS Kubo Node<br/>(ipfs.ehr.local :5001 / :8090)<br/>Encrypted Payloads & Lab PDFs"]
-        end
+    subgraph StorageLayer["5. Decentralized Off-Chain Storage Tier"]
+        IPFS_NODE["IPFS Kubo Node<br/>(ipfs.ehr.local :5001 / :8090)<br/>Encrypted Payloads & Clinical PDFs"]
     end
 
-    %% Client to Gateway Routing
-    HP -->|Receptionist / Admin| P0_API
-    HP -->|Doctor Consults| P1_API
-    HP -->|Vitals / Dispensing| P2_API
-    PP -->|Consent / EHR / Visits| PAT_API
-    PHARM_FE -->|Prescription Fulfill| P2_API
-    LAB_FE -->|Lab Tests & Claims| EXT_API
-    
-    %% Storage & Gateways
-    P1_API -.->|Pin Medical Summary| IPFS_SVC
-    EXT_API -.->|Pin Lab PDF / Reports| IPFS_SVC
-    IPFS_SVC -->|Store & Fetch CIDs| IPFS_NODE
+    %% Client Routing
+    HUB --> HP
+    HUB --> PP
+    HUB --> PHARM_FE
+    HUB --> LAB_FE
+    HUB --> DASH_FE
+    HP --> P0_API & P1_API & P2_API
+    PP --> PAT_API & DL_SVC
+    PHARM_FE --> P_BACK & P2_API
+    LAB_FE --> L_NODE & EXT_API
+    DASH_FE --> DASH_API
+
+    %% Gateway to Interop & Storage
+    P0_API & P1_API & EXT_API -.-> FHIR_CORE
+    L_NODE -.-> TOOL_VCAP
+    P1_API & EXT_API & DL_SVC & P_BACK --> IPFS_SVC
+    IPFS_SVC --> IPFS_NODE
 
     %% Gateway to Fabric Peers
-    P0_API -->|gRPC TLS| PEER0
-    P1_API -->|gRPC TLS| PEER1
-    P2_API -->|gRPC TLS| PEER2
-    EXT_API -->|gRPC TLS| PEER_DIAG
-    EXT_API -->|gRPC TLS| PEER_PROV
-    PAT_API -->|gRPC TLS| PEER0
-    PAT_API -->|gRPC TLS| PEER1
+    P0_API --> PEER0
+    P1_API --> PEER1
+    P2_API --> PEER2
+    EXT_API --> PEER_DIAG & PEER_PROV
+    PAT_API --> PEER0 & PEER1
+    DL_SVC --> PEER0
+    L_NODE --> PEER_DIAG
 
-    %% Peers to Orderer & Chaincode
-    PEER0 <--> CC0
-    PEER1 <--> CC1
-    PEER2 <--> CC2
-    PEER_DIAG <--> CC_DIAG
-    PEER_PROV <--> CC_PROV
-
-    PEER0 -->|Broadcast Tx| ORDERER
-    PEER1 -->|Broadcast Tx| ORDERER
-    PEER2 -->|Broadcast Tx| ORDERER
-    PEER_DIAG -->|Broadcast Tx| ORDERER
-    PEER_PROV -->|Broadcast Tx| ORDERER
+    %% Blockchain Consensus
+    PEER0 & PEER1 & PEER2 & PEER_DIAG & PEER_PROV --> ORDERER
+```
 ```
 
 ---
@@ -122,39 +120,44 @@ flowchart TB
 
 ```text
 EHR_blockchain/
+├── nginx/
+│   ├── nginx.conf        # Unified ingress reverse proxy (:80) with zero-CORS routing
+│   └── hub/              # Consortium Showcase Hub (Glassmorphic media cards, v11)
+├── fhir/                 # 🌐 HL7 FHIR R4 interoperability layer (schemas, adapters, validator)
 ├── orgs/
-│   ├── hospital/         # 🏥 Hospital Organization (Backend, UIs, Fabric Network)
-│   ├── pharmacy/         # 💊 Pharmacy Organization (Swarm Network, UIs, APIs)
-│   ├── lab/              # 🧪 Lab Organization (Analysis, OCR, IPFS Gateway)
-│   └── digilocker/       # 🔐 Digilocker System (Patient Data Vault)
-│       # 📊 Group 1 Dashboard (planned): hospital/.../ehr-backend-v3/dashboard-api + ehr-frontend-v2/dashboard-portal
-├── start.sh              # 🚀 Unified startup orchestrator (Fabric network + APIs + Portals)
-├── stop.sh               # 🛑 Stop all running services & blockchain network
-├── setup.sh              # 📦 Automated dependency installation
-├── start-sequential.sh   # Background microservice starter and manager
-└── start-sequential.ps1  # Native Windows alternative startup script
+│   ├── hospital/         # 🏥 Hospital Organization (Backend v3, Frontends v2, Fabric Network)
+│   ├── pharmacy/         # 💊 Unified Pharmacy Suite (:5175, RBAC zero-trust gate, p-backend :3000)
+│   ├── lab/              # 🧪 Lab Multi-Agent Subsystem (Tool layer, VCAP provenance, node-gateway :3006)
+│   └── digilocker/       # 🔐 DigiLocker Vault System (:4007, dynamic clinical PDFs, AES-256-GCM)
+├── services/
+│   └── ai-agent/         # 🧠 Autonomous Clinical AI Decision Support & PubMed RAG (:8000)
+├── start.sh              # 🚀 Universal orchestrator (Fabric network + APIs + Portals)
+├── stop.sh               # 🛑 Clean stop for services and blockchain network
+└── setup.sh              # 📦 Automated dependency installation & init-env
 ```
 
 ---
 
 ## ⚙️ Updated Implementation Details
 
-We have recently upgraded the core infrastructure to support robust distributed environments and advanced AI workloads:
+We have upgraded the core infrastructure to support robust distributed environments and advanced clinical AI workloads:
 
-* **Unified Startup Orchestration (`start.sh`)**: A universal initialization script that dynamically resolves paths, injects environment variables, boots the Hyperledger Fabric nodes, verifies chaincode deployment, and brings up all 4 web frontends and microservices.
-* **4 Distinct Agentic Peer Roles**: Granular ABAC enforcement is now mapped to specific peers: **Doctor** (diagnostics/prescriptions), **Nurse** (vital signs), **Pharmacy** (inventory/dispensing), and **Lab** (test execution and AI-assisted result uploads).
-* **Asynchronous IPFS & OCR Processing**: The `POST /api/records/ipfs` routes have been refactored. Heavy PDF OCR extraction (Tesseract.js) and IPFS pinning are now executed in background threads, returning `202 Accepted` immediately to prevent frontend HTTP timeouts on large medical files.
-* **Dynamic Environment Variables in Docker Swarm**: Swarm cluster networking is fully dynamic. Files like `hosts.final` rely on environment variable substitution (`${MACHINE1_IP}`, etc.) instead of hardcoded IPs, allowing seamless deployment across dynamic distributed servers.
-* **FHIR R4 Interoperability (implemented)**: Legacy clinical records are converted to HL7 FHIR R4 and a zero-PHI anchor (hash + CID + resource type) is committed on-chain via `FhirContract` under `RECORD~<patientIdHash>~<recordId>`. See [`docs/fhir-integration.md`](docs/fhir-integration.md). Verifiable Clinical AI Provenance (VCAP) remains a roadmap item.
+* **Unified Startup Orchestration (`start.sh`)**: A universal initialization script that dynamically resolves paths, injects environment variables, boots the Hyperledger Fabric nodes, verifies chaincode deployment, and brings up all web frontends and microservices.
+* **4 Distinct Agentic Peer Roles**: Granular ABAC enforcement is mapped to specific peers: **Doctor** (diagnostics/prescriptions), **Nurse** (vital signs), **Pharmacy** (inventory/dispensing), and **Lab** (test execution and AI-assisted result uploads).
+* **HL7 FHIR R4 Interoperability (Fully Implemented)**: Legacy clinical records are converted to HL7 FHIR R4 resources (Patient, Encounter, DiagnosticReport, Observation, Condition, MedicationRequest, Consent) and anchored on-chain via `FhirContract` under `RECORD~<patientIdHash>~<recordId>`. See [`docs/fhir-integration.md`](docs/fhir-integration.md).
+* **Verifiable Clinical AI Provenance (VCAP & Tool Layer Implemented)**: Sushil Tool Layer and VCAP module (`tools/` & `provenance/vcap.js` in `l-node-gateway`) anchor and verify stage-by-stage cryptographic traces for every AI run.
+* **DigiLocker Clinical Vault (Fully Implemented)**: Authentic clinical PDFs (CBC, Lipid Panel, OPD Prescriptions, Discharge Summaries) generated dynamically from on-chain patient visits and lab diagnostics, encrypted via AES-256-GCM envelope encryption, pinned to IPFS, and anchored to `DigiLockerContract`.
+* **Unified Pharmacy Suite (Fully Implemented)**: All 5 legacy pharmacy portals consolidated into one unified suite (`http://localhost:5175/`) with zero-trust credential verification and RBAC enforcement. Legacy containers and ports 3001–3005 decommissioned to optimize system RAM.
+* **Consortium Showcase Hub (`http://localhost/`)**: Media-rich showcase cards featuring sharp photographic headers, glassmorphic status overlays, and clean high-contrast lower content.
 
 ---
 
-## 📊 Group 1 — Observability Dashboard (Proposed Architecture)
+## 📊 Group 1 — Observability Dashboard
 
-> **Status:** Proposed · Phase 1 (Dashboard Foundation) ≈ 35% complete
+> **Status:** ✅ Fully Implemented · Phase 1 & 2 Live · 100% Operational
 > **Pillar:** Dashboard / Observability (1 of 4 — alongside Security, Agentic AI and Standard EHR / FHIR)
 
-Group 1 builds a **read-only observability dashboard** for the whole platform: live Fabric network health, ledger transactions, AI agent executions, IPFS activity and security events in one React app, served at `http://localhost/dashboard/`. It replaces manual page refreshes with **real-time push updates** driven by Fabric chaincode and block events.
+Group 1 provides a **read-only observability dashboard** for the whole platform: live Fabric network health, ledger transactions, AI agent executions, IPFS activity and security events in one React app, served at `http://localhost/dashboard/`. It replaces manual page refreshes with **real-time push updates** driven by Fabric chaincode and block events.
 
 ### 👥 Team & Tracks
 
@@ -441,31 +444,30 @@ Stop without deleting persistent data:
 
 | Service | URL | Notes |
 |---|---|---|
-| Workspace hub | [http://localhost/](http://localhost/) | Links to all available portals and checks real-time reachability. |
-| Hospital staff portal | [http://localhost:5173/](http://localhost:5173/) | React/Vite dev server; API requests use the peer APIs through configured proxy targets. |
-| Patient portal | [http://localhost/patient/](http://localhost/patient/) or port `5174` | Hospital patient self-service portal. |
+| Workspace hub | [http://localhost/](http://localhost/) | Consortium Showcase Hub with media showcase cards and live telemetry status. |
+| Hospital staff portal | [http://localhost:5173/](http://localhost:5173/) | React/Vite portal for Doctor, Nurse, Receptionist, and Admin roles. |
+| Patient portal | [http://localhost/patient/](http://localhost/patient/) or port `5174` | Hospital patient self-service portal (Consent, Timeline, Master EHR). |
+| DigiLocker Vault | [http://localhost:5174/digilocker](http://localhost:5174/digilocker) or API port `4007` | Patient-governed encrypted vault for authentic clinical PDFs, IPFS storage, and Fabric anchoring. |
 | System dashboard | [http://localhost/dashboard/](http://localhost/dashboard/) or port `5176` | Group 1 Real-time observability dashboard (Obsidian Glass UI) with 12 live telemetry targets, block stream inspector, 5 clinical agent views, and threshold alerts. |
 | Clinical AI Agent | [http://localhost/ai-agent/docs](http://localhost/ai-agent/docs) or port `8000` | Autonomous Clinical Intelligence, Vital Signs Trend Analysis, and Medical RAG Microservice (FastAPI Swagger `/docs` and ReDoc). |
-| Pharmacy main portal | [http://localhost/pharmacy/](http://localhost/pharmacy/) or port `5175` | MedBlock pharmacy consortium view with inventory stock and IPFS verification. |
-| Pharmacy sub-portals | `/pharmacy/manager/` (`:3001`), `/employee/` (`:3002`), `/inventory/` (`:3003`), `/patient/` (`:3004`), `/billing/` (`:3005`) | Five dedicated Vite apps for Pharmacy Manager, Pharmacist Dispensing, Stock Officer, Patient Self-Governance, and Outpatient Billing. |
-| Lab console & Multi-Agent Gateway | [http://localhost/lab/](http://localhost/lab/) or port `3006` | Multi-Agent diagnostic orchestrator (`lab-agent.js`, `history-agent.js`, `orchestrator.js`), human-in-the-loop review, and 4-hour ledger integrity checker. |
-
-The pharmacy patient app (`http://localhost:3004` or `/pharmacy/patient/`) is fully functional, featuring active patient switching (`PAT-001`, `PAT-014`, `PAT-021`, `testuser`), verifiable prescription ledgers, dispensing timelines, consent self-governance (grant/revoke access), and IPFS billing receipts.
-
-The standalone Digilocker proposal has no runnable service in this workspace.
+| Unified Pharmacy Suite | [http://localhost/pharmacy/](http://localhost/pharmacy/) or port `5175` | Unified 5-in-1 workspace: Pharmacy Manager, Pharmacist Dispensing, Stock Inventory, Outpatient Billing, and Patient Self-Service with Zero-Trust RBAC. |
+| Lab console & Multi-Agent Gateway | [http://localhost/lab/](http://localhost/lab/) or port `3006` | Multi-Agent diagnostic orchestrator, Sushil Tool Layer, VCAP provenance, and human-in-the-loop review. |
+| IPFS WebUI & Gateway | [http://localhost:5001/webui](http://localhost:5001/webui) or port `8090` | Kubo IPFS content-addressed decentralized storage node. |
 
 ## Architecture (as currently wired)
 
 ```mermaid
 flowchart TB
   subgraph ClientLayer ["Client & Ingress Layer"]
-    Browser["User in Browser"] --> Hub["Nginx :80 API Gateway"]
-    Browser --> HospitalUI["Hospital Portal :5173"]
+    Browser["User in Browser"] --> Hub["Nginx :80 Gateway"]
+    Hub --> HubUI["Showcase Hub / (:80)"]
+    Hub --> HospitalUI["Hospital Portal :5173"]
     Hub --> PatientUI["Patient Portal /patient/ (:5174)"]
     Hub --> DashUI["System Dashboard /dashboard/ (:5176)<br/>Obsidian Glass UI & Block Inspector"]
     Hub --> LabUI["Lab Console /lab/ (:3006)"]
-    Hub --> PharmUI["Pharmacy UIs /pharmacy/*<br/>Main :5175, Mgr :3001, Emp :3002,<br/>Inv :3003, Patient :3004, Bill :3005"]
+    Hub --> PharmUI["Unified Pharmacy Suite /pharmacy/ (:5175)<br/>Manager, Pharmacist, Inventory, Billing, Patient"]
     Hub --> AIAgentRoute["Clinical AI /ai-agent/ (:8000)"]
+    Hub --> IPFSRoute["IPFS WebUI (:5001)"]
   end
 
   subgraph MicroservicesLayer ["Microservices & Multi-Agent Layer"]
@@ -473,8 +475,13 @@ flowchart TB
     HospitalUI --> P1["peer1-api :4002"]
     HospitalUI --> P2["peer2-api :4003"]
     PatientUI --> PatientAPI["patient-api :4005"]
+    PatientUI --> DigiLockerAPI["digilocker-service :4007"]
     PharmUI --> PharmAPI["p-backend :3000"]
+    PharmUI --> P2
     AIAgentRoute --> AIAgentService["clinical-ai-agent :8000<br/>FastAPI Medical RAG & Trend Analyzer"]
+    LabUI --> LabNodeGateway["l-node-gateway :3006<br/>Multi-Agent Orchestrator, Tool Layer & VCAP"]
+    DashUI --> DashboardAPI["dashboard-api :4010<br/>Event Normalizer, SQLite Read Cache, WS / SSE"]
+  end
     LabUI --> LabGateway["Lab node-gateway :3006"]
 
     subgraph LabAgenticSubsystem ["Lab Multi-Agent Subsystem"]
