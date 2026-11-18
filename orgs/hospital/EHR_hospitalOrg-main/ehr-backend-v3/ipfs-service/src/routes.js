@@ -144,7 +144,7 @@ router.get('/health', async (req, res, next) => {
     return res.json({
       success: true,
       service: 'ipfs-service',
-      port:    process.env.PORT || 3006,
+      port:    process.env.PORT || 4006,
       ipfs:    info,
     });
   } catch (err) {

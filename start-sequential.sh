@@ -11,6 +11,9 @@ PID_DIR="${ROOT_DIR}/.pids"
 
 mkdir -p "${LOG_DIR}" "${PID_DIR}"
 
+# Shared secrets and per-service .env files (idempotent).
+node "${ROOT_DIR}/scripts/init-env.js"
+
 declare -A SERVICES
 # Hospital Backends
 SERVICES["ipfs-service"]="orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/ipfs-service:npm start:4006"
@@ -19,6 +22,7 @@ SERVICES["peer1-api"]="orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/peer1-a
 SERVICES["peer2-api"]="orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/peer2-api:npm start:4003"
 SERVICES["extorg-api"]="orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/extorg-api:npm start:4004"
 SERVICES["patient-api"]="orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/patient-api:npm start:4005"
+SERVICES["digilocker-service"]="orgs/digilocker/backend:npm start:4007"
 
 # Hospital Frontends
 SERVICES["hospital-portal"]="orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/hospital-portal:npx vite --host 0.0.0.0 --port 5173:5173"

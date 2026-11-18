@@ -8,7 +8,9 @@ import Overview from './pages/Overview'
 import { VisitsListPage, VisitDetailPage } from './pages/Visits'
 import { EHRPage, AccessPage, SignaturesPage } from './pages/EHRAccess'
 import Profile from './pages/Profile'
+import DigiLockerVault from './pages/DigiLocker'
 import './index.css'
+import './design-system/observatory-theme.css'
 
 function ProtectedRoute({ children }) {
   const { patient } = useAuth()
@@ -39,6 +41,9 @@ function AppRoutes() {
       } />
       <Route path="/signatures" element={
         <ProtectedRoute><Layout><SignaturesPage /></Layout></ProtectedRoute>
+      } />
+      <Route path="/digilocker" element={
+        <ProtectedRoute><Layout><DigiLockerVault /></Layout></ProtectedRoute>
       } />
       <Route path="/profile" element={
         <ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>

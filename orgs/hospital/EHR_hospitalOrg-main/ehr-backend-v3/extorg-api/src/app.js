@@ -19,7 +19,7 @@ const labRoutes    = require('./routes/lab');
 const claimsRoutes = require('./routes/claims');
 
 const app  = express();
-const PORT = process.env.PORT || 3004;
+const PORT = process.env.PORT || 4004;
 
 app.use(cors({ origin: '*', credentials: true }))
 app.use(helmet({ crossOriginResourcePolicy: false }));

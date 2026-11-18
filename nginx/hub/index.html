@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/vitalis-tokens.css" />
     <link rel="stylesheet" href="/caregrid-tokens.css" />
     <link rel="stylesheet" href="/hub.css?v=2" />
+    <link rel="stylesheet" href="/observatory-theme.css?v=1" />
     <script>
       (function() {
         try {
@@ -21,7 +22,7 @@
         } catch (e) {}
       })();
     </script>
-    <script defer src="/hub.js?v=3"></script>
+    <script defer src="/hub.js?v=4"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to services</a>
@@ -50,10 +51,10 @@
           <h3>Hospital Main Gateway</h3>
           <p>Multi-role clinical access (Doctor, Nurse, Receptionist, Pharmacy, Records, Admin) with Fabric peer credential verification.</p>
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 6px;">
-            <a href="http://localhost:5173/?role=doctor" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:#0d948820;color:#0d9488;border:1px solid #0d948840;">🩺 Doctor</a>
-            <a href="http://localhost:5173/?role=nurse" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:#8b5cf620;color:#8b5cf6;border:1px solid #8b5cf640;">📋 Nurse</a>
-            <a href="http://localhost:5173/?role=receptionist" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:#10b98120;color:#10b981;border:1px solid #10b98140;">🧑‍💼 Reception</a>
-            <a href="http://localhost:5173/?role=admin" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:#6366f120;color:#6366f1;border:1px solid #6366f140;">🛡️ Admin</a>
+            <a class="role-pill" href="http://localhost:5173/?role=doctor" target="_blank" rel="noopener">Doctor</a>
+            <a class="role-pill" href="http://localhost:5173/?role=nurse" target="_blank" rel="noopener">Nurse</a>
+            <a class="role-pill" href="http://localhost:5173/?role=receptionist" target="_blank" rel="noopener">Reception</a>
+            <a class="role-pill" href="http://localhost:5173/?role=admin" target="_blank" rel="noopener">Admin</a>
           </div>
           <div class="card-footer">
             <span>Role-Based Access</span>
@@ -71,7 +72,7 @@
       <section class="service-section" id="partners" aria-labelledby="partners-title"><div class="section-heading"><div><p class="eyebrow">CONNECTED ORGANIZATIONS</p><h2 id="partners-title">Partner services</h2></div><p>Availability is shown only when a live check responds.</p></div><div class="cards partner-cards">
         <article class="service-card compact"><div class="card-top"><span class="service-icon lab" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 3h6m-5 0v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3m-7 11h12"/></svg></span><span class="status" data-check="lab"><i></i><span>Checking</span></span></div><h3>Laboratory</h3><p>Lab gateway and diagnostic partner.</p><div class="card-footer"><span>Partner portal</span><a href="/lab/" target="_blank" rel="noopener">Open lab service <span aria-hidden="true">↗</span></a></div></article>
         <article class="service-card compact"><div class="card-top"><span class="service-icon pharmacy" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10h16v10H4zM3 10l2-6h14l2 6M12 13v4m-2-2h4"/></svg></span><span class="status" data-check="pharmacy"><i></i><span>Checking</span></span></div><h3>Pharmacy workspace</h3><p>Medication services and pharmacy team tools.</p><div class="card-footer"><span>Separate pharmacy access</span><a href="http://localhost:5175/" target="_blank" rel="noopener">Open pharmacy portal <span aria-hidden="true">↗</span></a></div></article>
-        <article class="service-card compact"><div class="card-top"><span class="service-icon data" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8m-8 3h8m-8 3h5"/></svg></span><span class="status neutral"><i></i><span>Not connected</span></span></div><h3>Digital locker</h3><p>External document integration is not connected in this deployment.</p><div class="card-footer"><span>Integration</span><span class="disabled-link">Unavailable</span></div></article>
+        <article class="service-card compact"><div class="card-top"><span class="service-icon data" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8m-8 3h8m-8 3h5"/></svg></span><span class="status" data-check="digilocker"><i></i><span>Checking</span></span></div><h3>DigiLocker vault</h3><p>Pull issued documents, encrypt them to IPFS and anchor their fingerprints on the ledger.</p><div class="card-footer"><span>Patient access</span><a href="http://localhost:5174/digilocker" target="_blank" rel="noopener">Open document vault <span aria-hidden="true">↗</span></a></div></article>
       </div>
         <details class="more-services"><summary>More pharmacy workspaces <span>5 available</span></summary><div class="more-grid"><a href="http://localhost:3001/" target="_blank" rel="noopener">Pharmacy manager <span>↗</span></a><a href="http://localhost:3002/" target="_blank" rel="noopener">Pharmacy employee <span>↗</span></a><a href="http://localhost:3003/" target="_blank" rel="noopener">Inventory <span>↗</span></a><a href="http://localhost:3004/" target="_blank" rel="noopener">Pharmacy patient <span>↗</span></a><a href="http://localhost:3005/" target="_blank" rel="noopener">Billing <span>↗</span></a></div></details>
       </section>

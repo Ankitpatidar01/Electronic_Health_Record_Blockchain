@@ -50,7 +50,7 @@ export default function NurseVisitsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: 'Fraunces, serif' }}>Nurse Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Nurse Dashboard</h1>
           <p className="text-sm text-slate-500 mt-0.5">Record vitals, care notes, and manage patient workflow</p>
         </div>
         {!visit && <Button variant="secondary" onClick={loadAll} loading={listLoading}>Refresh</Button>}

@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node index.js",
     "web": "node server.js",
-    "test": "node --test tests/history-agent.test.js"
+    "test": "node --test tests/history-agent.test.js tests/workflow-safety.test.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.10.0",

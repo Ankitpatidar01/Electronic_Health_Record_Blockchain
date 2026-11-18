@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react'
-import { createPatientClient } from '../utils/api'
+import { createPatientClient, createDigilockerClient } from '../utils/api'
 
 const AuthContext = createContext(null)
 
@@ -9,7 +9,17 @@ export function AuthProvider({ children }) {
   })
   const [token, setToken] = useState(() => localStorage.getItem('ehr_patient_token') || null)
 
-  const api = useCallback(() => createPatientClient(token), [token])
+  const logout = useCallback(() => {
+    setToken(null)
+    setPatient(null)
+    localStorage.removeItem('ehr_patient_token')
+    localStorage.removeItem('ehr_patient_user')
+  }, [])
+
+  // An expired or rejected token signs the patient out instead of leaving
+  // every page failing silently.
+  const api = useCallback(() => createPatientClient(token, logout), [token, logout])
+  const digilocker = useCallback(() => createDigilockerClient(token, logout), [token, logout])
 
   const login = async (patientId, password) => {
     const client = createPatientClient(null)
@@ -33,15 +43,8 @@ export function AuthProvider({ children }) {
     return res.data.data
   }
 
-  const logout = () => {
-    setToken(null)
-    setPatient(null)
-    localStorage.removeItem('ehr_patient_token')
-    localStorage.removeItem('ehr_patient_user')
-  }
-
   return (
-    <AuthContext.Provider value={{ patient, token, api, login, register, logout }}>
+    <AuthContext.Provider value={{ patient, token, api, digilocker, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   )

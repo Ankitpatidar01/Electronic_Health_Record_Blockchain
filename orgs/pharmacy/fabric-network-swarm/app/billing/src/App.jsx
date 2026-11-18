@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Pill, Activity, FileText, Send, User, Package, CheckCircle, RefreshCw, ShieldCheck, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './styles.css';
+import './design-system/observatory-theme.css';
 import ThemeToggle from './ThemeToggle.jsx';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/pharmacy';
@@ -123,7 +124,7 @@ export default function App() {
       <nav className="nav">
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <img src="/logo.svg" alt="Vitalis" style={{ width: 26, height: 26, objectFit: 'contain' }} />
-          <span>Vitalis <span style={{ fontWeight: 300, color: '#0d9488' }}>Pharmacy Billing</span></span>
+          <span>Vitalis <span style={{ fontWeight: 300, color: 'var(--obs-accent)' }}>Pharmacy Billing</span></span>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div className="glass-card" style={{ padding: '0.4rem 1rem', borderRadius: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)' }}>

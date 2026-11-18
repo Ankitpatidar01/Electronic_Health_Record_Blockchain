@@ -88,7 +88,7 @@ export default function PatientsPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search by Patient ID, ABHA number or full name..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -134,7 +134,7 @@ export default function PatientsPage() {
           <div className="bento-card p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl">
             <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center font-bold text-lg">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-sky-950/60 text-blue-600 dark:text-sky-400 flex items-center justify-center font-bold text-lg">
                   {selected.name?.[0]?.toUpperCase()}
                 </div>
                 <div>
@@ -186,7 +186,7 @@ export default function PatientsPage() {
                   <div
                     key={v.visitId}
                     onClick={() => navigate(`/visits/${v.visitId}`)}
-                    className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-teal-500 cursor-pointer transition-all flex items-center justify-between"
+                    className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-blue-500 cursor-pointer transition-all flex items-center justify-between"
                   >
                     <div>
                       <p className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">{v.visitId}</p>
@@ -226,7 +226,7 @@ function InfoTile({ icon: Icon, label, value, truncate }) {
   return (
     <div>
       <div className="flex items-center gap-1.5 mb-1">
-        <Icon size={12} className="text-teal-600 dark:text-teal-400" />
+        <Icon size={12} className="text-blue-600 dark:text-sky-400" />
         <span className="text-[11px] text-slate-400">{label}</span>
       </div>
       <p className={`text-xs font-semibold text-slate-800 dark:text-slate-200 ${truncate ? 'truncate' : ''}`}>{value || '—'}</p>
@@ -273,14 +273,14 @@ function RegisterModal({ open, onClose, api }) {
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Gender *</label>
             <select value={form.gender} onChange={e => update('gender', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
               {['Male','Female','Other'].map(g => <option key={g}>{g}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Blood Group *</label>
             <select value={form.bloodGroup} onChange={e => update('bloodGroup', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
               {['A+','A-','B+','B-','O+','O-','AB+','AB-'].map(g => <option key={g}>{g}</option>)}
             </select>
           </div>

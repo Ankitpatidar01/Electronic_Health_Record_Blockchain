@@ -20,6 +20,9 @@ echo -e "${CYAN}═════════════════════�
 echo -e "${BOLD}${CYAN}               STOPPING EHR BLOCKCHAIN SERVICES & NETWORK                     ${RESET}"
 echo -e "${CYAN}══════════════════════════════════════════════════════════════════════════════${RESET}"
 
+# docker-compose.yaml refuses to parse without the root .env secrets.
+node "${ROOT_DIR}/scripts/init-env.js" >/dev/null 2>&1 || true
+
 echo -e "\n  ${YELLOW}[1/3] Stopping application containers (portals, APIs, microservices)...${RESET}"
 docker compose -f "${APP_COMPOSE}" --profile dashboard stop >/dev/null 2>&1 || true
 echo -e "  ${GREEN}✓ Application containers stopped (Docker volumes preserved)${RESET}"

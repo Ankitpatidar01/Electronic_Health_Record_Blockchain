@@ -4,9 +4,10 @@ import { STATUS_COLORS, STATUS_LABELS } from '../../utils/api'
 import { X, Loader2 } from 'lucide-react'
 
 export function StatusBadge({ status }) {
-  const cls = STATUS_COLORS[status] || 'bg-gray-100 text-gray-500'
+  const tone = STATUS_COLORS[status] || 'is-neutral'
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+    <span className={`status-pill ${tone}`}>
+      <span className="status-pill-dot" />
       {STATUS_LABELS[status] || status}
     </span>
   )
@@ -14,39 +15,35 @@ export function StatusBadge({ status }) {
 
 export function Badge({ children, variant = 'default' }) {
   const variants = {
-    default: 'bg-slate-100 text-slate-700',
-    blue:    'bg-blue-100 text-blue-700',
-    green:   'bg-emerald-100 text-emerald-700',
-    red:     'bg-red-100 text-red-700',
-    amber:   'bg-amber-100 text-amber-700',
-    violet:  'bg-violet-100 text-violet-700',
+    default: 'is-neutral',
+    blue:    'is-info',
+    green:   'is-ok',
+    red:     'is-danger',
+    amber:   'is-warn',
+    violet:  'is-violet',
   }
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variants[variant]}`}>
-      {children}
-    </span>
-  )
+  return <span className={`status-pill ${variants[variant] || variants.default}`}>{children}</span>
 }
 
 export function Button({ children, variant = 'primary', size = 'md', className = '', loading = false, ...props }) {
   const variants = {
-    primary:   'bg-slate-900 text-white hover:bg-slate-700 disabled:bg-slate-300',
-    secondary: 'bg-white text-slate-900 border border-slate-200 hover:bg-slate-50',
-    danger:    'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300',
-    ghost:     'text-slate-600 hover:bg-slate-100',
-    success:   'bg-emerald-600 text-white hover:bg-emerald-700',
-    blue:      'bg-blue-600 text-white hover:bg-blue-700',
+    primary:   'obs-btn',
+    blue:      'obs-btn',
+    secondary: 'obs-btn-ghost',
+    ghost:     'obs-btn-ghost border-transparent bg-transparent',
+    danger:    'inline-flex items-center justify-center gap-2 rounded-full font-semibold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors',
+    success:   'inline-flex items-center justify-center gap-2 rounded-full font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors',
   }
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base',
+    sm: '!px-3 !py-1.5 !text-xs',
+    md: '!px-4 !py-2.5 !text-sm',
+    lg: '!px-6 !py-3 !text-base',
   }
   return (
     <button
       {...props}
       disabled={loading || props.disabled}
-      className={`inline-flex items-center gap-2 font-medium rounded-lg transition-colors disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`${variants[variant] || variants.primary} ${sizes[size]} ${className}`}
     >
       {loading && <Loader2 size={14} className="animate-spin" />}
       {children}
@@ -56,7 +53,7 @@ export function Button({ children, variant = 'primary', size = 'md', className =
 
 export function Card({ children, className = '', ...props }) {
   return (
-    <div className={`bg-white border border-slate-200 rounded-xl ${className}`} {...props}>
+    <div className={`premium-card ${className}`} {...props}>
       {children}
     </div>
   )
@@ -94,7 +91,7 @@ export function Textarea({ label, error, className = '', ...props }) {
 
 export function Spinner({ size = 'md' }) {
   const sizes = { sm: 'w-4 h-4', md: 'w-6 h-6', lg: 'w-8 h-8' }
-  return <div className={`${sizes[size]} border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin`} />
+  return <div role="status" aria-label="Loading" className={`${sizes[size]} border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin`} />
 }
 
 export function Modal({ open, onClose, title, children, size = 'md' }) {
@@ -108,10 +105,10 @@ export function Modal({ open, onClose, title, children, size = 'md' }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} max-h-[90vh] overflow-y-auto`}>
+      <div role="dialog" aria-modal="true" aria-label={title} className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} max-h-[90vh] overflow-y-auto`}>
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
           <h3 className="font-semibold text-slate-900 font-display">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-600 transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -141,7 +138,7 @@ export function Alert({ type = 'info', children }) {
     warning: 'bg-amber-50 border-amber-200 text-amber-800',
   }
   return (
-    <div className={`p-3 rounded-lg border text-sm ${styles[type]}`}>
+    <div role={type === 'error' ? 'alert' : 'status'} className={`p-3 rounded-xl border text-sm ${styles[type]}`}>
       {children}
     </div>
   )

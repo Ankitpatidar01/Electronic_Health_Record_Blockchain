@@ -75,6 +75,12 @@ for ca_state in \
   fi
 done
 
+# Root .env carries the shared secrets docker-compose.yaml requires.
+if ! node "${ROOT_DIR}/scripts/init-env.js"; then
+  echo -e "${RED}Could not prepare ${ROOT_DIR}/.env (is Node.js installed?).${RESET}" >&2
+  exit 1
+fi
+
 if ! docker network inspect ehr_network >/dev/null 2>&1; then
   echo -e "  ${YELLOW}Creating the shared Docker network ehr_network...${RESET}"
   docker network create ehr_network >/dev/null
@@ -91,6 +97,7 @@ echo -e "  ${GREEN}✓ Fabric ledger nodes online on ehrchannel${RESET}"
 echo -e "\n${BOLD}${BLUE}[3/6] 🏥 Starting hospital, patient, lab, and IPFS services...${RESET}"
 docker compose -f "${APP_COMPOSE}" up -d ${BUILD_FLAG} \
   h-ipfs-service h-peer0-api h-peer1-api h-peer2-api h-extorg-api h-patient-api \
+  h-digilocker-service clinical-ai-agent \
   h-hospital-portal h-patient-portal l-node-gateway
 echo -e "  ${GREEN}✓ Core hospital backends, IPFS, and web portals initialized${RESET}"
 
@@ -125,6 +132,7 @@ declare -A DESCRIPTIONS=(
   ["h-peer2-api"]="Nurse / Pharmacy API"
   ["h-extorg-api"]="Lab / Claims API"
   ["h-patient-api"]="Patient Records API"
+  ["h-digilocker-service"]="DigiLocker Vault Service"
   ["h-ipfs-service"]="IPFS Storage Service"
   ["h-dashboard-api"]="Dashboard Realtime API"
   ["l-node-gateway"]="Lab Node Gateway"
@@ -180,6 +188,7 @@ echo -e "     • Doctor API            : ${BOLD}http://localhost:4002/health${R
 echo -e "     • Nurse / Pharmacy API  : ${BOLD}http://localhost:4003/health${RESET}"
 echo -e "     • Lab / Claims API      : ${BOLD}http://localhost:4004/health${RESET}"
 echo -e "     • Patient API           : ${BOLD}http://localhost:4005/health${RESET}"
+echo -e "     • DigiLocker Vault API  : ${BOLD}http://localhost:4007/health${RESET}"
 echo -e "     • IPFS Storage Service  : ${BOLD}http://localhost:4006/health${RESET}"
 echo -e "     • Dashboard Stream API  : ${BOLD}http://localhost:4010/health${RESET}"
 echo -e "     • Pharmacy Backend API  : ${BOLD}http://localhost:3000/health${RESET}"

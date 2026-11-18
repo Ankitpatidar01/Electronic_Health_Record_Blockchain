@@ -67,12 +67,12 @@ export default function OverviewPage() {
       <div className="bento-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/90 dark:from-slate-900/90 dark:to-slate-900/70 relative overflow-hidden">
         {/* Soft decorative backdrop */}
         <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-15 dark:opacity-10 pointer-events-none bg-no-repeat bg-right-top"
-          style={{ backgroundImage: 'radial-gradient(circle at 100% 0%, #0d9488 0%, transparent 70%)' }} />
+          style={{ backgroundImage: 'radial-gradient(circle at 100% 0%, #2563eb 0%, transparent 70%)' }} />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs uppercase font-bold tracking-wider text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/50 px-2.5 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+              <span className="text-xs uppercase font-bold tracking-wider text-blue-600 dark:text-sky-400 bg-blue-50 dark:bg-sky-950/50 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-sky-800">
                 Vitalis Health Identity
               </span>
               <DataSourceTag source="live" />
@@ -269,7 +269,7 @@ export default function OverviewPage() {
             <button
               type="button"
               onClick={() => navigate('/visits')}
-              className="text-xs text-teal-600 dark:text-teal-400 font-semibold hover:underline flex items-center gap-1"
+              className="text-xs text-blue-600 dark:text-sky-400 font-semibold hover:underline flex items-center gap-1"
             >
               <span>All Visits</span>
               <ChevronRight size={12} />
@@ -289,7 +289,7 @@ export default function OverviewPage() {
                   className="p-3.5 rounded-2xl bg-slate-50 hover:bg-white dark:bg-slate-800/40 dark:hover:bg-slate-800/80 border border-slate-200/70 dark:border-slate-800 cursor-pointer transition-all flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center justify-center font-bold text-xs shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-sky-950/60 text-blue-700 dark:text-sky-300 border border-blue-200 dark:border-sky-800 flex items-center justify-center font-bold text-xs shrink-0">
                       Dr
                     </div>
                     <div>
@@ -315,7 +315,7 @@ export default function OverviewPage() {
       {/* Bottom Trust Card */}
       <div className="bento-card p-5 bg-slate-900 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-teal-300 shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-blue-300 shrink-0">
             <ShieldCheck size={22} />
           </div>
           <div>

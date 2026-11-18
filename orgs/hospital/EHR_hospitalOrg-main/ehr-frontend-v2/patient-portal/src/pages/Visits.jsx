@@ -31,7 +31,7 @@ const STAGE_META = {
   WITH_NURSE:        { label: 'Nursing Care',           icon: UserCheck,     color: 'text-violet-600',  bg: 'bg-violet-50'  },
   WITH_LAB:          { label: 'Lab Tests',              icon: TestTubes,     color: 'text-amber-600',   bg: 'bg-amber-50'   },
   VISIT_FINALIZED:   { label: 'Visit Finalized',        icon: ClipboardCheck,color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  RECORD_FINALIZED:  { label: 'Medical Record Approved',icon: FileText,      color: 'text-teal-600',    bg: 'bg-teal-50'    },
+  RECORD_FINALIZED:  { label: 'Medical Record Approved',icon: FileText,      color: 'text-blue-600',    bg: 'bg-blue-50'    },
   CLAIM_SUBMITTED:   { label: 'Insurance Claim Filed',  icon: ShieldCheck,   color: 'text-indigo-600',  bg: 'bg-indigo-50'  },
   CLAIM_UNDER_AUDIT: { label: 'Claim Under Review',     icon: Loader,        color: 'text-orange-600',  bg: 'bg-orange-50'  },
   CLAIM_APPROVED:    { label: 'Claim Approved',         icon: ShieldCheck,   color: 'text-green-600',   bg: 'bg-green-50'   },
@@ -441,7 +441,7 @@ export function VisitDetailPage() {
       {data.visitCID && (
         <Card className="p-4">
           <p className="text-xs text-slate-400 mb-1">IPFS Content Address</p>
-          <p className="font-mono text-xs text-teal-700 bg-teal-50 px-3 py-2 rounded-lg break-all">{data.visitCID}</p>
+          <p className="font-mono text-xs text-blue-700 bg-blue-50 px-3 py-2 rounded-lg break-all">{data.visitCID}</p>
           <p className="text-xs text-slate-400 mt-1">{data.cidHistory?.length || 1} version{data.cidHistory?.length !== 1 ? 's' : ''} on-chain</p>
         </Card>
       )}

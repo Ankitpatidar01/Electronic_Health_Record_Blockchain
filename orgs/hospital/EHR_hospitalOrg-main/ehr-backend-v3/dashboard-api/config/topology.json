@@ -33,7 +33,8 @@
     { "id": "pharmacy-api", "kind": "pharmacy", "org": "HospitalMSP", "component": "pharmacy-api", "agentId": "pharmacy-agent", "eventType": "PHARMACY_STATUS_CHANGED", "downEventType": "PHARMACY_DOWN", "urlEnv": "DASHBOARD_HEALTH_PHARMACY_URL" },
     { "id": "clinical-ai-agent", "kind": "api", "org": "HospitalMSP", "component": "clinical-agent", "agentId": "clinical-agent", "eventType": "API_STATUS_CHANGED", "downEventType": "API_DOWN", "urlEnv": "DASHBOARD_HEALTH_CLINICAL_AI_URL" },
     { "id": "history-agent-target", "kind": "api", "org": "HospitalMSP", "component": "history-agent", "agentId": "history-agent", "eventType": "API_STATUS_CHANGED", "downEventType": "API_DOWN", "urlEnv": "DASHBOARD_HEALTH_HISTORY_AGENT_URL" },
-    { "id": "governance-agent-target", "kind": "api", "org": "HospitalMSP", "component": "governance-agent", "agentId": "governance-agent", "eventType": "API_STATUS_CHANGED", "downEventType": "API_DOWN", "urlEnv": "DASHBOARD_HEALTH_GOVERNANCE_AGENT_URL" }
+    { "id": "governance-agent-target", "kind": "api", "org": "HospitalMSP", "component": "governance-agent", "agentId": "governance-agent", "eventType": "API_STATUS_CHANGED", "downEventType": "API_DOWN", "urlEnv": "DASHBOARD_HEALTH_GOVERNANCE_AGENT_URL" },
+    { "id": "digilocker-service", "kind": "api", "org": "HospitalMSP", "component": "digilocker-service", "agentId": "digilocker-agent", "eventType": "API_STATUS_CHANGED", "downEventType": "API_DOWN", "urlEnv": "DASHBOARD_HEALTH_DIGILOCKER_URL" }
   ],
   "agents": [
     { "id": "clinical-agent", "kind": "ai", "org": "HospitalMSP", "status": "not_connected", "dependency": "AI" },
@@ -42,6 +43,7 @@
     { "id": "lab-agent", "kind": "ai", "org": "DiagnosticsMSP", "status": "not_connected", "dependency": "AI" },
     { "id": "doctor-agent", "kind": "ai", "org": "HospitalMSP", "peerId": "peer1.hospital", "status": "not_connected", "dependency": "AI" },
     { "id": "nurse-agent", "kind": "logical", "org": "HospitalMSP", "peerId": "peer2.hospital", "status": "not_connected", "dependency": "Hospital API" },
-    { "id": "pharmacy-agent", "kind": "logical", "org": "HospitalMSP", "peerId": "peer2.hospital", "status": "not_connected", "dependency": "Hospital API" }
+    { "id": "pharmacy-agent", "kind": "logical", "org": "HospitalMSP", "peerId": "peer2.hospital", "status": "not_connected", "dependency": "Hospital API" },
+    { "id": "digilocker-agent", "kind": "logical", "org": "HospitalMSP", "peerId": "peer0.hospital", "status": "not_connected", "dependency": "DigiLocker service" }
   ]
 }

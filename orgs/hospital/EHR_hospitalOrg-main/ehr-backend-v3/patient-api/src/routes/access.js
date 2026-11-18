@@ -9,6 +9,7 @@
  * GET    /access/active      — list only active grants
  * GET    /access/log         — full audit log (every GRANT, REVOKE, READ)
  * GET    /access/check/:id   — check if a specific identity has access
+ * GET    /access/staff       — clinical staff the patient can grant access to
  *
  * These call AccessContract on blockchain, signed by patientService identity.
  * patient-api verifies the patient's JWT BEFORE calling chaincode —
@@ -26,6 +27,28 @@ const logger = require('../config/logger');
 const secured = [authenticate, fabricContext];
 
 const VALID_SECTIONS = ['ehr', 'visits', 'prescriptions', 'labResults', 'all'];
+
+// ── GET /access/staff ─────────────────────────────────────────────────────────
+// Clinical staff a patient may grant access to (username + role only).
+// Served here so the patient portal never has to call a hospital staff API.
+const fs   = require('fs');
+const path = require('path');
+const USERS_FILE     = process.env.USERS_FILE || path.join(__dirname, '../../../shared/users.json');
+const GRANTABLE_ROLES = ['doctor', 'nurse', 'pharmacist', 'medrecordofficer'];
+
+router.get('/staff', authenticate, (req, res) => {
+  let users;
+  try {
+    users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+  } catch (err) {
+    logger.error('Staff directory unavailable', { error: err.message });
+    return res.status(503).json({ success: false, error: 'Staff directory is unavailable' });
+  }
+  const staff = Object.entries(users)
+    .filter(([, user]) => GRANTABLE_ROLES.includes(user.role))
+    .map(([username, user]) => ({ username, role: user.role }));
+  return res.json({ success: true, data: staff });
+});
 
 // ── POST /access/grant ────────────────────────────────────────────────────────
 // Patient grants a staff member (or anyone) access to sections of their records.

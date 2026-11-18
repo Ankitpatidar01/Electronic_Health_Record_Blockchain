@@ -7,124 +7,82 @@ const ExecutionState = require('./state');
 const activeRuns = new Map();
 
 /**
- * Interface Adapters / Stubs for Team Modules
- * NOTE: These stubs use fallback mocks or delegate to real agent modules if imported.
- * Individual team members will replace these stubs with their actual modules during integration.
+ * Agent adapters.
+ *
+ * Each adapter runs the real module. A module that is not installed yields an
+ * explicit "unavailable" result with no clinical content — nothing is ever
+ * substituted with sample data — and an error thrown by a module propagates so
+ * the run is marked FAILED instead of being papered over.
  */
 
-// Saurabh: Lab Agent Stub
+const telemetry = require('../dashboard-telemetry');
+
+function loadModule(modulePath) {
+  try {
+    return require(modulePath);
+  } catch (error) {
+    if (error && error.code === 'MODULE_NOT_FOUND' && String(error.message).includes(modulePath.replace(/^\.\.\//, ''))) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function unavailableResult(agentId, what) {
+  return new AgentResult({
+    agentId,
+    status: AgentStatus.FAILED,
+    confidence: 'low',
+    result: { available: false },
+    errors: [`${what} is not installed on this gateway.`],
+    metadata: { source: 'unavailable' },
+  });
+}
+
 async function callLabAgent(context, inputPayload) {
-  try {
-    const labAgentModule = require('../agents/lab-agent');
-    if (typeof labAgentModule.runLabAgent === 'function') {
-      return await labAgentModule.runLabAgent(context, inputPayload);
-    }
-  } catch (_e) {
-    // Fallback stub if Saurabh's module is not yet merged
-  }
-
-  return new AgentResult({
-    agentId: 'lab-agent',
-    status: AgentStatus.SUCCESS,
-    confidence: 'high',
-    result: {
-      summary: 'Lab analysis stub: Hemoglobin is 9.2 g/dL.',
-      findings: 'Low hemoglobin level detected.',
-      abnormalities: ['Low Hemoglobin (9.2 g/dL vs 12.0-15.5)'],
-      riskFlags: ['Possible Moderate Anemia']
-    },
-    metadata: { source: 'stub-mock' }
-  });
+  const mod = loadModule('../agents/lab-agent');
+  if (!mod || typeof mod.runLabAgent !== 'function') return unavailableResult('lab-agent', 'The lab report agent');
+  return mod.runLabAgent(context, inputPayload);
 }
 
-// Abdullah: Patient History Agent Stub
 async function callHistoryAgent(context) {
-  try {
-    const historyModule = require('../agents/history-agent');
-    if (typeof historyModule.runHistoryAgent === 'function') {
-      return await historyModule.runHistoryAgent(context);
-    }
-  } catch (_e) {
-    // Fallback stub if Abdullah's module is not yet merged
-  }
-
-  return new AgentResult({
-    agentId: 'history-agent',
-    status: AgentStatus.SUCCESS,
-    confidence: 'high',
-    result: {
-      patientId: context.patientId,
-      historyCount: 2,
-      timeline: [
-        { date: '2026-01-10', testCode: 'CBC', hemoglobin: '11.2 g/dL' },
-        { date: '2026-04-19', testCode: 'CBC', hemoglobin: '9.2 g/dL' }
-      ],
-      trendSummary: 'Progressive decline in Hemoglobin levels over past 3 months.'
-    },
-    metadata: { source: 'stub-mock' }
-  });
+  const mod = loadModule('../agents/history-agent');
+  if (!mod || typeof mod.runHistoryAgent !== 'function') return unavailableResult('history-agent', 'The patient history agent');
+  return mod.runHistoryAgent(context);
 }
 
-// Ankit Patidar: Clinical Decision Support Agent Stub
 async function callClinicalAgent(context, labResult, historyResult) {
-  try {
-    const clinicalModule = require('../agents/clinical-agent');
-    if (typeof clinicalModule.runClinicalAgent === 'function') {
-      return await clinicalModule.runClinicalAgent(context, labResult, historyResult);
-    }
-  } catch (_e) {
-    // Fallback stub if Ankit's module is not yet merged
-  }
-
-  return new AgentResult({
-    agentId: 'clinical-agent',
-    status: AgentStatus.SUCCESS,
-    confidence: 'medium',
-    result: {
-      recommendation: 'Evaluate for iron deficiency anemia; recommend serum ferritin and iron panel.',
-      possibleRisks: ['Occult blood loss', 'Nutritional deficiency'],
-      nextSteps: ['Order Serum Ferritin', 'Schedule clinical follow-up']
-    },
-    metadata: { source: 'stub-mock' }
-  });
+  const mod = loadModule('../agents/clinical-agent');
+  if (!mod || typeof mod.runClinicalAgent !== 'function') return unavailableResult('clinical-agent', 'The clinical decision-support agent');
+  return mod.runClinicalAgent(context, labResult, historyResult);
 }
 
-// Adarsh: Governance / Safety Agent Stub
 async function callGovernance(context, allResults) {
-  try {
-    const governanceModule = require('../governance/governance');
-    if (typeof governanceModule.checkGovernance === 'function') {
-      return await governanceModule.checkGovernance(context, allResults);
-    }
-  } catch (_e) {
-    // Fallback stub if Adarsh's module is not yet merged
+  const mod = loadModule('../governance/governance');
+  if (!mod || typeof mod.checkGovernance !== 'function') {
+    // Fail closed: without a governance check nothing is approved.
+    const result = unavailableResult('governance-agent', 'The governance check');
+    result.result = { available: false, approved: false, requiresHumanReview: false, safetyFlags: ['Governance check unavailable'] };
+    return result;
   }
-
-  return new AgentResult({
-    agentId: 'governance-agent',
-    status: AgentStatus.SUCCESS,
-    result: {
-      approved: true,
-      requiresHumanReview: true,
-      safetyFlags: ['Pertains to abnormal clinical lab finding'],
-      disclaimerVerified: true
-    },
-    metadata: { source: 'stub-mock' }
-  });
+  return mod.checkGovernance(context, allResults);
 }
 
-// Sushil: VCAP Provenance Builder Stub
 async function createVCAP(state) {
-  try {
-    const vcapModule = require('../provenance/vcap');
-    if (typeof vcapModule.buildAndAnchorVCAP === 'function') {
-      return await vcapModule.buildAndAnchorVCAP(state);
-    }
-  } catch (_e) {
-    // Fallback stub if Sushil's module is not yet merged
+  const mod = loadModule('../provenance/vcap');
+  if (!mod || typeof mod.buildAndAnchorVCAP !== 'function') {
+    throw new Error('Provenance (VCAP) module is not installed; the run cannot be completed without a provenance record.');
   }
+  return mod.buildAndAnchorVCAP(state);
+}
 
-  return 'QmStubVCAPMockCidHash123456789';
+function traceAgent(runId, agentId, result) {
+  const failed = result && (result.status === AgentStatus.FAILED || result.status === 'ERROR');
+  telemetry.emit(failed ? 'AGENT_EXECUTION_FAILED' : 'AGENT_EXECUTION_COMPLETED', {
+    agentId,
+    status: telemetry.safeCode(result && result.status, 'UNKNOWN'),
+    ...(failed ? { errorCode: 'AGENT_FAILED' } : {}),
+  }, { source: 'lab-orchestrator', correlationId: telemetry.safeCode(runId, undefined), severity: failed ? 'WARNING' : 'INFO' });
 }
 
 /**
@@ -147,6 +105,7 @@ async function runWorkflow(payload) {
     const labContext = new AgentContext({ runId, patientId, requestingAgent: 'ORCHESTRATOR', metadata: payload });
     const labResult = await callLabAgent(labContext, payload);
     state.recordAgentResult(labResult);
+    traceAgent(runId, 'lab-agent', labResult);
 
     // 2. STEP 2: PATIENT HISTORY AGENT NODE
     state.updateAgentStart('history-agent');
@@ -159,6 +118,7 @@ async function runWorkflow(payload) {
     });
     const historyResult = await callHistoryAgent(historyContext);
     state.recordAgentResult(historyResult);
+    traceAgent(runId, 'history-agent', historyResult);
 
     // 3. STEP 3: CLINICAL DECISION SUPPORT AGENT NODE
     state.updateAgentStart('clinical-agent');
@@ -171,6 +131,7 @@ async function runWorkflow(payload) {
     });
     const clinicalResult = await callClinicalAgent(clinicalContext, labResult, historyResult);
     state.recordAgentResult(clinicalResult);
+    traceAgent(runId, 'clinical-agent', clinicalResult);
 
     // 4. STEP 4: GOVERNANCE & SAFETY CHECK
     state.updateAgentStart('governance-agent');
@@ -183,10 +144,26 @@ async function runWorkflow(payload) {
     });
     const governanceResult = await callGovernance(governanceContext, state.agentResults);
     state.recordAgentResult(governanceResult);
+    const governance = governanceResult.result || {};
+    telemetry.emit('GOVERNANCE_DECISION', {
+      agentId: 'governance-agent',
+      status: governance.approved ? 'APPROVED' : 'BLOCKED',
+      humanReviewStatus: governance.requiresHumanReview ? 'REQUIRED' : 'NOT_REQUIRED',
+    }, { source: 'lab-orchestrator', correlationId: telemetry.safeCode(runId, undefined), severity: governance.approved ? 'INFO' : 'WARNING' });
+    telemetry.traceStage('governance-agent', 'GOVERNANCE', governance.approved ? 'DONE' : 'FAILED', {}, { source: 'lab-orchestrator', correlationId: telemetry.safeCode(runId, undefined) });
+
+    // A run that governance did not approve stops here.
+    if (!governance.approved) {
+      state.fail('Governance did not approve this run: ' + ((governance.safetyFlags || []).join('; ') || 'no reason given'));
+      return state;
+    }
 
     // 5. STEP 5: HUMAN REVIEW / APPROVAL GATE
-    if (governanceResult.result && governanceResult.result.requiresHumanReview) {
+    if (governance.requiresHumanReview) {
       state.pauseForHumanReview();
+      telemetry.emit('HUMAN_REVIEW_REQUIRED', { agentId: 'governance-agent', status: 'WAITING', humanReviewStatus: 'PENDING' },
+        { source: 'lab-orchestrator', correlationId: telemetry.safeCode(runId, undefined) });
+      telemetry.traceStage('governance-agent', 'HUMAN_REVIEW', 'WAITING_HUMAN', {}, { source: 'lab-orchestrator', correlationId: telemetry.safeCode(runId, undefined) });
       return state;
     }
 
@@ -212,11 +189,28 @@ async function approveWorkflowRun(runId, approvalPayload) {
     throw new Error(`Run ID ${runId} not found`);
   }
 
-  state.recordHumanApproval(approvalPayload);
+  if (state.status !== 'PAUSED_FOR_HUMAN') {
+    throw new Error(`Run ${runId} is not waiting for review (status: ${state.status})`);
+  }
+  const decision = approvalPayload && approvalPayload.decision;
+  if (decision !== 'APPROVED' && decision !== 'REJECTED') {
+    throw new Error("decision must be 'APPROVED' or 'REJECTED'");
+  }
+  if (!approvalPayload.reviewedBy || !String(approvalPayload.reviewedBy).trim()) {
+    throw new Error('reviewedBy is required');
+  }
 
-  if (approvalPayload.decision === 'APPROVED') {
-    const vcapCid = await createVCAP(state);
-    state.complete(vcapCid);
+  state.recordHumanApproval(approvalPayload);
+  telemetry.traceStage('governance-agent', 'HUMAN_REVIEW', decision === 'APPROVED' ? 'DONE' : 'FAILED', {},
+    { source: 'lab-orchestrator', correlationId: telemetry.safeCode(runId, undefined) });
+
+  if (decision === 'APPROVED') {
+    try {
+      const vcapCid = await createVCAP(state);
+      state.complete(vcapCid);
+    } catch (error) {
+      state.fail(error.message);
+    }
   } else {
     state.fail(`Human reviewer rejected AI recommendation: ${approvalPayload.comments || 'No comment'}`);
   }
@@ -236,7 +230,7 @@ module.exports = {
   approveWorkflowRun,
   getWorkflowState,
   activeRuns,
-  // Export adapter stubs for unit testing
+  // Adapters, exported for unit testing
   callLabAgent,
   callHistoryAgent,
   callClinicalAgent,

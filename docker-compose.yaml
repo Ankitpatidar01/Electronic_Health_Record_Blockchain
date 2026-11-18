@@ -1,4 +1,20 @@
 
+# Shared settings. Values come from the root .env (create it with
+# `node scripts/init-env.js`; setup.sh and start.sh do this for you).
+x-hospital-api-env: &hospital-api-env
+  NODE_ENV: ${NODE_ENV:-development}
+  JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}"
+  JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+  FABRIC_BASE_PATH: /ehr-network
+  FABRIC_CHANNEL: ${FABRIC_CHANNEL:-ehrchannel}
+  FABRIC_CHAINCODE: ${FABRIC_CHAINCODE:-ehr}
+  IPFS_SERVICE_URL: http://h-ipfs-service:4006
+  IPFS_SERVICE_KEY: "${IPFS_SERVICE_KEY:?IPFS_SERVICE_KEY is not set. Run: node scripts/init-env.js}"
+
+x-dashboard-emitter-env: &dashboard-emitter-env
+  DASHBOARD_EVENT_API_URL: http://h-dashboard-api:4010
+  DASHBOARD_SERVICE_KEY: ${DASHBOARD_SERVICE_KEY:-}
+
 services:
 
 
@@ -27,8 +43,10 @@ services:
       - h-ipfs-service-modules:/app/node_modules
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
     environment:
+      PORT: 4006
       IPFS_API_URL: http://ipfs.ehr.local:5001
       IPFS_GATEWAY_URL: http://ipfs.ehr.local:8080
+      IPFS_SERVICE_KEY: "${IPFS_SERVICE_KEY:?IPFS_SERVICE_KEY is not set. Run: node scripts/init-env.js}"
     ports:
       - "4006:4006"
     networks:
@@ -48,7 +66,8 @@ services:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
     environment:
-      FABRIC_BASE_PATH: /ehr-network
+      <<: *hospital-api-env
+      PORT: 4001
       PEER_ADDRESS: peer0.hospital.example.com:7051
     ports:
       - "4001:4001"
@@ -69,7 +88,8 @@ services:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
     environment:
-      FABRIC_BASE_PATH: /ehr-network
+      <<: *hospital-api-env
+      PORT: 4002
       PEER_ADDRESS: peer1.hospital.example.com:9051
     ports:
       - "4002:4002"
@@ -90,7 +110,8 @@ services:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
     environment:
-      FABRIC_BASE_PATH: /ehr-network
+      <<: *hospital-api-env
+      PORT: 4003
       PEER_ADDRESS: peer2.hospital.example.com:10051
     ports:
       - "4003:4003"
@@ -111,7 +132,8 @@ services:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
     environment:
-      FABRIC_BASE_PATH: /ehr-network
+      <<: *hospital-api-env
+      PORT: 4004
       DIAG_PEER_ADDRESS: peer0.diagnostic.example.com:8051
       PROV_PEER_ADDRESS: peer0.provider.example.com:11051
     ports:
@@ -133,8 +155,10 @@ services:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
     environment:
-      FABRIC_BASE_PATH: /ehr-network
+      <<: *hospital-api-env
+      PORT: 4005
       PEER_ADDRESS: peer0.hospital.example.com:7051
+      SQLITE_PATH: ./data/patients.db
     ports:
       - "4005:4005"
     networks:
@@ -143,6 +167,42 @@ services:
     command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
     restart: unless-stopped
 
+  h-digilocker-service:
+    image: ehr-h-digilocker-service:local
+    build:
+      context: ./orgs/digilocker/backend
+    working_dir: /app
+    volumes:
+      - ./orgs/digilocker/backend:/app
+      - h-digilocker-service-modules:/app/node_modules
+      - h-digilocker-service-data:/data
+      - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+    environment:
+      <<: *dashboard-emitter-env
+      PORT: 4007
+      NODE_ENV: ${NODE_ENV:-development}
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}"
+      DIGILOCKER_VAULT_KEY: "${DIGILOCKER_VAULT_KEY:?DIGILOCKER_VAULT_KEY is not set. Run: node scripts/init-env.js}"
+      DIGILOCKER_MODE: ${DIGILOCKER_MODE:-sandbox}
+      DIGILOCKER_CLIENT_ID: ${DIGILOCKER_CLIENT_ID:-}
+      DIGILOCKER_CLIENT_SECRET: ${DIGILOCKER_CLIENT_SECRET:-}
+      DIGILOCKER_PUBLIC_URL: ${DIGILOCKER_PUBLIC_URL:-http://localhost:4007}
+      DIGILOCKER_PORTAL_RETURN_URL: ${DIGILOCKER_PORTAL_RETURN_URL:-http://localhost:5174/digilocker}
+      CORS_ALLOWED_ORIGINS: ${DIGILOCKER_CORS_ALLOWED_ORIGINS:-http://localhost:5174,http://localhost}
+      DIGILOCKER_DATA_DIR: /data
+      FABRIC_BASE_PATH: /ehr-network
+      PEER_ADDRESS: peer0.hospital.example.com:7051
+      FABRIC_CHANNEL: ${FABRIC_CHANNEL:-ehrchannel}
+      FABRIC_CHAINCODE: ${FABRIC_CHAINCODE:-ehr}
+      IPFS_SERVICE_URL: http://h-ipfs-service:4006
+      IPFS_SERVICE_KEY: "${IPFS_SERVICE_KEY:?IPFS_SERVICE_KEY is not set. Run: node scripts/init-env.js}"
+    ports:
+      - "4007:4007"
+    networks:
+      - default
+      - ehr_network
+    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
+    restart: unless-stopped
   clinical-ai-agent:
     image: ehr-clinical-ai-agent:local
     build:
@@ -152,6 +212,7 @@ services:
       - ./services/ai-agent:/app
       - /app/.venv
     environment:
+      <<: *dashboard-emitter-env
       HOST: 0.0.0.0
       PORT: 8000
       EHR_OFFLINE_MODE: "true"
@@ -172,6 +233,9 @@ services:
       - path: ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/.env
         required: false
     environment:
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}"
+      DASHBOARD_SERVICE_KEY: ${DASHBOARD_SERVICE_KEY:-}
+      DASHBOARD_HEALTH_DIGILOCKER_URL: http://h-digilocker-service:4007/health
       DASHBOARD_FABRIC_GATEWAY_ENDPOINT: peer0.hospital.example.com:7051
       DASHBOARD_PEER_HOSPITAL_RECEPTION: peer0.hospital.example.com:7051
       DASHBOARD_PEER_HOSPITAL_DOCTOR: peer1.hospital.example.com:9051
@@ -250,6 +314,9 @@ services:
     volumes:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/patient-portal:/app
       - h-patient-portal-modules:/app/node_modules
+    environment:
+      VITE_PATIENT_API_URL: ${VITE_PATIENT_API_URL:-http://localhost:4005}
+      VITE_DIGILOCKER_API_URL: ${VITE_DIGILOCKER_API_URL:-http://localhost:4007}
     ports:
       - "5174:5174"
     command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 5174"
@@ -371,6 +438,10 @@ services:
       - ./orgs/lab/EHR-LABORG-main/organizations:/organizations:ro
       - l-node-gateway-modules:/app/node_modules
     environment:
+      <<: *dashboard-emitter-env
+      DASHBOARD_EVENT_ORG: DiagnosticsMSP
+      CLINICAL_AI_AGENT_URL: http://clinical-ai-agent:8000
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       IPFS_API_URL: http://ipfs.ehr.local:5001
       IPFS_GATEWAY_URL: http://ipfs.ehr.local:8080
       # Lab joins the shared ehrchannel as the Diagnostics organization.
@@ -397,6 +468,8 @@ services:
 # ──────────────────────────────────────────────────────────
 volumes:
   h-dashboard-api-data:
+  h-digilocker-service-modules:
+  h-digilocker-service-data:
   h-dashboard-portal-modules:
   h-ipfs-service-modules:
   h-peer0-api-modules:

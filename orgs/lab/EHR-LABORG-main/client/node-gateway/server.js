@@ -40,6 +40,8 @@ const {
   getWorkflowState,
 } = require('./orchestrator/orchestrator');
 const { createIntegrityChecker } = require('./integrity-check');
+const telemetry = require('./dashboard-telemetry');
+const { randomUUID } = require('crypto');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -277,6 +279,7 @@ app.post('/api/ai/analyze', async (req, res, next) => {
       }
     }
 
+    const analysisStarted = Date.now();
     const ai = await runAgenticClinicalAnalysis({
       resultData: req.body.resultData,
       testCode: req.body.testCode,
@@ -284,6 +287,12 @@ app.post('/api/ai/analyze', async (req, res, next) => {
       patientHistory,
       reportText: req.body.reportText,
       reportTextSource: req.body.reportTextSource,
+    });
+    telemetry.traceStage('lab-agent', 'AGENT_PROCESSING', ai && ai.ok === false ? 'FAILED' : 'DONE', {
+      durationMs: Date.now() - analysisStarted,
+      model: telemetry.safeCode(ai && ai.model, 'unknown'),
+      patientIdHash: telemetry.patientHash(req.body.patientId),
+      fallbackUsed: Boolean(ai && (ai.ok === false || ai.warning)),
     });
 
     let aiIpfs = null;
@@ -376,9 +385,18 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
     });
 
     // Run heavy IPFS/OCR processing in background
+    const traceId = `lab-${randomUUID()}`;
+    const traceStarted = Date.now();
+    const tracePatient = telemetry.patientHash(trimmedField(req.body.patientId));
+    const trace = (stage, stageStatus, extra = {}) => telemetry.traceStage(
+      'lab-agent', stage, stageStatus, { patientIdHash: tracePatient, ...extra }, { correlationId: traceId }
+    );
+    let traceStageName = 'REPORT_RECEIVED';
     (async () => {
       try {
     const runAiAgents = parseBooleanValue(req.body.runAiAgents, true);
+    telemetry.emit('AGENT_EXECUTION_STARTED', { agentId: 'lab-agent', status: 'RUNNING', patientIdHash: tracePatient }, { correlationId: traceId });
+    trace('REPORT_RECEIVED', 'DONE');
 
     const warnings = [];
     let reportFileIpfs = null;
@@ -395,13 +413,17 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
         contentType: mimeType,
       });
 
+      traceStageName = 'OCR_PARSING';
+      const ocrStarted = Date.now();
       try {
         extractedReportText = await extractTextFromLabReport({
           buffer: req.file.buffer,
           mimeType,
         });
+        trace('OCR_PARSING', extractedReportText ? 'DONE' : 'SKIPPED', { durationMs: Date.now() - ocrStarted });
       } catch (error) {
         warnings.push(`Unable to extract report text: ${error.message}`);
+        trace('OCR_PARSING', 'FAILED', { durationMs: Date.now() - ocrStarted, errorCode: 'OCR_EXTRACTION_FAILED' });
       }
 
       if (!extractedReportText) {
@@ -426,9 +448,16 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
       }
       : parsedResultData;
 
+    traceStageName = 'ENCRYPTED_IPFS_STORED';
+    const ipfsStarted = Date.now();
     const ipfsPayload = await addJsonToIpfs(ipfsEnvelope, {
       fileName: `${resultId || 'labresult'}-payload.json`,
     });
+    telemetry.emit('IPFS_UPLOAD_COMPLETED', {
+      component: 'lab-gateway', status: 'OK', agentId: 'lab-agent', cid: ipfsPayload.cid,
+      byteLength: Number(ipfsPayload.size) || undefined, durationMs: Date.now() - ipfsStarted,
+    }, { correlationId: traceId });
+    trace('ENCRYPTED_IPFS_STORED', 'DONE', { cid: ipfsPayload.cid, durationMs: Date.now() - ipfsStarted });
 
     let patientHistory = [];
     if (runAiAgents && req.body.patientId) {
@@ -455,6 +484,8 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
           : null,
       };
 
+      traceStageName = 'AGENT_PROCESSING';
+      const aiStarted = Date.now();
       ai = await runAgenticClinicalAnalysis({
         resultData: resultDataForAi,
         testCode: req.body.testCode,
@@ -465,6 +496,15 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
           ? (req.file.originalname || reportFileIpfs.name)
           : undefined,
       });
+      const aiModel = telemetry.safeCode(ai && ai.model, 'unknown');
+      trace('AGENT_PROCESSING', ai && ai.ok === false ? 'FAILED' : 'DONE', {
+        durationMs: Date.now() - aiStarted, model: aiModel,
+        fallbackUsed: Boolean(ai && (ai.ok === false || ai.warning)),
+      });
+      if (ai && (ai.ok === false || ai.warning)) {
+        telemetry.emit('AI_FALLBACK_USED', { agentId: 'lab-agent', status: 'FALLBACK', model: aiModel, fallbackUsed: true },
+          { correlationId: traceId, severity: 'WARNING' });
+      }
 
       aiIpfs = await addJsonToIpfs(ai, {
         fileName: `${resultId || 'labresult'}-ai-summary.json`,
@@ -516,6 +556,7 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
       };
     }
 
+    traceStageName = 'RECORD_ANCHORED';
     const response = await createLabResult(
       {
         resultId,
@@ -528,9 +569,18 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
       { peerName }
     );
 
+    trace('RECORD_ANCHORED', 'DONE', { cid: ipfsPayload.cid, durationMs: Date.now() - traceStarted });
+    telemetry.emit('AGENT_EXECUTION_COMPLETED', {
+      agentId: 'lab-agent', status: 'COMPLETED', durationMs: Date.now() - traceStarted, patientIdHash: tracePatient,
+    }, { correlationId: traceId });
     console.log(`Background processing completed for resultId ${resultId}`);
       } catch (bgError) {
         console.error(`Background processing failed for resultId ${resultId}:`, bgError);
+        trace(traceStageName, 'FAILED', { errorCode: 'LAB_PIPELINE_FAILED' });
+        telemetry.emit('AGENT_EXECUTION_FAILED', {
+          agentId: 'lab-agent', status: 'FAILED', errorCode: 'LAB_PIPELINE_FAILED',
+          durationMs: Date.now() - traceStarted, patientIdHash: tracePatient,
+        }, { correlationId: traceId, severity: 'WARNING' });
       }
     })();
   } catch (error) {
@@ -641,6 +691,9 @@ app.listen(PORT, BIND_HOST, () => {
     integrityChecker.start();
     console.log(`Ledger-integrity re-check scheduled every ${integrityChecker.status().intervalMs / 60000} min`);
   }
+
+  // Agents hosted by this gateway report liveness to the observability dashboard.
+  telemetry.startHeartbeat(['lab-agent', 'history-agent']);
 
   if (advertisedHost !== 'localhost') {
     console.log(`Network access URL: http://${advertisedHost}:${PORT}`);

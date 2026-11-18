@@ -16,12 +16,12 @@ export default function DoctorCard({
 }) {
   return (
     <div
-      className={`bento-card p-5 bg-gradient-to-br from-white via-sky-50/40 to-cyan-50/50 dark:from-slate-900/95 dark:via-sky-950/20 dark:to-cyan-950/30 border border-slate-200/90 dark:border-slate-800/80 rounded-3xl transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-teal-500/40 dark:hover:border-teal-400/40 flex flex-col justify-between ${className}`}
+      className={`bento-card p-5 bg-gradient-to-br from-white via-sky-50/40 to-cyan-50/50 dark:from-slate-900/95 dark:via-sky-950/20 dark:to-cyan-950/30 border border-slate-200/90 dark:border-slate-800/80 rounded-3xl transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-blue-500/40 dark:hover:border-sky-400/40 flex flex-col justify-between ${className}`}
     >
       <div>
         {/* Top Header Row: Rating */}
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-50 dark:bg-sky-950/60 text-blue-700 dark:text-sky-300 border border-blue-200 dark:border-sky-800">
             {status === 'online' ? 'Available' : status === 'busy' ? 'In Consultation' : 'Off Duty'}
           </span>
           <div className="flex items-center gap-1 text-xs font-bold text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
@@ -37,7 +37,7 @@ export default function DoctorCard({
             <h3 className="font-bold text-base text-slate-900 dark:text-white leading-tight truncate">
               {name.startsWith('Dr.') ? name : `Dr. ${name}`}
             </h3>
-            <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 mt-0.5 truncate">
+            <p className="text-xs font-semibold text-blue-600 dark:text-sky-400 mt-0.5 truncate">
               {specialty}
             </p>
             <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-1 truncate">
@@ -49,7 +49,7 @@ export default function DoctorCard({
 
         {/* Schedule / Hours */}
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-2 mb-4">
-          <Clock size={13} className="text-teal-500 shrink-0" />
+          <Clock size={13} className="text-blue-500 shrink-0" />
           <span className="truncate">{availability}</span>
         </div>
       </div>

@@ -162,7 +162,7 @@ export default function ProfilePage() {
           {error && <Alert type="error">{error}</Alert>}
           <div className="flex justify-end gap-3">
             <Button variant="secondary" size="sm" onClick={() => setPassModal(false)}>Cancel</Button>
-            <Button variant="teal" size="sm" loading={saving} onClick={changePassword}>Change Password</Button>
+            <Button variant="accent" size="sm" loading={saving} onClick={changePassword}>Change Password</Button>
           </div>
         </div>
       </Modal>

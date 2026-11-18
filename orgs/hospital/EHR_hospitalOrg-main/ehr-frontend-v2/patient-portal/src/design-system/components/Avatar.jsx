@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 
 const GRADIENTS = [
-  'linear-gradient(135deg, #1E4DFF, #2DD4BF)',
-  'linear-gradient(135deg, #0E9AA7, #A8E6CF)',
+  'linear-gradient(135deg, #1E4DFF, #38bdf8)',
+  'linear-gradient(135deg, #2563eb, #A8E6CF)',
   'linear-gradient(135deg, #8B5CF6, #B7D3FF)',
   'linear-gradient(135deg, #EC4899, #F8C8DC)',
   'linear-gradient(135deg, #F59E0B, #FFE08A)',
-  'linear-gradient(135deg, #10B981, #2DD4BF)',
+  'linear-gradient(135deg, #10B981, #38bdf8)',
 ]
 
 function hashString(str = '') {
@@ -64,7 +64,7 @@ export default function Avatar({
     <div className={`relative inline-flex items-center justify-center shrink-0 ${className}`}>
       <div
         className={`rounded-2xl transition-all ${
-          ring ? 'p-[2.5px] bg-gradient-to-tr from-[#1E4DFF] via-[#0E9AA7] to-[#2DD4BF] shadow-xs' : ''
+          ring ? 'p-[2.5px] bg-gradient-to-tr from-[#1E4DFF] via-[#2563eb] to-[#38bdf8] shadow-xs' : ''
         }`}
       >
         <div

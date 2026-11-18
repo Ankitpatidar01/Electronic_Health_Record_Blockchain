@@ -18,7 +18,7 @@ export default function StaffCard({
     doctor: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-400/40',
     nurse: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-400/40',
     receptionist: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-400/40',
-    pharmacist: 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-400/40',
+    pharmacist: 'bg-blue-500/15 text-blue-700 dark:text-sky-300 border-blue-400/40',
     medrecordofficer: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-400/40',
     admin: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-400/40',
   }
@@ -26,8 +26,8 @@ export default function StaffCard({
   const roleGradients = {
     doctor: 'bg-gradient-to-br from-sky-500/10 via-cyan-500/5 to-blue-500/10 dark:from-sky-950/40 dark:via-cyan-950/20 dark:to-blue-950/40 border-sky-200/90 dark:border-sky-800/60',
     nurse: 'bg-gradient-to-br from-purple-500/10 via-fuchsia-500/5 to-pink-500/10 dark:from-purple-950/40 dark:via-fuchsia-950/20 dark:to-pink-950/40 border-purple-200/90 dark:border-purple-800/60',
-    receptionist: 'bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-green-500/10 dark:from-emerald-950/40 dark:via-teal-950/20 dark:to-green-950/40 border-emerald-200/90 dark:border-emerald-800/60',
-    pharmacist: 'bg-gradient-to-br from-teal-500/10 via-cyan-500/5 to-emerald-500/10 dark:from-teal-950/40 dark:via-cyan-950/20 dark:to-emerald-950/40 border-teal-200/90 dark:border-teal-800/60',
+    receptionist: 'bg-gradient-to-br from-emerald-500/10 via-blue-500/5 to-green-500/10 dark:from-emerald-950/40 dark:via-sky-950/20 dark:to-green-950/40 border-emerald-200/90 dark:border-emerald-800/60',
+    pharmacist: 'bg-gradient-to-br from-blue-500/10 via-cyan-500/5 to-emerald-500/10 dark:from-sky-950/40 dark:via-cyan-950/20 dark:to-emerald-950/40 border-blue-200/90 dark:border-sky-800/60',
     medrecordofficer: 'bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-yellow-500/10 dark:from-amber-950/40 dark:via-orange-950/20 dark:to-yellow-950/40 border-amber-200/90 dark:border-amber-800/60',
     admin: 'bg-gradient-to-br from-indigo-500/10 via-blue-500/5 to-violet-500/10 dark:from-indigo-950/40 dark:via-blue-950/20 dark:to-violet-950/40 border-indigo-200/90 dark:border-indigo-800/60',
   }

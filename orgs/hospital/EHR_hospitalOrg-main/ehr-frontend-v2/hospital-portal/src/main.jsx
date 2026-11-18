@@ -12,6 +12,7 @@ import NurseVisits from './pages/NurseVisits'
 import { PharmacistPage, MedRecordsPage } from './pages/PharmacistRecords'
 import Staff from './pages/Staff'
 import './index.css'
+import './design-system/observatory-theme.css'
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useAuth()

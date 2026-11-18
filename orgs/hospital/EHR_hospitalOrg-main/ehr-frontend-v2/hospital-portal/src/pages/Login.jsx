@@ -60,9 +60,9 @@ const CLINICAL_ROLES = [
     icon: Users,
     desc: 'Patient check-in, ABHA demographic registry & opening clinical visits.',
     defaultPath: '/patients',
-    gradientUnselected: 'bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-green-500/10 dark:from-emerald-950/40 dark:via-teal-950/20 dark:to-green-950/40 border-emerald-200/80 dark:border-emerald-800/60 hover:border-emerald-400 dark:hover:border-emerald-600',
-    gradientSelected: 'bg-gradient-to-br from-emerald-500/25 via-teal-500/20 to-green-600/25 dark:from-emerald-900/60 dark:via-teal-900/50 dark:to-green-900/60 border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-500/40 shadow-lg shadow-emerald-500/15',
-    iconGradient: 'bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-500/30',
+    gradientUnselected: 'bg-gradient-to-br from-emerald-500/10 via-blue-500/5 to-green-500/10 dark:from-emerald-950/40 dark:via-sky-950/20 dark:to-green-950/40 border-emerald-200/80 dark:border-emerald-800/60 hover:border-emerald-400 dark:hover:border-emerald-600',
+    gradientSelected: 'bg-gradient-to-br from-emerald-500/25 via-blue-500/20 to-green-600/25 dark:from-emerald-900/60 dark:via-sky-900/50 dark:to-green-900/60 border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-500/40 shadow-lg shadow-emerald-500/15',
+    iconGradient: 'bg-gradient-to-tr from-emerald-600 to-blue-500 text-white shadow-md shadow-emerald-500/30',
     accentColor: 'text-emerald-600 dark:text-emerald-400',
   },
   {
@@ -71,14 +71,14 @@ const CLINICAL_ROLES = [
     username: 'pharmacist',
     hint: 'pharmpw',
     peer: 'peer2-api (Port 4003)',
-    badge: 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-400/40',
+    badge: 'bg-blue-500/15 text-blue-700 dark:text-sky-300 border-blue-400/40',
     icon: Pill,
     desc: 'Medication fulfillment, dispensing queue & inventory ledger sync.',
     defaultPath: '/dispense',
-    gradientUnselected: 'bg-gradient-to-br from-teal-500/10 via-cyan-500/5 to-emerald-500/10 dark:from-teal-950/40 dark:via-cyan-950/20 dark:to-emerald-950/40 border-teal-200/80 dark:border-teal-800/60 hover:border-teal-400 dark:hover:border-teal-600',
-    gradientSelected: 'bg-gradient-to-br from-teal-500/25 via-cyan-500/20 to-emerald-600/25 dark:from-teal-900/60 dark:via-cyan-900/50 dark:to-emerald-900/60 border-teal-500 dark:border-teal-400 ring-2 ring-teal-500/40 shadow-lg shadow-teal-500/15',
-    iconGradient: 'bg-gradient-to-tr from-teal-600 to-cyan-600 text-white shadow-md shadow-teal-500/30',
-    accentColor: 'text-teal-600 dark:text-teal-400',
+    gradientUnselected: 'bg-gradient-to-br from-blue-500/10 via-cyan-500/5 to-emerald-500/10 dark:from-sky-950/40 dark:via-cyan-950/20 dark:to-emerald-950/40 border-blue-200/80 dark:border-sky-800/60 hover:border-blue-400 dark:hover:border-sky-600',
+    gradientSelected: 'bg-gradient-to-br from-blue-500/25 via-cyan-500/20 to-emerald-600/25 dark:from-sky-900/60 dark:via-cyan-900/50 dark:to-emerald-900/60 border-blue-500 dark:border-sky-400 ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/15',
+    iconGradient: 'bg-gradient-to-tr from-blue-600 to-cyan-600 text-white shadow-md shadow-blue-500/30',
+    accentColor: 'text-blue-600 dark:text-sky-400',
   },
   {
     value: 'medrecordofficer',
@@ -179,12 +179,12 @@ export default function LoginPage() {
       <header className="relative z-10 max-w-6xl w-full mx-auto flex items-center justify-between py-2">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-md">
-            <Activity size={20} className="text-teal-400 dark:text-teal-600" />
+            <Activity size={20} className="text-blue-400 dark:text-sky-600" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">CareGrid EHR</span>
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/30">
+              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">Vitalis EHR</span>
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-700 dark:text-sky-300 border border-blue-500/30">
                 Hospital Gateway
               </span>
             </div>
@@ -212,14 +212,14 @@ export default function LoginPage() {
 
           {/* Active Session Notice if already logged in */}
           {user && (
-            <div className="mb-6 p-4 rounded-2xl bg-teal-500/10 dark:bg-teal-950/40 border border-teal-500/30 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+            <div className="mb-6 p-4 rounded-2xl bg-blue-500/10 dark:bg-sky-950/40 border border-blue-500/30 flex flex-wrap items-center justify-between gap-3 shadow-xs">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm">
                   {user.role?.[0] || 'U'}
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                    Active Session: <span className="text-teal-600 dark:text-teal-400 font-mono">{user.username}</span> ({user.role})
+                    Active Session: <span className="text-blue-600 dark:text-sky-400 font-mono">{user.username}</span> ({user.role})
                   </p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     You can return to your workspace directly or select any role below to verify new credentials.
@@ -309,7 +309,7 @@ export default function LoginPage() {
               </div>
               <div className="text-right">
                 <span className="text-[10px] text-slate-400 block font-mono">Fabric Gateway Target:</span>
-                <span className="text-xs font-mono font-bold text-teal-600 dark:text-teal-400">
+                <span className="text-xs font-mono font-bold text-blue-600 dark:text-sky-400">
                   {selectedRole.peer}
                 </span>
               </div>
@@ -334,7 +334,7 @@ export default function LoginPage() {
                       value={username}
                       onChange={e => setUsername(e.target.value)}
                       required
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -350,7 +350,7 @@ export default function LoginPage() {
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       required
-                      className="w-full pl-9 pr-10 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full pl-9 pr-10 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
                       type="button"

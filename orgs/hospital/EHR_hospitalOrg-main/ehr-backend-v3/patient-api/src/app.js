@@ -23,7 +23,7 @@ const accessRoutes      = require('./routes/access');
 const signatureRoutes   = require('./routes/signatures');
 
 const app  = express();
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 4005;
 
 // ── Core middleware ───────────────────────────────────────────────────────────
 app.use(cors({ origin: '*', credentials: true }))
@@ -68,11 +68,14 @@ app.use(errorHandler);
 
 // ── Startup ───────────────────────────────────────────────────────────────────
 async function start() {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is required. Run `node scripts/init-env.js` at the repository root.');
+  }
   logger.info('Starting patient-api...', {
     port:    PORT,
     fabricBase: process.env.FABRIC_BASE_PATH,
     peer:    process.env.PEER_ADDRESS || 'localhost:7051',
-    ipfs:    process.env.IPFS_SERVICE_URL || 'http://localhost:3006',
+    ipfs:    process.env.IPFS_SERVICE_URL || 'http://localhost:4006',
   });
 
   // Log MSP paths for diagnostics

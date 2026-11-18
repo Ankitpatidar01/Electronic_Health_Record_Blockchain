@@ -20,6 +20,7 @@ from services.patient_service import PatientService
 from services.trend_analyzer import ClinicalTrendAnalyzer
 from services.rag_engine import ClinicalRAGEngine
 from core.logger import get_logger
+from core import telemetry
 
 logger = get_logger("api_routes")
 router = APIRouter(prefix="/api/v1", tags=["Clinical AI Agent"])
@@ -98,7 +99,8 @@ def query_clinical_agent(req: AgentQueryRequest):
     Retrieves evidence from peer-reviewed literature and contextual patient records.
     """
     try:
-        return rag_engine.query(req)
+        with telemetry.track(req.patient_id):
+            return rag_engine.query(req)
     except Exception as e:
         logger.error(f"Error querying clinical agent: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
@@ -110,7 +112,8 @@ def analyze_lab_report(req: LabReportAnalysisRequest):
     Extracts markers, detects abnormalities, and computes cryptographic provenance.
     """
     try:
-        result = rag_engine.analyze_lab_report(req.report_text, req.patient_id)
+        with telemetry.track(req.patient_id):
+            result = rag_engine.analyze_lab_report(req.report_text, req.patient_id)
         return LabReportAnalysisResponse(
             patient_id=result["patient_id"],
             report_type=req.report_type or "General Lab Report",

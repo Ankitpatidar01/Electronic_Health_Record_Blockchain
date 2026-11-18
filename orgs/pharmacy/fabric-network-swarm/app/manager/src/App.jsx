@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, User, Activity, RefreshCw, Users, ClipboardList, ShieldCheck, DollarSign, ExternalLink, Package, Server, Database, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './styles.css';
+import './design-system/observatory-theme.css';
 import ThemeToggle from './ThemeToggle.jsx';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/pharmacy';
@@ -98,7 +99,7 @@ export default function App() {
       <nav className="nav">
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <img src="/logo.svg" alt="Vitalis" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-          <span>Vitalis <span style={{ fontWeight: 300, color: '#0d9488' }}>Pharmacy Manager</span></span>
+          <span>Vitalis <span style={{ fontWeight: 300, color: 'var(--obs-accent)' }}>Pharmacy Manager</span></span>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button className="btn" onClick={loadData} disabled={loading}>

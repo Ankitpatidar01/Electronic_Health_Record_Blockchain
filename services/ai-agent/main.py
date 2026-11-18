@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routes import router
 from core.config import settings
 from core.logger import get_logger
+from core import telemetry
 
 logger = get_logger("main")
 
@@ -30,6 +31,11 @@ app.add_middleware(
 
 # Mount API routers
 app.include_router(router)
+
+@app.on_event("startup")
+def start_dashboard_heartbeat() -> None:
+    """Report agent liveness to the observability dashboard when it is configured."""
+    telemetry.start_heartbeat()
 
 @app.get("/health", tags=["Health"])
 def health_check():

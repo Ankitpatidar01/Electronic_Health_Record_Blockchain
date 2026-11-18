@@ -37,7 +37,7 @@ export default function OpenVisitPage() {
           <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Calendar size={24} className="text-emerald-600" />
           </div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-1" style={{ fontFamily: 'Fraunces, serif' }}>
+          <h2 className="text-xl font-semibold text-slate-900 mb-1" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
             Visit Opened
           </h2>
           <p className="text-slate-500 text-sm mb-6">Visit has been registered and pinned to IPFS</p>
@@ -65,7 +65,7 @@ export default function OpenVisitPage() {
   return (
     <div className="max-w-lg mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: 'Fraunces, serif' }}>Open Visit</h1>
+        <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Open Visit</h1>
         <p className="text-sm text-slate-500 mt-0.5">Register a new visit and initialise IPFS document</p>
       </div>
 

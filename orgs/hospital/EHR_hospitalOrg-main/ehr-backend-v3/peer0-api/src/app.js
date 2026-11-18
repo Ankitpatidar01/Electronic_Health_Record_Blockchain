@@ -19,7 +19,7 @@ const patientRoutes = require('./routes/patients');
 const visitRoutes   = require('./routes/visits');
 
 const app  = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 4001;
 
 app.use(cors({ origin: '*', credentials: true }))
 app.use(helmet({ crossOriginResourcePolicy: false }));

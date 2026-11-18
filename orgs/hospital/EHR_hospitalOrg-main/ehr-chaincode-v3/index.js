@@ -8,6 +8,7 @@ const { LabContract }       = require('./lib/labContract');
 const { ClaimsContract }    = require('./lib/claimsContract');
 const { EhrContract }       = require('./lib/ehrContract');
 const { AccessContract }    = require('./lib/accessContract');
+const { DigiLockerContract } = require('./lib/digilockerContract');
 
 module.exports.PatientContract   = PatientContract;
 module.exports.VisitContract     = VisitContract;
@@ -17,6 +18,7 @@ module.exports.LabContract       = LabContract;
 module.exports.ClaimsContract    = ClaimsContract;
 module.exports.EhrContract       = EhrContract;
 module.exports.AccessContract    = AccessContract;
+module.exports.DigiLockerContract = DigiLockerContract;
 
 module.exports.contracts = [
   PatientContract,
@@ -27,4 +29,5 @@ module.exports.contracts = [
   ClaimsContract,
   EhrContract,
   AccessContract,
+  DigiLockerContract,
 ];

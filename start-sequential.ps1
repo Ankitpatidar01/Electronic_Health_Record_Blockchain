@@ -6,6 +6,7 @@ $apps = @(
     @{ dir = "orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/peer2-api"; cmd = "npm start" },
     @{ dir = "orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/extorg-api"; cmd = "npm start" },
     @{ dir = "orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/patient-api"; cmd = "npm start" },
+    @{ dir = "orgs/digilocker/backend"; cmd = "npm start" },
     
     # Pharmacy Frontends
     @{ dir = "orgs/pharmacy/fabric-network-swarm/app/manager"; cmd = "npm run dev -- --host 0.0.0.0 --port 3001"; isVite = $true },
@@ -20,6 +21,10 @@ $apps = @(
 )
 
 $rootDir = Get-Location
+
+# Shared secrets and per-service .env files (idempotent).
+node (Join-Path $rootDir "scripts/init-env.js")
+if ($LASTEXITCODE -ne 0) { Write-Error "scripts/init-env.js failed; is Node.js installed?"; exit 1 }
 
 foreach ($app in $apps) {
     $fullPath = Join-Path $rootDir $app.dir

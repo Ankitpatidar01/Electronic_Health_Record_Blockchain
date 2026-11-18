@@ -5,6 +5,7 @@ const probes = {
   ipfs: ['/api/hospital/ipfs/health'],
   lab: ['/lab/health', '/lab/api/health'],
   pharmacy: ['/pharmacy/'],
+  digilocker: ['/api/digilocker/health'],
 };
 
 function savedTheme() {

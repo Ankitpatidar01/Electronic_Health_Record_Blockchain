@@ -18,7 +18,7 @@ const authRoutes   = require('./routes/auth');
 const doctorRoutes = require('./routes/doctor');
 
 const app  = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 4002;
 
 app.use(cors({ origin: '*', credentials: true }))
 app.use(helmet({ crossOriginResourcePolicy: false }));

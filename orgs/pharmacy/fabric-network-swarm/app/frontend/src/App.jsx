@@ -63,7 +63,7 @@ function App() {
       <nav className="nav">
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
            <img src="/logo.svg" alt="Vitalis" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-           <span>Vitalis <span style={{ fontWeight: 300, color: '#0d9488' }}>Pharmacy Hub</span></span>
+           <span>Vitalis <span style={{ fontWeight: 300, color: 'var(--obs-accent)' }}>Pharmacy Hub</span></span>
         </div>
         
         <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, Plus, User, CreditCard, CheckCircle2, RefreshCw, LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './styles.css';
+import './design-system/observatory-theme.css';
 import ThemeToggle from './ThemeToggle.jsx';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/pharmacy';
@@ -114,7 +115,7 @@ export default function App() {
       <nav className="nav">
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <img src="/logo.svg" alt="Vitalis" style={{ width: 26, height: 26, objectFit: 'contain' }} />
-          <span>Vitalis <span style={{ fontWeight: 300, color: '#0d9488' }}>Pharmacist Station</span></span>
+          <span>Vitalis <span style={{ fontWeight: 300, color: 'var(--obs-accent)' }}>Pharmacist Station</span></span>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           {loggedIn && (
