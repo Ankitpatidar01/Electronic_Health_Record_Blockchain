@@ -344,13 +344,20 @@ export default function DigiLockerVault() {
       </section>
 
       <section aria-labelledby="issued-heading">
-        <div className="section-heading !mt-2">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4 mt-6">
           <div>
-            <p className="eyebrow">In your DigiLocker</p>
-            <h2 id="issued-heading">Issued documents</h2>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-sky-500/15 dark:text-sky-300 mb-1">
+              <FolderLock size={12} /> DigiLocker Repository
+            </div>
+            <h2 id="issued-heading" className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Issued Documents
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Verified clinical certificates and diagnostic reports available from your linked DigiLocker account
+            </p>
           </div>
           {status.linked && (
-            <button type="button" onClick={loadIssued} className="obs-btn-ghost"><RefreshCw size={13} /> Refresh</button>
+            <button type="button" onClick={loadIssued} className="obs-btn-ghost text-xs"><RefreshCw size={13} /> Refresh</button>
           )}
         </div>
 
@@ -406,12 +413,19 @@ export default function DigiLockerVault() {
       </section>
 
       <section aria-labelledby="vault-heading">
-        <div className="section-heading">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4 mt-8">
           <div>
-            <p className="eyebrow">Anchored on Hyperledger Fabric</p>
-            <h2 id="vault-heading">My vault</h2>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 mb-1">
+              <ShieldCheck size={12} /> Hyperledger Fabric Public Vault
+            </div>
+            <h2 id="vault-heading" className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Anchored Personal Vault
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Encrypted IPFS-pinned health records permanently anchored on the blockchain ledger
+            </p>
           </div>
-          <button type="button" onClick={loadVault} className="obs-btn-ghost"><RefreshCw size={13} /> Refresh</button>
+          <button type="button" onClick={loadVault} className="obs-btn-ghost text-xs"><RefreshCw size={13} /> Refresh</button>
         </div>
 
         {vaultError ? (
