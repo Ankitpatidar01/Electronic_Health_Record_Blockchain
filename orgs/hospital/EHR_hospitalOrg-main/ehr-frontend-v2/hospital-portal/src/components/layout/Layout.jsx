@@ -28,7 +28,6 @@ const ROLE_CONFIG = {
       { to: '/patients',   icon: Users,        label: 'Patients' },
       { to: '/staff',      icon: Users,        label: 'Doctors & Staff' },
       { to: '/visits',     icon: Calendar,     label: 'Encounters' },
-      { to: '/lab-queue',  icon: FlaskConical, label: 'Lab Orders' },
       { to: '/dispense',   icon: Pill,         label: 'Pharmacy' },
       { to: '/register',   icon: Users,        label: 'Register Patient' },
       { to: '/open-visit', icon: Calendar,     label: 'Open Visit' },
@@ -39,7 +38,6 @@ const ROLE_CONFIG = {
     label: 'Clinical Physician',
     nav: [
       { to: '/my-visits',    icon: Stethoscope,  label: 'Doctor Queue' },
-      { to: '/lab-queue',    icon: FlaskConical, label: 'Lab Orders' },
     ],
   },
   nurse: {

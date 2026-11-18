@@ -7,7 +7,7 @@
     <meta name="description" content="CareGrid NITW — Smart care, absolute privacy—your health records, decentralized and immutable." />
     <title>CareGrid NITW | NIT Warangal Health Center</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="stylesheet" href="/hub.css?v=7" />
+    <link rel="stylesheet" href="/hub.css?v=11" />
     <script>
       (function() {
         try {
@@ -200,21 +200,11 @@
 
         <div class="cards-grid">
           <!-- Card 1: Hospital Main Gateway -->
-          <article class="hub-card">
-            <div>
-              <h3 class="hub-card-title">Hospital Main Gateway</h3>
-              <p class="hub-card-desc">
-                Multi-role clinical access: (Doctor, Nurse, Reception), Pharmacy, Records.
-              </p>
-            </div>
-            <div>
-              <div class="hub-card-middle">
-                <div class="role-badges">
-                  <a class="role-badge doctor" href="http://localhost:5173/?role=doctor" target="_blank" rel="noopener">Doctor</a>
-                  <a class="role-badge nurse" href="http://localhost:5173/?role=nurse" target="_blank" rel="noopener">Nurse</a>
-                  <a class="role-badge reception" href="http://localhost:5173/?role=receptionist" target="_blank" rel="noopener">Reception</a>
-                  <a class="role-badge admin" href="http://localhost:5173/?role=admin" target="_blank" rel="noopener">Admin</a>
-                </div>
+          <article class="hub-card card-hospital">
+            <div class="hub-card-media">
+              <img src="/assets/cards/hospital.jpg" alt="Hospital Main Gateway" class="hub-card-img" loading="lazy" />
+              <div class="hub-card-media-overlay">
+                <span class="media-category-pill">Clinical Gateway</span>
                 <div class="vital-stat">
                   <span class="heart-pulse-icon" aria-hidden="true">
                     <svg viewBox="0 0 32 16" fill="none" class="pulse-svg">
@@ -224,6 +214,22 @@
                   <div class="vital-text">
                     <span class="vital-num">124</span>
                     <span class="vital-unit">vital</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="hub-card-body">
+              <div>
+                <h3 class="hub-card-title">Hospital Main Gateway</h3>
+                <p class="hub-card-desc">
+                  Multi-role clinical access: (Doctor, Nurse, Reception), Pharmacy, Records.
+                </p>
+                <div class="hub-card-middle">
+                  <div class="role-badges">
+                    <a class="role-badge doctor" href="http://localhost:5173/?role=doctor" target="_blank" rel="noopener">Doctor</a>
+                    <a class="role-badge nurse" href="http://localhost:5173/?role=nurse" target="_blank" rel="noopener">Nurse</a>
+                    <a class="role-badge reception" href="http://localhost:5173/?role=receptionist" target="_blank" rel="noopener">Reception</a>
+                    <a class="role-badge admin" href="http://localhost:5173/?role=admin" target="_blank" rel="noopener">Admin</a>
                   </div>
                 </div>
               </div>
@@ -237,18 +243,11 @@
           </article>
 
           <!-- Card 2: Patient Portal -->
-          <article class="hub-card">
-            <div>
-              <h3 class="hub-card-title">Patient Portal</h3>
-              <p class="hub-card-desc">
-                Patient self-service, consent, and health timeline.
-              </p>
-            </div>
-            <div>
-              <div class="hub-card-middle">
-                <div class="role-badges">
-                  <span class="role-badge patient-access">Patient access</span>
-                </div>
+          <article class="hub-card card-patient">
+            <div class="hub-card-media">
+              <img src="/assets/cards/patient.jpg" alt="Patient Portal" class="hub-card-img" loading="lazy" />
+              <div class="hub-card-media-overlay">
+                <span class="media-category-pill">Patient Vault</span>
                 <div class="vital-stat">
                   <span class="heart-pulse-icon" aria-hidden="true">
                     <svg viewBox="0 0 32 16" fill="none" class="pulse-svg">
@@ -258,6 +257,19 @@
                   <div class="vital-text">
                     <span class="vital-num">136</span>
                     <span class="vital-unit">vital</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="hub-card-body">
+              <div>
+                <h3 class="hub-card-title">Patient Portal</h3>
+                <p class="hub-card-desc">
+                  Patient self-service, consent, and health timeline.
+                </p>
+                <div class="hub-card-middle">
+                  <div class="role-badges">
+                    <span class="role-badge patient-access">Patient access</span>
                   </div>
                 </div>
               </div>
@@ -280,9 +292,10 @@
 
         <div class="cards-grid">
           <!-- Card 3: System Dashboard -->
-          <article class="hub-card">
-            <div>
-              <div class="card-top-status">
+          <article class="hub-card card-dashboard">
+            <div class="hub-card-media">
+              <img src="/assets/cards/dashboard.jpg" alt="System Operations Dashboard" class="hub-card-img" loading="lazy" />
+              <div class="hub-card-media-overlay">
                 <div class="card-icon-box blue-box" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 3v18h18M7 16l4-5 4 3 6-8"/>
@@ -292,23 +305,28 @@
                   <span class="live-dot"></span><span>Responding</span>
                 </span>
               </div>
-              <h3 class="hub-card-title">System Dashboard</h3>
-              <p class="hub-card-desc">
-                Real-time overview of service status, network activity, and events.
-              </p>
             </div>
-            <div class="hub-card-footer">
-              <span class="footer-note">Operations view</span>
-              <a href="/dashboard/" class="card-action-link">
-                Open system dashboard <span aria-hidden="true">→</span>
-              </a>
+            <div class="hub-card-body">
+              <div>
+                <h3 class="hub-card-title">System Dashboard</h3>
+                <p class="hub-card-desc">
+                  Real-time overview of service status, network activity, and events.
+                </p>
+              </div>
+              <div class="hub-card-footer">
+                <span class="footer-note">Operations view</span>
+                <a href="/dashboard/" class="card-action-link">
+                  Open system dashboard <span aria-hidden="true">→</span>
+                </a>
+              </div>
             </div>
           </article>
 
           <!-- Card 4: Document Service (IPFS & DigiLocker) -->
-          <article class="hub-card">
-            <div>
-              <div class="card-top-status">
+          <article class="hub-card card-docservice">
+            <div class="hub-card-media">
+              <img src="/assets/cards/document-service.jpg" alt="Document Service" class="hub-card-img" loading="lazy" />
+              <div class="hub-card-media-overlay">
                 <div class="card-icon-box purple-box" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 0v9m8-4.5-8 4.5m-8-4.5 8 4.5m0 0v9"/>
@@ -316,16 +334,20 @@
                 </div>
                 <span class="badge-tag purple-tag">DigiLocker</span>
               </div>
-              <h3 class="hub-card-title">Document Service (IPFS &amp; DigiLocker)</h3>
-              <p class="hub-card-desc">
-                Kubo IPFS node, content-addressed storage, and document gateway.
-              </p>
             </div>
-            <div class="hub-card-footer">
-              <span class="footer-note">Infrastructure</span>
-              <a href="http://localhost:5001/webui" target="_blank" rel="noopener" class="card-action-link">
-                Open IPFS WebUI <span aria-hidden="true">→</span>
-              </a>
+            <div class="hub-card-body">
+              <div>
+                <h3 class="hub-card-title">Document Service (IPFS &amp; DigiLocker)</h3>
+                <p class="hub-card-desc">
+                  Kubo IPFS node, content-addressed storage, and document gateway.
+                </p>
+              </div>
+              <div class="hub-card-footer">
+                <span class="footer-note">Infrastructure</span>
+                <a href="http://localhost:5001/webui" target="_blank" rel="noopener" class="card-action-link">
+                  Open IPFS WebUI <span aria-hidden="true">→</span>
+                </a>
+              </div>
             </div>
           </article>
         </div>
@@ -339,9 +361,10 @@
 
         <div class="cards-grid three-col">
           <!-- Card 5: Laboratory & Diagnostics -->
-          <article class="hub-card">
-            <div>
-              <div class="card-top-status">
+          <article class="hub-card card-lab">
+            <div class="hub-card-media">
+              <img src="/assets/cards/lab.jpg" alt="Laboratory & Diagnostics" class="hub-card-img" loading="lazy" />
+              <div class="hub-card-media-overlay">
                 <div class="card-icon-box green-box" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 3h6m-5 0v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3m-7 11h12"/>
@@ -351,23 +374,28 @@
                   <span class="live-dot"></span><span>Checking</span>
                 </span>
               </div>
-              <h3 class="hub-card-title">Laboratory &amp; Diagnostics</h3>
-              <p class="hub-card-desc">
-                Diagnostic control deck with multi-disease AI clinical review.
-              </p>
             </div>
-            <div class="hub-card-footer">
-              <span class="footer-note">Partner portal</span>
-              <a href="/lab/" target="_blank" rel="noopener" class="card-action-link">
-                Open lab service <span aria-hidden="true">→</span>
-              </a>
+            <div class="hub-card-body">
+              <div>
+                <h3 class="hub-card-title">Laboratory &amp; Diagnostics</h3>
+                <p class="hub-card-desc">
+                  Diagnostic control deck with multi-disease AI clinical review.
+                </p>
+              </div>
+              <div class="hub-card-footer">
+                <span class="footer-note">Partner portal</span>
+                <a href="/lab/" target="_blank" rel="noopener" class="card-action-link">
+                  Open lab service <span aria-hidden="true">→</span>
+                </a>
+              </div>
             </div>
           </article>
 
           <!-- Card 6: Pharmacy Workspace -->
-          <article class="hub-card">
-            <div>
-              <div class="card-top-status">
+          <article class="hub-card card-pharmacy">
+            <div class="hub-card-media">
+              <img src="/assets/cards/pharmacy.jpg" alt="Pharmacy Workspace" class="hub-card-img" loading="lazy" />
+              <div class="hub-card-media-overlay">
                 <div class="card-icon-box amber-box" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M4 10h16v10H4zM3 10l2-6h14l2 6M12 13v4m-2-2h4"/>
@@ -377,23 +405,28 @@
                   <span class="live-dot"></span><span>Checking</span>
                 </span>
               </div>
-              <h3 class="hub-card-title">Pharmacy Workspace</h3>
-              <p class="hub-card-desc">
-                Medication services, inventory, and decentralized dispensing.
-              </p>
             </div>
-            <div class="hub-card-footer">
-              <span class="footer-note">Separate pharmacy access</span>
-              <a href="http://localhost:5175/" target="_blank" rel="noopener" class="card-action-link">
-                Open pharmacy portal <span aria-hidden="true">→</span>
-              </a>
+            <div class="hub-card-body">
+              <div>
+                <h3 class="hub-card-title">Pharmacy Workspace</h3>
+                <p class="hub-card-desc">
+                  Medication services, inventory, and decentralized dispensing.
+                </p>
+              </div>
+              <div class="hub-card-footer">
+                <span class="footer-note">Pharmacy Suite</span>
+                <a href="http://localhost:5175/" target="_blank" rel="noopener" class="card-action-link">
+                  Open pharmacy portal <span aria-hidden="true">→</span>
+                </a>
+              </div>
             </div>
           </article>
 
           <!-- Card 7: DigiLocker Vault -->
-          <article class="hub-card">
-            <div>
-              <div class="card-top-status">
+          <article class="hub-card card-digilocker">
+            <div class="hub-card-media">
+              <img src="/assets/cards/digilocker.jpg" alt="DigiLocker Vault" class="hub-card-img" loading="lazy" />
+              <div class="hub-card-media-overlay">
                 <div class="card-icon-box purple-box" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -403,16 +436,20 @@
                   <span class="live-dot"></span><span>Checking</span>
                 </span>
               </div>
-              <h3 class="hub-card-title">DigiLocker Vault</h3>
-              <p class="hub-card-desc">
-                Pull issued documents, encrypt to IPFS and anchor fingerprints on the ledger.
-              </p>
             </div>
-            <div class="hub-card-footer">
-              <span class="footer-note">Patient access</span>
-              <a href="http://localhost:5174/digilocker" target="_blank" rel="noopener" class="card-action-link">
-                Open document vault <span aria-hidden="true">→</span>
-              </a>
+            <div class="hub-card-body">
+              <div>
+                <h3 class="hub-card-title">DigiLocker Vault</h3>
+                <p class="hub-card-desc">
+                  Pull issued documents, encrypt to IPFS and anchor fingerprints on the ledger.
+                </p>
+              </div>
+              <div class="hub-card-footer">
+                <span class="footer-note">Patient access</span>
+                <a href="http://localhost:5174/digilocker" target="_blank" rel="noopener" class="card-action-link">
+                  Open document vault <span aria-hidden="true">→</span>
+                </a>
+              </div>
             </div>
           </article>
         </div>

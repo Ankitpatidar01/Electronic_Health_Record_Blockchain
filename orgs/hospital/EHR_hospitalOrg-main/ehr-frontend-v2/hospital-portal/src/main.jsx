@@ -104,7 +104,7 @@ function AppRoutes() {
 
       {/* Diagnostic Lab Orders Queue */}
       <Route path="/lab-queue" element={
-        <ProtectedRoute allowedRoles={['labreceptionist','labtechnician','radiologist','labsupervisor','labadmin','admin','doctor']}>
+        <ProtectedRoute allowedRoles={['labreceptionist','labtechnician','radiologist','labsupervisor','labadmin']}>
           <Layout><LabQueue /></Layout>
         </ProtectedRoute>
       } />
