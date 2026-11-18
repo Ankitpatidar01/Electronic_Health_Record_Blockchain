@@ -88,23 +88,35 @@ The multi-agent workflow is orchestrated via LangGraph as a state machine:
 
 ---
 
-## 5. How to Run Locally
+## 5. Location and Setup
 
-### 1. Activate Environment and Start API Server
-```powershell
-cd BlockChain_24MCF1R06
-.\.venv\Scripts\python.exe -m uvicorn api:app --host 127.0.0.1 --port 8000 --reload
+- **Canonical Location:** `services/clinical-decision-support/`
+- **Legacy / Academic Submission Link:** `BlockChain_24MCF1R06/` (symlinked for backwards compatibility with submission scripts)
+
+### 1. Installation
+```bash
+cd services/clinical-decision-support
+pip install -r requirements.txt
+cp .env.example .env
 ```
-Access the interactive Swagger UI at: **`http://127.0.0.1:8000/docs`**
 
-### 2. Run Test Suite
-```powershell
-.\.venv\Scripts\python.exe test_graph.py
+### 2. Start API Server Locally
+```bash
+uvicorn api:app --host 127.0.0.1 --port 8000 --reload
+```
+Interactive Swagger UI: **`http://127.0.0.1:8000/docs`**
+
+### 3. Run Test Suite
+```bash
+pytest -v
+# Or standalone script:
+python test_graph.py
+python test_clinical_agent.py
 ```
 
 ---
 
 ## 6. Integration with Team Architecture
 - **Common Contract:** Exports `AgentResult` conformant with `orchestrator/agent-contract.js`.
-- **Node.js Adapter:** Invoked via `client/node-gateway/agents/clinical-agent.js`.
+- **Node.js Adapter:** Invoked via `orgs/lab/EHR-LABORG-main/client/node-gateway/agents/clinical-agent.js`.
 - **Zero-Downtime Fallback:** Embedded local JavaScript evaluation tools allow the Node orchestrator to operate even if the Python service is offline.

@@ -292,7 +292,8 @@ start_network() {
     curl -s -X POST \
       "http://localhost:5001/api/v0/config?arg=API.HTTPHeaders.Access-Control-Allow-Methods&arg=[\"PUT\",\"POST\",\"GET\"]&json=true" \
       --output /dev/null 2>/dev/null || true
-    docker exec ipfs.ehr.local ipfs config --json Gateway.PublicGateways '{"localhost": {"UseSubdomains": false, "Paths": ["/ipfs", "/ipns"]}}' >/dev/null 2>&1 || true
+    docker exec ipfs.ehr.local ipfs config --json Gateway.PublicGateways '{"localhost": {"UseSubdomains": false, "Paths": ["/ipfs", "/ipns", "/"]}}' >/dev/null 2>&1 || true
+    docker exec ipfs.ehr.local ipfs config Gateway.RootRedirect "http://localhost:5001/webui" >/dev/null 2>&1 || true
     success "IPFS CORS and Gateway path routing configured"
   fi
 

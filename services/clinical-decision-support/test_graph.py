@@ -46,6 +46,43 @@ def run_test_case(name: str, patient_id: str, lab_result: dict, history_result: 
         print("Error:", result.get("error"))
 
     print("\n" + "-" * 60)
+    return result
+
+
+def test_hematologic_anemia_case():
+    result = run_test_case(
+        name="Microcytic Iron Deficiency Anemia",
+        patient_id="P-ANEMIA-01",
+        lab_result={"hemoglobin": 9.2, "mcv": 72, "ferritin": 18},
+        history_result={"age": 35, "sex": "female", "symptoms": ["fatigue", "weakness"]}
+    )
+    assert result["clinical_result"] is not None
+    assert "Hematologic & Anemia Evaluation Tool" in result["disease_analysis"]["tools_executed"]
+    assert result["disease_analysis"]["overall_severity"] in ("HIGH", "CRITICAL")
+
+
+def test_cardiovascular_case():
+    result = run_test_case(
+        name="Cardiovascular - Acute Troponin Elevation & Hyperlipidemia",
+        patient_id="P-CARDIAC-02",
+        lab_result={"troponin": 0.08, "ldl": 182, "total_cholesterol": 245, "systolic_bp": 155, "diastolic_bp": 95},
+        history_result={"age": 58, "sex": "male", "symptoms": ["substernal chest pressure", "dyspnea"]}
+    )
+    assert result["clinical_result"] is not None
+    assert "Heart Disease Evaluation Tool" in result["disease_analysis"]["tools_executed"]
+    assert result["disease_analysis"]["overall_severity"] == "CRITICAL"
+
+
+def test_renal_case():
+    result = run_test_case(
+        name="Renal - Chronic Kidney Disease & Prerenal Azotemia",
+        patient_id="P-RENAL-03",
+        lab_result={"creatinine": 2.6, "bun": 58, "potassium": 5.2, "urine_protein": 45},
+        history_result={"age": 67, "sex": "male", "symptoms": ["decreased urine output", "lethargy"]}
+    )
+    assert result["clinical_result"] is not None
+    assert "Kidney Disease Evaluation Tool" in result["disease_analysis"]["tools_executed"]
+    assert result["disease_analysis"]["overall_severity"] in ("HIGH", "CRITICAL")
 
 
 if __name__ == "__main__":

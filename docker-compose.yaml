@@ -28,6 +28,9 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/hub:/usr/share/nginx/html/hub:ro
+    networks:
+      - default
+      - ehr_network
     restart: unless-stopped
 
   # ──────────────────────────────────────────────────────────

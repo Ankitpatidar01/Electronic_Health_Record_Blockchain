@@ -12,7 +12,7 @@
  * - Hepatic & Liver Diseases (Hepatocellular vs Cholestatic, De Ritis Ratio)
  *
  * Integrates with Clinical AI Agent microservice (services/ai-agent,
- * POST /api/v1/agent/analyze-report) and Python FastAPI (BlockChain_24MCF1R06)
+ * POST /api/v1/agent/analyze-report) and Python FastAPI (services/clinical-decision-support)
  * with deterministic multi-disease evaluation tools.
  * Conforms strictly to orchestrator/agent-contract.js (AgentResult).
  */

@@ -3,8 +3,10 @@ EHR Clinical AI Agent Microservice Entry Point.
 FastAPI Application with automated OpenAPI documentation and CORS support.
 """
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from api.routes import router
 from core.config import settings
 from core.logger import get_logger
@@ -12,12 +14,15 @@ from core import telemetry
 
 logger = get_logger("main")
 
+root_path = os.getenv("FASTAPI_ROOT_PATH", "/ai-agent")
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.version,
     description="Autonomous Clinical Intelligence, Trend Analysis, and Medical RAG Microservice for Decentralized EHR.",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    root_path=root_path
 )
 
 # Enable CORS for external services (Node.js Gateway, React Frontends)
@@ -28,6 +33,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Compatibility endpoint for direct port-8000 access when root_path is set
+@app.get("/ai-agent/openapi.json", include_in_schema=False)
+def ai_agent_openapi():
+    return JSONResponse(app.openapi())
 
 # Mount API routers
 app.include_router(router)
