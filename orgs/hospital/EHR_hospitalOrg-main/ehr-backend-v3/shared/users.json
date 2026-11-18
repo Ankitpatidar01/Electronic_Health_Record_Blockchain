@@ -34,6 +34,27 @@
     "peer": "peer2",
     "status": "active"
   },
+  "inventory_mgr_01": {
+    "password": "$2a$10$w5/E81h5YKHa7CbWOs8EMOeRkA.iRqjhJCmB/2aXvGuAF1Ta.3BcO",
+    "role": "inventory",
+    "mspId": "HospitalMSP",
+    "peer": "peer2",
+    "status": "active"
+  },
+  "billing_clerk_01": {
+    "password": "$2a$10$FGkKeeK/3oUjRzlZ3Ocsi.Aex13MbQLsZtGRdKaeiTHNpE8gFlseK",
+    "role": "billing",
+    "mspId": "HospitalMSP",
+    "peer": "peer2",
+    "status": "active"
+  },
+  "pharmacy_mgr": {
+    "password": "$2a$10$XyFtf7xHtHb38UdziBKCYOYonKI0cr4Uljab.eGOWAexk.xnlsJeK",
+    "role": "manager",
+    "mspId": "HospitalMSP",
+    "peer": "peer2",
+    "status": "active"
+  },
   "medrecordofficer": {
     "password": "$2a$10$wfni3qmrBtiao9tT30k4OuatADYNM/g3dwOaAaKMsfMnkWHbm.rlG",
     "role": "medrecordofficer",

@@ -22,6 +22,11 @@ import {
   Layers,
   ChevronRight,
   LogOut,
+  Lock,
+  KeyRound,
+  Eye,
+  EyeOff,
+  User,
   X
 } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
@@ -35,6 +40,8 @@ const PHARMACY_ROLES = [
     badge: 'peer2-api (Port 4003)',
     badgeTone: 'pill-info',
     icon: Pill,
+    allowedTabs: ['prescriptions', 'inventory'],
+    defaultTab: 'prescriptions',
     desc: 'In-patient doctor prescription fulfillment, hospital encounter verification & ledger dispense stamp.',
     gradient: 'linear-gradient(135deg, rgba(14,165,233,0.12), rgba(2,132,199,0.06))',
     borderSelected: '#0284c7'
@@ -47,6 +54,8 @@ const PHARMACY_ROLES = [
     badge: 'p-backend (Port 3000)',
     badgeTone: 'pill-warn',
     icon: Package,
+    allowedTabs: ['inventory'],
+    defaultTab: 'inventory',
     desc: 'Pharmaceutical stock registry, batch intake, fast deductions, reorder alerts & ledger sync.',
     gradient: 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(217,119,6,0.06))',
     borderSelected: '#f59e0b'
@@ -59,6 +68,8 @@ const PHARMACY_ROLES = [
     badge: 'p-backend (Port 3000)',
     badgeTone: 'pill-ok',
     icon: FileText,
+    allowedTabs: ['billing', 'inventory'],
+    defaultTab: 'billing',
     desc: 'Point-of-sale customer billing, prescription template packs, tax calculation & IPFS receipt minting.',
     gradient: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06))',
     borderSelected: '#10b981'
@@ -71,6 +82,8 @@ const PHARMACY_ROLES = [
     badge: 'p-backend (Port 3000)',
     badgeTone: 'pill-danger',
     icon: ShieldCheck,
+    allowedTabs: ['prescriptions', 'inventory', 'billing', 'operations'],
+    defaultTab: 'operations',
     desc: 'Staff credentialing roster, global billing audits, financial overview & Fabric consensus monitoring.',
     gradient: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(79,70,229,0.06))',
     borderSelected: '#6366f1'
@@ -105,8 +118,40 @@ const PRESCRIPTION_TEMPLATES = {
 }
 
 export default function App() {
-  const [selectedRole, setSelectedRole] = useState(PHARMACY_ROLES[0])
+  const [session, setSession] = useState(() => {
+    try {
+      const stored = localStorage.getItem('pharmacy_session')
+      if (stored) return JSON.parse(stored)
+    } catch {}
+    return {
+      username: 'pharmacist',
+      role: 'pharmacist',
+      title: 'Hospital Dispensing Pharmacist',
+      token: localStorage.getItem('pharmacy_jwt_token') || ''
+    }
+  })
+
+  const [selectedRole, setSelectedRole] = useState(() => {
+    try {
+      const stored = localStorage.getItem('pharmacy_session')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        const found = PHARMACY_ROLES.find(r => r.id === parsed.role)
+        if (found) return found
+      }
+    } catch {}
+    return PHARMACY_ROLES[0]
+  })
+
+  // Role Switching & Credential Verification State
   const [roleModalOpen, setRoleModalOpen] = useState(false)
+  const [pendingRole, setPendingRole] = useState(PHARMACY_ROLES[0])
+  const [authUsername, setAuthUsername] = useState(PHARMACY_ROLES[0].user)
+  const [authPassword, setAuthPassword] = useState(PHARMACY_ROLES[0].pwd)
+  const [showAuthPass, setShowAuthPass] = useState(false)
+  const [authError, setAuthError] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
+
   const [activeTab, setActiveTab] = useState('prescriptions') // prescriptions, inventory, billing, operations
 
   // Notification Toast
@@ -115,6 +160,117 @@ export default function App() {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 4000)
   }
+
+  // ── Role Gateway & Authentication Actions ─────────────────────────────────
+  const openRoleModal = (roleToSelect) => {
+    const target = roleToSelect || selectedRole
+    setPendingRole(target)
+    setAuthUsername(target.user)
+    setAuthPassword(target.pwd)
+    setAuthError('')
+    setShowAuthPass(false)
+    setRoleModalOpen(true)
+  }
+
+  const handleSelectPendingRole = (role) => {
+    setPendingRole(role)
+    setAuthUsername(role.user)
+    setAuthPassword(role.pwd)
+    setAuthError('')
+  }
+
+  const handleRoleAuthenticate = async (e) => {
+    if (e) e.preventDefault()
+    setAuthLoading(true)
+    setAuthError('')
+
+    try {
+      const res = await fetch('/api/hospital/peer2/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: authUsername.trim(),
+          password: authPassword.trim()
+        })
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `Authentication failed: Invalid credentials for ${pendingRole.title}`)
+      }
+
+      const newSession = {
+        username: data.data.user.username,
+        role: pendingRole.id,
+        backendRole: data.data.user.role,
+        title: pendingRole.title,
+        token: data.data.token,
+        mspId: data.data.user.mspId,
+        peer: data.data.user.peer
+      }
+
+      setSession(newSession)
+      setSelectedRole(pendingRole)
+      localStorage.setItem('pharmacy_session', JSON.stringify(newSession))
+      localStorage.setItem('pharmacy_jwt_token', newSession.token)
+
+      setActiveTab(pendingRole.defaultTab)
+      if (pendingRole.id === 'manager') fetchOpsData()
+
+      setRoleModalOpen(false)
+      showToast(`Authenticated as ${pendingRole.title} (${newSession.username})`, 'ok')
+    } catch (err) {
+      setAuthError(err.message || 'Authentication failed. Please verify credentials.')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  const handleSignOut = () => {
+    localStorage.removeItem('pharmacy_session')
+    localStorage.removeItem('pharmacy_jwt_token')
+    setSession(null)
+    openRoleModal(PHARMACY_ROLES[0])
+    showToast('Signed out. Please authenticate to enter a role workspace.', 'ok')
+  }
+
+  const renderRbacGate = (targetRole, tabName) => (
+    <div className="pharmacy-glass" style={{ padding: '3.5rem 2rem', textAlign: 'center', maxWidth: 640, margin: '2rem auto', borderRadius: '1.25rem' }}>
+      <div style={{
+        width: 64,
+        height: 64,
+        borderRadius: '1.25rem',
+        background: 'rgba(239,68,68,0.12)',
+        color: '#ef4444',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: '0 auto 1.25rem',
+        border: '1px solid rgba(239,68,68,0.25)'
+      }}>
+        <Lock size={30} />
+      </div>
+      <span className="pill pill-danger" style={{ marginBottom: '0.75rem' }}>
+        <span className="pill-dot" />
+        Role Access Restriction (RBAC)
+      </span>
+      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+        Authentication Required for {tabName}
+      </h3>
+      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 500, margin: '0 auto 1.5rem' }}>
+        Your active session is signed in as <strong>{selectedRole.title} ({session?.username || selectedRole.user})</strong>, which does not hold endorsement privileges for this workspace module.
+        Please authenticate with verified credentials for <strong>{targetRole.title}</strong> to unlock.
+      </p>
+      <button
+        onClick={() => openRoleModal(targetRole)}
+        className="btn-ink btn-ink-primary"
+        style={{ gap: '0.5rem', padding: '0.6rem 1.4rem', margin: '0 auto' }}
+      >
+        <KeyRound size={15} />
+        <span>Verify Credentials for {targetRole.title} →</span>
+      </button>
+    </div>
+  )
 
   // Network & System Health
   const [networkStatus, setNetworkStatus] = useState({ nodes: { peer0: 18, peer1: 18, peer2: 18 }, ipfs: 'UP', network: 'ONLINE' })
@@ -454,35 +610,49 @@ export default function App() {
         </div>
 
         {/* Right Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           {/* Active Role Switcher Pill */}
-          <button
-            onClick={() => setRoleModalOpen(true)}
+          <div
+            onClick={() => openRoleModal(selectedRole)}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              padding: '0.4rem 0.85rem',
+              padding: '0.35rem 0.85rem',
               borderRadius: '9999px',
               border: '1px solid var(--border-card)',
               background: 'var(--bg-card)',
               color: 'var(--text-primary)',
               fontSize: '0.75rem',
               fontWeight: 600,
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'all 0.2s'
             }}
-            title="Click to switch between Hospital Pharmacist, Inventory Manager, Billing, and Director"
+            title="Click to switch role or verify credentials"
           >
-            <span className={`pill-dot ${selectedRole.badgeTone === 'pill-ok' ? 'bg-emerald-500' : 'bg-blue-500'}`} style={{ width: 8, height: 8 }} />
-            <span>{selectedRole.title}</span>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.5)' }} />
+            <span>{session?.username ? `${session.username} (${selectedRole.title})` : selectedRole.title}</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>▼</span>
+          </div>
+
+          <button
+            onClick={() => openRoleModal(selectedRole)}
+            className="btn-ink btn-ink-ghost"
+            style={{ padding: '0.4rem 0.75rem', fontSize: '0.72rem', gap: '0.35rem' }}
+            title="Switch Role and Verify Password"
+          >
+            <KeyRound size={12} />
+            <span>Switch Role</span>
           </button>
 
-          {/* Network Health Pill */}
-          <div className="pill pill-ok" style={{ display: 'none', mdDisplay: 'inline-flex' }}>
-            <span className="pill-dot" />
-            <span>Fabric: Online</span>
-          </div>
+          <button
+            onClick={handleSignOut}
+            className="btn-ink btn-ink-ghost"
+            style={{ padding: '0.4rem 0.65rem', fontSize: '0.72rem', color: '#ef4444' }}
+            title="Lock / Sign Out of Active Role"
+          >
+            <LogOut size={12} />
+          </button>
 
           <ThemeToggle />
 
@@ -531,23 +701,27 @@ export default function App() {
               {React.createElement(selectedRole.icon, { size: 24 })}
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <h1 style={{ fontSize: '1.25rem', fontWeight: 800 }}>{selectedRole.title}</h1>
                 <span className={`pill ${selectedRole.badgeTone}`}>{selectedRole.badge}</span>
+                <span className="pill pill-ok" style={{ fontSize: '0.7rem' }}>
+                  <span className="pill-dot" />
+                  Authenticated: <strong>{session?.username || selectedRole.user}</strong>
+                </span>
               </div>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
                 {selectedRole.desc}
               </p>
             </div>
           </div>
 
           <button
-            onClick={() => setRoleModalOpen(true)}
+            onClick={() => openRoleModal(selectedRole)}
             className="btn-ink btn-ink-primary"
-            style={{ fontSize: '0.75rem', padding: '0.5rem 1rem' }}
+            style={{ fontSize: '0.75rem', padding: '0.5rem 1.1rem', gap: '0.4rem' }}
           >
-            <span>Switch Role Card</span>
-            <ChevronRight size={13} />
+            <KeyRound size={13} />
+            <span>Switch Role / Authenticate</span>
           </button>
         </div>
 
@@ -555,113 +729,116 @@ export default function App() {
             TAB 1: IN-PATIENT CLINICAL PRESCRIPTIONS (DOCTOR ORDERS)
            ══════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'prescriptions' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>In-Patient Prescriptions from Hospital Doctors</h2>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  Encounter orders finalized by Dr. Smith and clinical staff on Hyperledger Fabric.
-                </p>
+          selectedRole.allowedTabs?.includes('prescriptions') ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>In-Patient Prescriptions from Hospital Doctors</h2>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    Encounter orders finalized by Dr. Smith and clinical staff on Hyperledger Fabric.
+                  </p>
+                </div>
+                <button onClick={fetchHospitalVisits} className="btn-ink btn-ink-ghost" style={{ fontSize: '0.75rem', gap: '0.4rem' }}>
+                  <RefreshCw size={13} className={visitsLoading ? 'animate-spin' : ''} />
+                  <span>Refresh Queue</span>
+                </button>
               </div>
-              <button onClick={fetchHospitalVisits} className="btn-ink btn-ink-ghost" style={{ fontSize: '0.75rem', gap: '0.4rem' }}>
-                <RefreshCw size={13} className={visitsLoading ? 'animate-spin' : ''} />
-                <span>Refresh Queue</span>
-              </button>
-            </div>
 
-            {visitsLoading ? (
-              <div className="pharmacy-glass" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                Syncing with Hospital Ledger Peer2...
-              </div>
-            ) : hospitalVisits.length === 0 ? (
-              <div className="pharmacy-glass" style={{ padding: '3rem', textAlign: 'center' }}>
-                <Pill size={36} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem' }} />
-                <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>No Finalized Prescriptions in Queue</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: 450, margin: '0.25rem auto 0' }}>
-                  When a doctor finalizes a patient consultation in the Hospital Portal, their prescription will automatically appear here for fulfillment.
-                </p>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1rem' }}>
-                {hospitalVisits.map(v => {
-                  const presc = v.clinical?.prescriptions?.[v.clinical.prescriptions.length - 1]
-                  const isDispensed = Boolean(v.clinical?.medicationDispensedBy || v.clinical?.medicationDetails)
+              {visitsLoading ? (
+                <div className="pharmacy-glass" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  Syncing with Hospital Ledger Peer2...
+                </div>
+              ) : hospitalVisits.length === 0 ? (
+                <div className="pharmacy-glass" style={{ padding: '3rem', textAlign: 'center' }}>
+                  <Pill size={36} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem' }} />
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>No Finalized Prescriptions in Queue</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: 450, margin: '0.25rem auto 0' }}>
+                    When a doctor finalizes a patient consultation in the Hospital Portal, their prescription will automatically appear here for fulfillment.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1rem' }}>
+                  {hospitalVisits.map(v => {
+                    const presc = v.clinical?.prescriptions?.[v.clinical.prescriptions.length - 1]
+                    const isDispensed = Boolean(v.clinical?.medicationDispensedBy || v.clinical?.medicationDetails)
 
-                  return (
-                    <div key={v.visitId} className="pharmacy-glass" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                          <div>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem' }}>{v.visitId}</span>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-                              Patient: <strong style={{ color: 'var(--obs-accent)' }}>{v.patientId}</strong>
+                    return (
+                      <div key={v.visitId} className="pharmacy-glass" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                            <div>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem' }}>{v.visitId}</span>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                                Patient: <strong style={{ color: 'var(--obs-accent)' }}>{v.patientId}</strong>
+                              </div>
+                            </div>
+                            <span className={`pill ${isDispensed ? 'pill-ok' : 'pill-warn'}`}>
+                              <span className="pill-dot" />
+                              {isDispensed ? 'Dispensed' : 'Ready to Dispense'}
+                            </span>
+                          </div>
+
+                          {v.clinical?.chiefComplaint && (
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', padding: '0.5rem', borderRadius: '0.5rem', background: 'rgba(148,163,184,0.08)' }}>
+                              <strong>Complaint:</strong> {v.clinical.chiefComplaint}
+                            </div>
+                          )}
+
+                          <div style={{ marginBottom: '1rem' }}>
+                            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '0.35rem' }}>
+                              Prescribed Medication:
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                              {(presc?.medications || ['paracetamol 500mg']).map((m, idx) => (
+                                <span key={idx} style={{
+                                  padding: '0.3rem 0.65rem',
+                                  borderRadius: '0.5rem',
+                                  background: 'rgba(56,189,248,0.12)',
+                                  color: 'var(--obs-accent)',
+                                  fontWeight: 600,
+                                  fontSize: '0.75rem'
+                                }}>
+                                  {m}
+                                </span>
+                              ))}
                             </div>
                           </div>
-                          <span className={`pill ${isDispensed ? 'pill-ok' : 'pill-warn'}`}>
-                            <span className="pill-dot" />
-                            {isDispensed ? 'Dispensed' : 'Ready to Dispense'}
+
+                          {isDispensed && (
+                            <div style={{ fontSize: '0.7rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.75rem' }}>
+                              <CheckCircle2 size={13} />
+                              <span>Dispensed by {v.clinical.medicationDispensedBy || 'pharmacist'}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ borderTop: '1px solid var(--border-card)', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            Doctor: <strong>Dr. {v.assignedDoctor || 'Smith'}</strong>
                           </span>
+                          <button
+                            onClick={() => openDispenseModal(v)}
+                            className={`btn-ink ${isDispensed ? 'btn-ink-ghost' : 'btn-ink-primary'}`}
+                            style={{ fontSize: '0.75rem', padding: '0.45rem 0.95rem' }}
+                          >
+                            {isDispensed ? 'View Dispense Record' : 'Dispense Medication'}
+                          </button>
                         </div>
-
-                        {v.clinical?.chiefComplaint && (
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', padding: '0.5rem', borderRadius: '0.5rem', background: 'rgba(148,163,184,0.08)' }}>
-                            <strong>Complaint:</strong> {v.clinical.chiefComplaint}
-                          </div>
-                        )}
-
-                        <div style={{ marginBottom: '1rem' }}>
-                          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '0.35rem' }}>
-                            Prescribed Medication:
-                          </div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                            {(presc?.medications || ['paracetamol 500mg']).map((m, idx) => (
-                              <span key={idx} style={{
-                                padding: '0.3rem 0.65rem',
-                                borderRadius: '0.5rem',
-                                background: 'rgba(56,189,248,0.12)',
-                                color: 'var(--obs-accent)',
-                                fontWeight: 600,
-                                fontSize: '0.75rem'
-                              }}>
-                                {m}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {isDispensed && (
-                          <div style={{ fontSize: '0.7rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.75rem' }}>
-                            <CheckCircle2 size={13} />
-                            <span>Dispensed by {v.clinical.medicationDispensedBy || 'pharmacist'}</span>
-                          </div>
-                        )}
                       </div>
-
-                      <div style={{ borderTop: '1px solid var(--border-card)', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                          Doctor: <strong>Dr. {v.assignedDoctor || 'Smith'}</strong>
-                        </span>
-                        <button
-                          onClick={() => openDispenseModal(v)}
-                          className={`btn-ink ${isDispensed ? 'btn-ink-ghost' : 'btn-ink-primary'}`}
-                          style={{ fontSize: '0.75rem', padding: '0.45rem 0.95rem' }}
-                        >
-                          {isDispensed ? 'View Dispense Record' : 'Dispense Medication'}
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          ) : renderRbacGate(PHARMACY_ROLES[0], 'Doctor Prescriptions & Dispensing')
         )}
 
         {/* ══════════════════════════════════════════════════════════════════════
             TAB 2: LIVE MEDICINE INVENTORY & STOCK
            ══════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'inventory' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          selectedRole.allowedTabs?.includes('inventory') ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Pharmaceutical Stock &amp; Inventory</h2>
@@ -792,12 +969,14 @@ export default function App() {
               </table>
             </div>
           </div>
-        )}
+        ) : renderRbacGate(PHARMACY_ROLES[1], 'Medicine Stock & Inventory')
+      )}
 
-        {/* ══════════════════════════════════════════════════════════════════════
-            TAB 3: POS & BILLING INVOICING
-           ══════════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'billing' && (
+      {/* ══════════════════════════════════════════════════════════════════════
+          TAB 3: POS & BILLING INVOICING
+         ══════════════════════════════════════════════════════════════════════ */}
+      {activeTab === 'billing' && (
+        selectedRole.allowedTabs?.includes('billing') ? (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem', alignItems: 'start' }}>
             {/* Left: Template Selector & Items Cart */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -941,12 +1120,14 @@ export default function App() {
               )}
             </div>
           </div>
-        )}
+        ) : renderRbacGate(PHARMACY_ROLES[2], 'Point of Sale (POS) Billing')
+      )}
 
-        {/* ══════════════════════════════════════════════════════════════════════
-            TAB 4: OPERATIONS, AUDIT TRAIL & CONSENSUS HEALTH
-           ══════════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'operations' && (
+      {/* ══════════════════════════════════════════════════════════════════════
+          TAB 4: OPERATIONS, AUDIT TRAIL & CONSENSUS HEALTH
+         ══════════════════════════════════════════════════════════════════════ */}
+      {activeTab === 'operations' && (
+        selectedRole.allowedTabs?.includes('operations') ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
               <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Pharmacy Operations &amp; Blockchain Consensus</h2>
@@ -1002,13 +1183,14 @@ export default function App() {
               </div>
             </div>
           </div>
-        )}
+        ) : renderRbacGate(PHARMACY_ROLES[3], 'Audit Trail & Fabric Consensus')
+      )}
       </main>
 
       {/* ── Role Selection Modal (Hospital Card Style) ───────────────────────── */}
       {roleModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 880 }}>
+          <div className="modal-content" style={{ maxWidth: 960 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Select Pharmacy Role Workspace</h2>
@@ -1021,14 +1203,61 @@ export default function App() {
               </button>
             </div>
 
-            <div className="role-grid" style={{ marginBottom: '1.5rem' }}>
+            {/* Active Session Notification Bar */}
+            {session && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '0.75rem 1rem',
+                borderRadius: '0.75rem',
+                background: 'rgba(56,189,248,0.1)',
+                border: '1px solid rgba(56,189,248,0.25)',
+                marginBottom: '1.25rem',
+                fontSize: '0.8rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <span style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    background: 'var(--obs-accent)',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 800
+                  }}>
+                    {session.username?.[0]?.toUpperCase() || 'P'}
+                  </span>
+                  <div>
+                    <strong>Active Session:</strong> <span style={{ color: 'var(--obs-accent)', fontWeight: 700 }}>{session.username}</span> ({session.title})
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      You can return to your workspace directly or select any role below to verify new credentials.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRoleModalOpen(false)}
+                  className="btn-ink btn-ink-primary"
+                  style={{ fontSize: '0.75rem', padding: '0.4rem 0.85rem' }}
+                >
+                  Enter {session.title} Workspace →
+                </button>
+              </div>
+            )}
+
+            {/* Role Cards Grid */}
+            <div className="role-grid" style={{ marginBottom: '1.25rem' }}>
               {PHARMACY_ROLES.map(r => {
-                const isSelected = selectedRole.id === r.id
+                const isSelected = pendingRole.id === r.id
                 const Icon = r.icon
                 return (
                   <div
                     key={r.id}
-                    onClick={() => setSelectedRole(r)}
+                    onClick={() => handleSelectPendingRole(r)}
                     className={`role-card ${isSelected ? 'selected' : ''}`}
                     style={{ background: isSelected ? r.gradient : undefined }}
                   >
@@ -1050,31 +1279,173 @@ export default function App() {
                       {r.desc}
                     </p>
 
-                    <div style={{ borderTop: '1px solid var(--border-card)', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                    <div style={{ borderTop: '1px solid var(--border-card)', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                       <span>Identity: <strong>{r.user}</strong></span>
-                      <span style={{ fontFamily: 'var(--font-mono)' }}>Demo: {r.pwd}</span>
+                      {isSelected ? (
+                        <span style={{ color: r.borderSelected, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <CheckCircle2 size={12} />
+                          Active Selection
+                        </span>
+                      ) : (
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>Demo: {r.pwd}</span>
+                      )}
                     </div>
                   </div>
                 )
               })}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button onClick={() => setRoleModalOpen(false)} className="btn-ink btn-ink-ghost">
-                Close
-              </button>
-              <button
-                onClick={() => {
-                  setRoleModalOpen(false)
-                  if (selectedRole.id === 'pharmacist') setActiveTab('prescriptions')
-                  if (selectedRole.id === 'inventory') setActiveTab('inventory')
-                  if (selectedRole.id === 'billing') setActiveTab('billing')
-                  if (selectedRole.id === 'manager') setActiveTab('operations')
-                }}
-                className="btn-ink btn-ink-primary"
-              >
-                Enter {selectedRole.title} Workspace
-              </button>
+            {/* Credential Verification Form */}
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderRadius: '1rem',
+              background: 'rgba(255, 255, 255, 0.7)',
+              border: '1px solid var(--border-card)',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.02)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.65rem', borderBottom: '1px solid var(--border-card)' }}>
+                <div>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
+                    VERIFY CREDENTIALS
+                  </div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.15rem' }}>
+                    Sign in as {pendingRole.title}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', fontFamily: 'var(--font-mono)' }}>Fabric Gateway Target:</span>
+                  <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--obs-accent)' }}>
+                    {pendingRole.badge}
+                  </span>
+                </div>
+              </div>
+
+              {authError && (
+                <div style={{
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '0.65rem',
+                  background: 'rgba(239,68,68,0.12)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  color: '#ef4444',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <AlertTriangle size={15} />
+                  <span>{authError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleRoleAuthenticate}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.35rem', color: 'var(--text-secondary)' }}>
+                      Username
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <User size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                      <input
+                        type="text"
+                        value={authUsername}
+                        onChange={e => setAuthUsername(e.target.value)}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem 0.75rem 0.55rem 2.2rem',
+                          borderRadius: '0.65rem',
+                          border: '1px solid var(--border-card)',
+                          background: 'var(--bg-page)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.8rem',
+                          fontFamily: 'var(--font-mono)'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.35rem', color: 'var(--text-secondary)' }}>
+                      Password
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Lock size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                      <input
+                        type={showAuthPass ? 'text' : 'password'}
+                        value={authPassword}
+                        onChange={e => setAuthPassword(e.target.value)}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem 2.2rem 0.55rem 2.2rem',
+                          borderRadius: '0.65rem',
+                          border: '1px solid var(--border-card)',
+                          background: 'var(--bg-page)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.8rem',
+                          fontFamily: 'var(--font-mono)'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAuthPass(!showAuthPass)}
+                        style={{
+                          position: 'absolute',
+                          right: '0.65rem',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          color: 'var(--text-muted)'
+                        }}
+                      >
+                        {showAuthPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid var(--border-card)' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    <span>MSP Identity: <strong style={{ color: 'var(--text-primary)' }}>HospitalMSP</strong></span>
+                    <span style={{ margin: '0 0.5rem' }}>·</span>
+                    <span>Demo Hint: <strong style={{ color: 'var(--obs-accent)' }}>{pendingRole.user}</strong> / <code>{pendingRole.pwd}</code></span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {session && (
+                      <button
+                        type="button"
+                        onClick={() => setRoleModalOpen(false)}
+                        className="btn-ink btn-ink-ghost"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={authLoading}
+                      className="btn-ink btn-ink-primary"
+                      style={{ gap: '0.4rem' }}
+                    >
+                      {authLoading ? (
+                        <>
+                          <RefreshCw size={13} className="animate-spin" />
+                          <span>Verifying Credentials...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Verify Credentials &amp; Enter {pendingRole.title} Workspace</span>
+                          <ArrowRight size={13} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
         </div>
