@@ -116,39 +116,6 @@ function listGatewayPeers() {
   return ['peer0.diagnostic.example.com', 'peer0.lab.example.com', 'peer1.lab.example.com', 'peer2.lab.example.com'];
 }
 
-// ── In-Memory Resilient Fallback Store ──────────────────────────
-const localRecords = [
-  {
-    resultId: 'labresult1',
-    patientId: 'PAT-DEMO-001',
-    testCode: 'CBC',
-    collectedAt: '2026-10-14T08:00:00Z',
-    status: 'REPORTED',
-    resultData: {
-      hemoglobin: '13.8',
-      wbc: '6200',
-      platelets: '250000',
-    },
-    cid: 'bafkreiey2fj2tj6q6n57a73ygmyvsmzpuzwh7fxbsydrlpm2jzqme5cx34',
-    createdAt: '2026-10-14T08:00:00Z',
-    updatedAt: '2026-10-14T08:00:00Z',
-  },
-  {
-    resultId: 'labresult2',
-    patientId: 'patient-1002',
-    testCode: 'LFT',
-    collectedAt: '2026-10-14T09:30:00Z',
-    status: 'IN_REVIEW',
-    resultData: {
-      alt: '42',
-      ast: '37',
-      bilirubin: '0.8',
-    },
-    createdAt: '2026-10-14T09:30:00Z',
-    updatedAt: '2026-10-14T09:30:00Z',
-  },
-];
-
 function resolvePeerName(peerName) {
   if (peerName && typeof peerName === 'string') {
     return peerName;
@@ -264,92 +231,20 @@ async function withContract(peerName, callback) {
   }
 }
 
+// A ledger failure is reported to the caller. There is no local substitute
+// store: a lab record that is not on the ledger does not exist.
 async function evaluateTransaction(peerName, functionName, args = []) {
-  try {
-    return await withContract(peerName, async (contract, selectedPeer) => {
-      const response = await contract.evaluateTransaction(functionName, ...args);
-      return {
-        peer: selectedPeer,
-        result: parseResult(decodeResult(response)),
-      };
-    });
-  } catch (error) {
-    console.warn(`[Fabric Gateway fallback for ${functionName}]: ${error.message}`);
-    // Graceful in-memory fallback
-    const selectedPeer = resolvePeerName(peerName);
-    if (functionName === 'GetAllLabResults') {
-      return { peer: selectedPeer, result: localRecords };
-    }
-    if (functionName === 'ReadLabResult') {
-      const record = localRecords.find(r => r.resultId === args[0]);
-      if (!record) throw new Error(`Lab result ${args[0]} not found`);
-      return { peer: selectedPeer, result: record };
-    }
-    if (functionName === 'GetLabResultsByPatient') {
-      const records = localRecords.filter(r => r.patientId === args[0]);
-      return { peer: selectedPeer, result: records };
-    }
-    throw error;
-  }
+  return withContract(peerName, async (contract, selectedPeer) => {
+    const response = await contract.evaluateTransaction(functionName, ...args);
+    return { peer: selectedPeer, result: parseResult(decodeResult(response)) };
+  });
 }
 
 async function submitTransaction(peerName, functionName, args = []) {
-  try {
-    return await withContract(peerName, async (contract, selectedPeer) => {
-      const response = await contract.submitTransaction(functionName, ...args);
-      return {
-        peer: selectedPeer,
-        result: parseResult(decodeResult(response)),
-      };
-    });
-  } catch (error) {
-    console.warn(`[Fabric Gateway fallback for ${functionName}]: ${error.message}`);
-    const selectedPeer = resolvePeerName(peerName);
-    if (functionName === 'CreateLabResult') {
-      const [resultId, patientId, testCode, collectedAt, status, resultDataJson] = args;
-      const parsedData = parseResult(resultDataJson);
-      const newRecord = {
-        resultId,
-        patientId,
-        testCode,
-        collectedAt,
-        status,
-        resultData: parsedData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      const existingIdx = localRecords.findIndex(r => r.resultId === resultId);
-      if (existingIdx >= 0) {
-        localRecords[existingIdx] = newRecord;
-      } else {
-        localRecords.unshift(newRecord);
-      }
-      return { peer: selectedPeer, result: newRecord };
-    }
-    if (functionName === 'UpdateLabResult') {
-      const [resultId, patientId, testCode, collectedAt, status, resultDataJson] = args;
-      const record = localRecords.find(r => r.resultId === resultId);
-      if (!record) throw new Error(`Lab result ${resultId} not found`);
-      Object.assign(record, {
-        patientId,
-        testCode,
-        collectedAt,
-        status,
-        resultData: parseResult(resultDataJson),
-        updatedAt: new Date().toISOString(),
-      });
-      return { peer: selectedPeer, result: record };
-    }
-    if (functionName === 'UpdateLabStatus') {
-      const [resultId, status] = args;
-      const record = localRecords.find(r => r.resultId === resultId);
-      if (!record) throw new Error(`Lab result ${resultId} not found`);
-      record.status = status;
-      record.updatedAt = new Date().toISOString();
-      return { peer: selectedPeer, result: record };
-    }
-    throw error;
-  }
+  return withContract(peerName, async (contract, selectedPeer) => {
+    const response = await contract.submitTransaction(functionName, ...args);
+    return { peer: selectedPeer, result: parseResult(decodeResult(response)) };
+  });
 }
 
 async function getAllLabResults(options = {}) {

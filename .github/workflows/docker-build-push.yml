@@ -50,21 +50,6 @@ jobs:
           - name: ehr-p-backend
             context: orgs/pharmacy/fabric-network-swarm/app/backend
 
-          - name: ehr-p-manager
-            context: orgs/pharmacy/fabric-network-swarm/app/manager
-
-          - name: ehr-p-employee
-            context: orgs/pharmacy/fabric-network-swarm/app/employee
-
-          - name: ehr-p-inventory
-            context: orgs/pharmacy/fabric-network-swarm/app/inventory
-
-          - name: ehr-p-patient
-            context: orgs/pharmacy/fabric-network-swarm/app/patient
-
-          - name: ehr-p-billing
-            context: orgs/pharmacy/fabric-network-swarm/app/billing
-
           - name: ehr-p-frontend
             context: orgs/pharmacy/fabric-network-swarm/app/frontend
 

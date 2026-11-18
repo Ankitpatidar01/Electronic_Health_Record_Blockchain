@@ -1,5 +1,0 @@
-export { default as Avatar } from './Avatar.jsx'
-export { default as DoctorCard } from './DoctorCard.jsx'
-export { default as PatientCard } from './PatientCard.jsx'
-export { default as StaffCard } from './StaffCard.jsx'
-export { default as PhotoUploadModal } from './PhotoUploadModal.jsx'

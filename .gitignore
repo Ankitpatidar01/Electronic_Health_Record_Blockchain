@@ -53,3 +53,7 @@ base work/
 *.backup
 **/backups/
 .pids/
+
+# Captured script output
+setup-output.txt
+start-output.txt

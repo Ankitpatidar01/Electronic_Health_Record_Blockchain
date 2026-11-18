@@ -100,6 +100,7 @@ if [[ -d "${PEER_MSP}" && -d "${ORDERER_MSP}" ]]; then
     # There is no channel data to preserve, so rebuild the network cleanly.
     echo -e "  ${YELLOW}Peers are running but ehrchannel does not exist on this machine.${RESET}"
     echo -e "  ${YELLOW}Rebuilding the Fabric network from scratch (old identity files are replaced).${RESET}"
+    bash "${ROOT_DIR}/scripts/reset-app-state.sh"
     ( cd "${FABRIC_DIR}" && bash scripts/network-down.sh )
     rm -rf "${FABRIC_DIR}/.generated"
     docker network inspect ehr_network >/dev/null 2>&1 || docker network create ehr_network >/dev/null
@@ -109,6 +110,8 @@ if [[ -d "${PEER_MSP}" && -d "${ORDERER_MSP}" ]]; then
 else
   step "1/5" "No Fabric identities found — creating the network from scratch"
   note "This enrols every identity, starts peers/orderer, creates ehrchannel and sets anchor peers."
+  bash "${ROOT_DIR}/scripts/reset-app-state.sh"
+  docker network inspect ehr_network >/dev/null 2>&1 || docker network create ehr_network >/dev/null
   build_network
   ok "Fabric network created"
 fi

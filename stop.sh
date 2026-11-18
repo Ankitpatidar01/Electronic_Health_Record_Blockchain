@@ -39,7 +39,7 @@ if [[ "${RESET_ALL}" == true ]]; then
   echo -e "\n  ${YELLOW}--reset: this deletes the ledger, all identities and every application volume.${RESET}"
   read -r -p "  Type RESET to continue: " answer
   [[ "${answer}" == "RESET" ]] || { echo "  Cancelled."; exit 1; }
-  docker compose -f "${APP_COMPOSE}" --profile dashboard down --volumes --remove-orphans || true
+  bash "${ROOT_DIR}/scripts/reset-app-state.sh"
   ( cd "${FABRIC_DIR}" && bash scripts/network-down.sh )
   rm -rf "${FABRIC_DIR}/.generated"
   echo -e "  ${GREEN}✓ Everything removed. Run ./start.sh to build a new network.${RESET}\n"

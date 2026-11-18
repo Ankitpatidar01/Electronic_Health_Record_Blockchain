@@ -400,45 +400,14 @@ async function runHistoryAgent(context) {
       try {
         gateway = require('../gateway');
       } catch (requireErr) {
-        warnings.push(`Gateway module notice: ${requireErr.message}. Checking resilient fallback.`);
+        warnings.push(`Gateway module notice: ${requireErr.message}`);
       }
 
       if (gateway && typeof gateway.getLabResultsByPatient === 'function') {
         const response = await gateway.getLabResultsByPatient(patientId, context.options || {});
         rawRecords = response && response.result ? response.result : response;
       } else {
-        // Built-in resilient fallback records matching gateway.js localRecords
-        if (patientId === 'PAT-DEMO-001') {
-          rawRecords = [
-            {
-              resultId: 'labresult1',
-              patientId: 'PAT-DEMO-001',
-              testCode: 'CBC',
-              collectedAt: '2026-10-14T08:00:00Z',
-              status: 'REPORTED',
-              resultData: {
-                hemoglobin: '13.8 g/dL',
-                wbc: '6200 /uL',
-                platelets: '250000 /uL',
-              },
-            },
-            {
-              resultId: 'labresult3',
-              patientId: 'PAT-DEMO-001',
-              testCode: 'CBC',
-              collectedAt: '2026-11-01T08:30:00Z',
-              status: 'REPORTED',
-              resultData: {
-                hemoglobin: '14.2 g/dL',
-                wbc: '6100 /uL',
-                platelets: '260000 /uL',
-              },
-            },
-          ];
-          warnings.push('Used resilient local records for PAT-DEMO-001.');
-        } else {
-          throw new Error('Approved interface getLabResultsByPatient is not available on gateway module.');
-        }
+        throw new Error('Approved interface getLabResultsByPatient is not available on gateway module.');
       }
     }
   } catch (dataErr) {

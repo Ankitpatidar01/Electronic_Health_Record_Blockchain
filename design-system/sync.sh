@@ -12,12 +12,7 @@ REACT_APPS=(
   "orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/hospital-portal"
   "orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/patient-portal"
   "orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/dashboard-portal"
-  "orgs/pharmacy/fabric-network-swarm/app/patient"
   "orgs/pharmacy/fabric-network-swarm/app/frontend"
-  "orgs/pharmacy/fabric-network-swarm/app/billing"
-  "orgs/pharmacy/fabric-network-swarm/app/employee"
-  "orgs/pharmacy/fabric-network-swarm/app/inventory"
-  "orgs/pharmacy/fabric-network-swarm/app/manager"
 )
 
 for app in "${REACT_APPS[@]}"; do
