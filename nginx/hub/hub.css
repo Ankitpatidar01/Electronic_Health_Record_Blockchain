@@ -297,6 +297,7 @@ html.dark .toggle-switch-knob {
 .hero-showcase {
   position: relative;
   width: 100%;
+  min-height: 680px;
   margin: 0;
   padding: 0;
   border-radius: 0;
@@ -319,12 +320,12 @@ html.dark .hero-showcase {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 180px;
+  height: 200px;
   background: linear-gradient(
     to bottom,
     rgba(248, 250, 252, 0) 0%,
-    rgba(248, 250, 252, 0.35) 40%,
-    rgba(248, 250, 252, 0.85) 80%,
+    rgba(248, 250, 252, 0.25) 35%,
+    rgba(248, 250, 252, 0.75) 75%,
     var(--bg-page) 100%
   );
   pointer-events: none;
@@ -336,8 +337,8 @@ html.dark .hero-showcase::after {
   background: linear-gradient(
     to bottom,
     rgba(9, 13, 22, 0) 0%,
-    rgba(9, 13, 22, 0.35) 40%,
-    rgba(9, 13, 22, 0.85) 80%,
+    rgba(9, 13, 22, 0.25) 35%,
+    rgba(9, 13, 22, 0.75) 75%,
     var(--bg-page) 100%
   );
 }
@@ -347,11 +348,11 @@ html.dark .hero-showcase::after {
   z-index: 3;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 56px max(4vw, 24px) 36px;
+  padding: 72px max(4vw, 24px) 44px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 560px;
+  min-height: 680px;
 }
 
 .hero-bg-wrapper {
@@ -371,7 +372,7 @@ html.dark .hero-showcase::after {
   height: 106%;
   background-image: url('/assets/hero-doctor-patient.jpg');
   background-size: cover;
-  background-position: right 8% center;
+  background-position: right 6% center;
   animation: heroDrift 28s ease-in-out infinite alternate;
   will-change: transform;
 }
@@ -397,17 +398,18 @@ html.dark .hero-showcase::after {
     linear-gradient(
       to bottom,
       transparent 0%,
-      transparent 55%,
-      rgba(248, 250, 252, 0.45) 80%,
+      transparent 60%,
+      rgba(248, 250, 252, 0.35) 85%,
       var(--bg-page) 100%
     ),
     linear-gradient(
       90deg,
       #f8fafc 0%,
-      rgba(248, 250, 252, 0.98) 35%,
-      rgba(248, 250, 252, 0.90) 50%,
-      rgba(248, 250, 252, 0.45) 75%,
-      rgba(248, 250, 252, 0.10) 100%
+      rgba(248, 250, 252, 0.96) 24%,
+      rgba(248, 250, 252, 0.75) 36%,
+      rgba(248, 250, 252, 0.30) 48%,
+      rgba(248, 250, 252, 0) 60%,
+      transparent 100%
     );
   pointer-events: none;
 }
@@ -418,17 +420,18 @@ html.dark .hero-bg-overlay {
     linear-gradient(
       to bottom,
       transparent 0%,
-      transparent 55%,
-      rgba(9, 13, 22, 0.5) 80%,
+      transparent 60%,
+      rgba(9, 13, 22, 0.35) 85%,
       var(--bg-page) 100%
     ),
     linear-gradient(
       90deg,
       #090d16 0%,
-      rgba(9, 13, 22, 0.98) 35%,
-      rgba(9, 13, 22, 0.90) 50%,
-      rgba(9, 13, 22, 0.45) 75%,
-      rgba(9, 13, 22, 0.10) 100%
+      rgba(9, 13, 22, 0.96) 24%,
+      rgba(9, 13, 22, 0.75) 36%,
+      rgba(9, 13, 22, 0.30) 48%,
+      rgba(9, 13, 22, 0) 60%,
+      transparent 100%
     );
 }
 
