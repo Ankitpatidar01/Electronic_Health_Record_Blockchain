@@ -1,0 +1,413 @@
+/* Vitalis appearance — one palette and type system for every portal.
+   Light and dark stay in the same teal clinical family. */
+
+:root,
+html[data-theme="light"] {
+  color-scheme: light;
+  --font-sans: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Fraunces", "Plus Jakarta Sans", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --bg: #f3f6f8;
+  --bg-elevated: #ffffff;
+  --field: #f7fafb;
+  --ink: #12232c;
+  --muted: #5d7380;
+  --line: #d5e2e7;
+  --accent: #0c7c78;
+  --accent-strong: #095e5b;
+  --accent-soft: #e5f4f2;
+  --accent-fg: #ffffff;
+  --danger: #b42318;
+  --warn: #b54708;
+  --ok: #067647;
+  --shadow: 0 12px 32px rgba(18, 45, 55, 0.08);
+  --radius: 18px;
+
+  --workspace-bg: var(--bg);
+  --workspace-surface: var(--bg-elevated);
+  --workspace-text: var(--ink);
+  --workspace-muted: var(--muted);
+  --workspace-border: var(--line);
+  --workspace-accent: var(--accent);
+
+  --text-primary: var(--ink);
+  --text-secondary: var(--muted);
+  --text-muted: #7d93a0;
+  --bg-color: var(--bg);
+  --card-bg: var(--bg-elevated);
+  --border-color: var(--line);
+  --surface: var(--bg-elevated);
+  --glass: var(--bg-elevated);
+  --border: var(--line);
+  --accent-primary: var(--accent);
+  --accent-secondary: #14968f;
+  --glass-bg: rgba(255, 255, 255, 0.86);
+  --glass-border: rgba(18, 35, 44, 0.08);
+  --backdrop-from: #d7efec;
+  --backdrop-to: #e7eef8;
+  --app-bg: var(--bg);
+  --staff-content-bg: var(--bg-elevated);
+  --chart-grid: #e4edf0;
+  --chart-label: var(--muted);
+  --chart-tooltip: var(--bg-elevated);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #071116;
+  --bg-elevated: #102028;
+  --field: #0c1a21;
+  --ink: #e7f2f4;
+  --muted: #9bb0b8;
+  --line: #274049;
+  --accent: #3dcec2;
+  --accent-strong: #14b8a6;
+  --accent-soft: #12332f;
+  --accent-fg: #06221f;
+  --danger: #fda29b;
+  --warn: #fdb022;
+  --ok: #6ce9a6;
+  --shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+
+  --workspace-bg: var(--bg);
+  --workspace-surface: var(--bg-elevated);
+  --workspace-text: var(--ink);
+  --workspace-muted: var(--muted);
+  --workspace-border: var(--line);
+  --workspace-accent: var(--accent);
+
+  --text-primary: var(--ink);
+  --text-secondary: var(--muted);
+  --text-muted: #7f97a1;
+  --bg-color: var(--bg);
+  --card-bg: var(--bg-elevated);
+  --border-color: var(--line);
+  --surface: var(--bg-elevated);
+  --glass: var(--bg-elevated);
+  --border: var(--line);
+  --accent-primary: var(--accent);
+  --accent-secondary: #5eead4;
+  --glass-bg: rgba(16, 32, 40, 0.86);
+  --glass-border: rgba(231, 242, 244, 0.1);
+  --backdrop-from: #0c2428;
+  --backdrop-to: #0b1824;
+  --app-bg: var(--bg);
+  --staff-content-bg: #0e1c24;
+  --chart-grid: #274049;
+  --chart-label: var(--muted);
+  --chart-tooltip: var(--bg-elevated);
+
+  --pastel-mint: #0e352b;
+  --pastel-mint-text: #a8e6cf;
+  --pastel-yellow: #382c0e;
+  --pastel-yellow-text: #ffe08a;
+  --pastel-pink: #381523;
+  --pastel-pink-text: #f8c8dc;
+  --pastel-sky: #10283a;
+  --pastel-sky-text: #b7d3ff;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+}
+
+code, .font-mono, kbd {
+  font-family: var(--font-mono);
+}
+
+.vitalis-staff-shell {
+  background: linear-gradient(165deg, #127e79 0%, #0a4548 46%, #07262c 100%) !important;
+  color: #f4fffe;
+}
+
+html[data-theme="dark"] .vitalis-staff-shell {
+  background: linear-gradient(165deg, #0d2a2e 0%, #08181c 58%, #050e12 100%) !important;
+}
+
+.vitalis-canvas {
+  background: var(--staff-content-bg) !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+  box-shadow: var(--shadow);
+}
+
+.vitalis-nav-pill {
+  color: rgba(244, 255, 254, 0.78);
+  font-family: var(--font-sans);
+}
+
+.vitalis-nav-pill.active {
+  background: #ffffff !important;
+  color: #0a3f45 !important;
+  border-color: #c9ebe6 !important;
+}
+
+html[data-theme="dark"] .vitalis-nav-pill.active {
+  background: rgba(61, 206, 194, 0.16) !important;
+  color: #b7fff6 !important;
+  border-color: rgba(61, 206, 194, 0.4) !important;
+}
+
+.vitalis-counter-header,
+.vitalis-counter-header .count {
+  font-family: var(--font-display);
+  color: var(--ink);
+}
+
+.vitalis-counter-header .count { color: var(--accent); }
+
+.nav {
+  background: color-mix(in srgb, var(--bg-elevated) 92%, transparent) !important;
+  border-color: var(--line) !important;
+  color: var(--ink);
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.logo, .app h1, .app h2, .app h3, .app h4 {
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+.glass-card, .card, .panel, .bento-card, .soft-glass-shell {
+  background: var(--bg-elevated) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+  box-shadow: var(--shadow);
+}
+
+.tabs {
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg)) !important;
+  border-color: var(--line) !important;
+}
+
+.tab { color: var(--muted); }
+.tab.active {
+  background: var(--accent) !important;
+  color: var(--accent-fg) !important;
+  box-shadow: none !important;
+}
+
+.btn {
+  border-radius: 12px;
+  font-family: var(--font-sans);
+  background: var(--bg-elevated);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.btn-primary, .btn.btn-primary, button.btn-primary {
+  background: var(--accent) !important;
+  background-image: none !important;
+  color: var(--accent-fg) !important;
+  border-color: var(--accent) !important;
+  box-shadow: none !important;
+}
+
+.btn-primary:hover, .btn.btn-primary:hover {
+  background: var(--accent-strong) !important;
+  filter: none;
+}
+
+input, select, textarea {
+  background: var(--field) !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+  font-family: var(--font-sans);
+}
+
+input::placeholder, textarea::placeholder { color: var(--muted); }
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent) !important;
+}
+
+table th {
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-elevated)) !important;
+  color: var(--muted) !important;
+  font-family: var(--font-sans);
+}
+
+table td {
+  border-color: var(--line) !important;
+  color: var(--ink);
+}
+
+.theme-toggle, .theme-switch {
+  position: static !important;
+  inset: auto !important;
+  z-index: auto !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line) !important;
+  border-radius: 999px !important;
+  background: var(--bg-elevated) !important;
+  color: var(--ink) !important;
+  box-shadow: none !important;
+  font: 650 12px var(--font-sans) !important;
+  cursor: pointer;
+  backdrop-filter: none !important;
+}
+
+.theme-toggle:hover, .theme-switch:hover {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+.theme-toggle:focus-visible, .theme-switch:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Tailwind utility bridge so slate screens follow the same tokens. */
+html[data-theme="dark"] body,
+html[data-theme="dark"] .bg-slate-50,
+html[data-theme="dark"] .min-h-screen.bg-slate-50,
+html[data-theme="dark"] .dashboard-shell {
+  background: var(--bg) !important;
+  background-image: none !important;
+  color: var(--ink) !important;
+}
+
+html[data-theme="light"] body,
+html[data-theme="light"] .bg-slate-50,
+html[data-theme="light"] .dashboard-shell {
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  font-family: var(--font-sans) !important;
+}
+
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .bg-white\/80,
+html[data-theme="dark"] .bg-white\/90,
+html[data-theme="dark"] .dashboard-topbar,
+html[data-theme="dark"] .overview-metric,
+html[data-theme="dark"] .overview-hero,
+html[data-theme="dark"] .hero-alert-card,
+html[data-theme="dark"] .block-stat-card,
+html[data-theme="dark"] .block-chart-card,
+html[data-theme="dark"] .block-item,
+html[data-theme="dark"] .dashboard-message,
+html[data-theme="dark"] .block-inspector-panel,
+html[data-theme="dark"] .block-floating-tooltip,
+html[data-theme="dark"] .chart-custom-tooltip {
+  background: var(--bg-elevated) !important;
+  background-image: none !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}
+
+html[data-theme="light"] .overview-metric,
+html[data-theme="light"] .overview-hero,
+html[data-theme="light"] .block-stat-card,
+html[data-theme="light"] .block-chart-card,
+html[data-theme="light"] .block-item,
+html[data-theme="light"] .dashboard-message,
+html[data-theme="light"] .dashboard-topbar {
+  background: var(--bg-elevated) !important;
+  border-color: var(--line) !important;
+}
+
+html[data-theme="dark"] .text-slate-900,
+html[data-theme="dark"] .text-slate-800,
+html[data-theme="dark"] .text-slate-700,
+html[data-theme="dark"] .overview-hero h1,
+html[data-theme="dark"] .section-heading h2,
+html[data-theme="dark"] .metric-value-row strong,
+html[data-theme="dark"] .block-stat-card strong,
+html[data-theme="dark"] .block-number-tag,
+html[data-theme="dark"] .block-tooltip-title,
+html[data-theme="dark"] .hero-alert-card strong {
+  color: var(--ink) !important;
+}
+
+html[data-theme="dark"] .text-slate-600,
+html[data-theme="dark"] .text-slate-500,
+html[data-theme="dark"] .text-slate-400,
+html[data-theme="dark"] .hero-subtitle,
+html[data-theme="dark"] .metric-label,
+html[data-theme="dark"] .dashboard-nav-link {
+  color: var(--muted) !important;
+}
+
+html[data-theme="dark"] .border-slate-100,
+html[data-theme="dark"] .border-slate-200,
+html[data-theme="dark"] .border-slate-300,
+html[data-theme="dark"] .dashboard-topbar {
+  border-color: var(--line) !important;
+}
+
+html[data-theme="dark"] .bg-slate-100,
+html[data-theme="dark"] .bg-slate-200,
+html[data-theme="dark"] .metric-status {
+  background: #17303a !important;
+  color: var(--muted) !important;
+}
+
+.dashboard-nav-link.is-active {
+  background: var(--accent-soft) !important;
+  color: var(--accent-strong) !important;
+  box-shadow: inset 0 0 0 1px var(--line) !important;
+}
+
+html[data-theme="dark"] .dashboard-nav-link.is-active {
+  color: var(--accent) !important;
+}
+
+.dashboard-brand-mark,
+html[data-theme="light"] .min-h-screen.bg-slate-950 button[type="submit"],
+html[data-theme="dark"] button[class*="bg-blue-"],
+html[data-theme="dark"] button[class*="bg-teal-"],
+html[data-theme="dark"] button[class*="bg-emerald-"],
+html[data-theme="dark"] button[class*="bg-indigo-"] {
+  background: var(--accent) !important;
+  background-image: none !important;
+  color: var(--accent-fg) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="light"] .min-h-screen.bg-slate-950 {
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+}
+
+html[data-theme="light"] .min-h-screen.bg-slate-950 h1,
+html[data-theme="light"] .min-h-screen.bg-slate-950 .text-white {
+  color: var(--ink) !important;
+}
+
+html[data-theme="light"] .min-h-screen.bg-slate-950 button[type="submit"],
+html[data-theme="light"] .min-h-screen.bg-slate-950 button[type="submit"].text-white {
+  color: var(--accent-fg) !important;
+}
+
+html[data-theme="dark"] .min-h-screen.bg-slate-950,
+html[data-theme="dark"] .min-h-screen.bg-gradient-to-br,
+html[data-theme="light"] .min-h-screen.bg-gradient-to-br {
+  background: var(--bg) !important;
+  background-image: none !important;
+  color: var(--ink) !important;
+}
+
+html[data-theme="dark"] .bg-red-50 { background: #3a1d22 !important; }
+html[data-theme="dark"] .text-red-700 { color: #fda29b !important; }
+html[data-theme="dark"] .bg-teal-50 { background: var(--accent-soft) !important; }
+html[data-theme="dark"] .text-teal-700,
+html[data-theme="dark"] .text-teal-600 { color: var(--accent) !important; }
+
+p { color: inherit; }
+.patient-app, .app { font-family: var(--font-sans); color: var(--ink); background: var(--bg); }

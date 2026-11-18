@@ -1,0 +1,15 @@
+# Modernized Dependency Manifest for Python 3.11+ / Python 3.13+
+# Preserves legacy requirements.txt untouched as prior student attribution.
+#
+# Use: pip install -r requirements_modern.txt
+
+langchain>=0.2.0
+langchain-community>=0.2.0
+chromadb>=0.5.0
+sentence-transformers>=3.0.0
+beautifulsoup4>=4.12.3
+requests>=2.31.0
+gradio>=4.13.0
+transformers>=4.40.0
+torch>=2.2.0
+accelerate>=0.28.0

@@ -33,23 +33,11 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/" element={<Login />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/gateway" element={<Login />} />
 
       {/* Protected routes with Layout */}
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Layout>
-            <Navigate to={
-              !user ? '/login' :
-              ['receptionist','admin'].includes(user.role) ? '/patients' :
-              ['doctor'].includes(user.role) ? '/my-visits' :
-              ['nurse'].includes(user.role) ? '/my-visits' :
-              user.role === 'pharmacist' ? '/dispense' : '/finalize'
-            } replace />
-          </Layout>
-        </ProtectedRoute>
-      } />
-
       {/* Receptionist / Admin */}
       <Route path="/patients" element={
         <ProtectedRoute allowedRoles={['receptionist','admin']}>
@@ -117,7 +105,7 @@ function AppRoutes() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>

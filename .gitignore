@@ -7,8 +7,41 @@
 
 **/node_modules/
 **/package-lock.json
-bin/
-config/
+!bin/
+!config/
+
+# Build output
+**/dist/
+**/build/
+
+# Logs
+*.log
+**/logs/
+**/log.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Data / runtime
+**/data/
+*.db
+*.db-shm
+*.db-wal
+
+# Large files that shouldn't be tracked
+*.pdf
+*.mp4
+*.webm
+*.pptx
+repomix-output.xml
+base work/
 
 # Python virtual environments & bytecode
 .venv/
@@ -20,7 +53,3 @@ config/
 *.backup
 **/backups/
 .pids/
-*.log
-
-# Generated network logs (not project source files)
-**/ehr-network/log.txt
