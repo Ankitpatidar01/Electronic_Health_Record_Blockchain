@@ -21,3 +21,6 @@ config/
 **/backups/
 .pids/
 *.log
+
+# Generated network logs (not project source files)
+**/ehr-network/log.txt
