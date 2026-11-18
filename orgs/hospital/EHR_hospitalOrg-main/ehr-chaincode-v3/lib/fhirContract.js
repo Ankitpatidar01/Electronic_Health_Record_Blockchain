@@ -77,8 +77,8 @@ class FhirContract extends Contract {
       status: status || 'FINAL',
       canonicalizationScheme: 'RFC8785-JCS',
       updatedBy: userId,
-      createdAt: existing ? existing.createdAt : now(),
-      updatedAt: now(),
+      createdAt: existing ? existing.createdAt : now(ctx),
+      updatedAt: now(ctx),
     };
 
     await putState(ctx, key, record);

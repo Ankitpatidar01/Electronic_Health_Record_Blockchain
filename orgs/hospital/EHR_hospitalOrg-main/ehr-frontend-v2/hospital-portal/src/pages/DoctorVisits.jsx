@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { Card, Button, Input, Modal, Alert, StatusBadge, Spinner, EmptyState, Badge } from '../components/ui'
+import LabReport, { LabStatusPill } from '../components/LabReport'
 import { Stethoscope, Search, FileText, Pill, FlaskConical, CheckCircle, ChevronDown, ChevronUp, Plus, X, ChevronRight, ArrowLeft } from 'lucide-react'
 
 export default function DoctorVisitsPage() {
@@ -267,7 +268,7 @@ export default function DoctorVisitsPage() {
               {clinical?.labRequests?.length > 0 ? (
                 <div className="space-y-4">
                   {clinical.labRequests.map((lr, i) => (
-                    <LabRequestCard key={i} lr={lr} />
+                    <LabRequestCard key={lr.labRequestId || i} lr={lr} visit={visit} api={api} />
                   ))}
                 </div>
               ) : (
@@ -316,63 +317,40 @@ function Field({ label, value }) {
   )
 }
 
-function LabRequestCard({ lr }) {
-  const [open, setOpen] = useState(false)
-  const statusColor = {
-    REQUESTED:    'bg-slate-100 text-slate-600',
-    ACKNOWLEDGED: 'bg-amber-100 text-amber-700',
-    COMPLETED:    'bg-blue-100 text-blue-700',
-    APPROVED:     'bg-emerald-100 text-emerald-700',
-  }[lr.status] || 'bg-gray-100 text-gray-600'
+function LabRequestCard({ lr, visit, api }) {
+  const [open, setOpen] = useState(lr.status === 'APPROVED')
+
+  const openAttachment = async (att) => {
+    let res
+    try {
+      res = await api().get(`/doctor/visits/${visit.visitId}/lab/${lr.labRequestId}/attachments/${att.cid}`, { responseType: 'blob' })
+    } catch (err) {
+      throw new Error(err.response?.status === 404 ? 'This attachment is no longer available.' : 'Could not open the attachment.')
+    }
+    const url = URL.createObjectURL(res.data)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 60000)
+  }
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden">
-      <button onClick={() => setOpen(!open)}
+      <button onClick={() => setOpen(!open)} aria-expanded={open}
         className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left">
         <div className="flex items-center gap-3">
           <FlaskConical size={15} className="text-amber-500" />
           <div>
-            <p className="font-medium text-sm text-slate-900">{lr.labRequestId}</p>
-            <p className="text-xs text-slate-400">{lr.tests?.join(', ')}</p>
+            <p className="font-medium text-sm text-slate-900">{lr.tests?.join(', ')}</p>
+            <p className="text-xs text-slate-400 font-mono">{lr.labRequestId}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}`}>{lr.status}</span>
+          <LabStatusPill status={lr.status} />
           {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </div>
       </button>
       {open && (
-        <div className="px-4 pb-4 border-t border-slate-100 pt-3">
-          {lr.results && Object.keys(lr.results).length > 0 ? (
-            <div className="space-y-3">
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Results</p>
-              {Object.entries(lr.results).filter(([k]) => !k.startsWith('ai')).map(([k, v]) => (
-                <div key={k} className="flex justify-between py-1.5 border-b border-slate-50">
-                  <span className="text-sm text-slate-600">{k}</span>
-                  <span className="text-sm font-medium text-slate-900">{v}</span>
-                </div>
-              ))}
-
-              {lr.results.aiAbnormalitiesFlagged && (
-                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 text-xs text-red-800 dark:text-red-300">
-                  <span className="font-bold block mb-1">🚨 AI Abnormality Flags:</span>
-                  <p>{lr.results.aiAbnormalitiesFlagged}</p>
-                  {lr.results.aiSuggestedFollowups && (
-                    <p className="mt-1.5 text-blue-700 dark:text-sky-300 font-medium">💡 Suggested Follow-up: {lr.results.aiSuggestedFollowups}</p>
-                  )}
-                  {lr.results.aiProvenanceHash && (
-                    <p className="mt-1 text-[10px] text-slate-400 font-mono">Provenance: {lr.results.aiProvenanceHash.slice(0, 16)}...</p>
-                  )}
-                </div>
-              )}
-
-              {lr.approvedBy && (
-                <p className="text-xs text-emerald-600 mt-2 font-medium">✓ Approved by {lr.approvedBy}</p>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-400">Results pending</p>
-          )}
+        <div className="px-4 pb-4 border-t border-slate-100 pt-4">
+          <LabReport order={lr} patient={{ patientId: visit?.patientId }} openAttachment={openAttachment} />
         </div>
       )}
     </div>

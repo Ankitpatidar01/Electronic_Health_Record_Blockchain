@@ -23,6 +23,8 @@ const PORT = process.env.PORT || 4004;
 
 app.use(cors({ origin: '*', credentials: true }))
 app.use(helmet({ crossOriginResourcePolicy: false }));
+// Lab report attachments arrive as base64 (3 MB file ≈ 4 MB of JSON).
+app.use('/lab/visits/:id/request/:reqId/attachments', express.json({ limit: '6mb' }));
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('combined', { stream: { write: m => logger.http(m.trim()) } }));
 app.use(rateLimit({ windowMs: 60_000, max: 100, standardHeaders: true, legacyHeaders: false }));
@@ -64,12 +66,10 @@ async function start() {
   const server = app.listen(PORT, () => {
     logger.info(`extorg-api listening on :${PORT}`);
     logger.info('── Lab routes (DiagnosticsMSP) ──');
-    logger.info('GET  /lab/visits/:id');
+    logger.info('GET  /lab/catalog · GET /lab/requests?status=');
     logger.info('GET  /lab/visits/:id/request/:reqId');
-    logger.info('PUT  /lab/visits/:id/request/:reqId/acknowledge');
-    logger.info('PUT  /lab/visits/:id/request/:reqId/submit');
-    logger.info('PUT  /lab/visits/:id/request/:reqId/approve');
-    logger.info('PUT  /lab/visits/:id/request/:reqId/return');
+    logger.info('PUT  …/acknowledge · PUT …/submit · PUT …/approve · PUT …/reject');
+    logger.info('POST …/attachments · GET …/attachments/:cid');
     logger.info('── Claims routes (ProviderMSP) ──');
     logger.info('GET  /claims/visits/:id');
     logger.info('GET  /claims/visits/:id/history');

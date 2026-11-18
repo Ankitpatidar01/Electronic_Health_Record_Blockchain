@@ -36,8 +36,12 @@ const ehrKey    = (patientId) => `${EHR_PREFIX}:${patientId}`;
  */
 function getCallerIdentity(ctx) {
   const id            = ctx.clientIdentity;
-  const role          = id.getAttributeValue('role')      || '';
   const mspId         = id.getMSPID();
+  // Every org's CA issues its administrator the attribute role=admin. Scope it
+  // by MSP so a lab or insurer administrator is not a hospital administrator.
+  const ADMIN_BY_MSP  = { HospitalMSP: 'admin', DiagnosticsMSP: 'labadmin', ProviderMSP: 'provideradmin' };
+  const rawRole       = id.getAttributeValue('role')      || '';
+  const role          = rawRole === 'admin' ? (ADMIN_BY_MSP[mspId] || '') : rawRole;
   const patientIdAttr = id.getAttributeValue('patientId') || '';
 
   // Extract CN from certificate subject as userId
@@ -113,7 +117,7 @@ async function assertReadAccess(ctx, patientId, section) {
     );
   }
 
-  const nowIso = new Date().toISOString();
+  const nowIso = now(ctx);
   const grant = accessRecord.grants.find(g =>
     g.granteeId === userId &&
     !g.revoked  &&
@@ -161,8 +165,14 @@ function makeLabRequestId(visitId, requestNumber) {
 
 // ── Timestamp ─────────────────────────────────────────────────────────────────
 
-function now() {
-  return new Date().toISOString();
+// Transaction time, not the peer's wall clock: every endorsing peer must
+// produce the same write set, so time has to come from the proposal.
+function now(ctx) {
+  const ts = ctx.stub.getTxTimestamp();
+  const seconds = typeof ts.seconds === 'object' && ts.seconds !== null && typeof ts.seconds.toNumber === 'function'
+    ? ts.seconds.toNumber()
+    : Number(ts.seconds);
+  return new Date(seconds * 1000 + Math.floor((ts.nanos || 0) / 1e6)).toISOString();
 }
 
 // ── Ledger helpers ────────────────────────────────────────────────────────────
@@ -174,7 +184,7 @@ async function getState(ctx, key) {
 }
 
 async function putState(ctx, key, obj) {
-  obj.updatedAt = now();
+  obj.updatedAt = now(ctx);
   await ctx.stub.putState(key, Buffer.from(JSON.stringify(obj)));
   return obj;
 }

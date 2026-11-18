@@ -15,6 +15,7 @@ const { authenticate }      = require('../middleware/auth');
 const { fabricContext }     = require('../middleware/fabricContext');
 const { wrap, parseResult } = require('../middleware/errorHandler');
 const { fetchByCID }        = require('../fabric/ipfsClient');
+const lab = require('../../../shared/labReport');
 const logger = require('../config/logger');
 
 const secured = [authenticate, fabricContext];
@@ -74,6 +75,14 @@ router.get('/:id', ...secured, wrap(async (req, res) => {
     }
   }
 
+  // A lab report is released to the patient only after the lab supervisor has
+  // verified it. Until then the patient sees the order and its status.
+  if (clinicalData && Array.isArray(clinicalData.labRequests)) {
+    clinicalData.labRequests = clinicalData.labRequests.map(r => (
+      r.status === 'APPROVED' ? r : { ...r, report: null, results: {}, resultsHash: '' }
+    ));
+  }
+
   // 3. Log access
   await req.contract.submitTransaction(
     'AccessContract:LogAccess', patientId, 'visits'
@@ -89,6 +98,22 @@ router.get('/:id', ...secured, wrap(async (req, res) => {
       clinical: clinicalData,
     },
   });
+}));
+
+// ── GET /visits/:id/lab/:reqId/attachments/:cid ──────────────────────────────
+// A file attached to a verified lab report on one of the patient's own visits.
+router.get('/:id/lab/:reqId/attachments/:cid', ...secured, wrap(async (req, res) => {
+  const visit = parseResult(await req.contract.evaluateTransaction('VisitContract:GetVisit', req.params.id));
+  if (!visit) return res.status(404).json({ success: false, error: `Visit not found: ${req.params.id}` });
+  if (visit.patientId !== req.patient.patientId) {
+    return res.status(403).json({ success: false, error: 'This visit does not belong to your account' });
+  }
+  const clinical = visit.visitCID ? await fetchByCID(visit.visitCID) : null;
+  const labReq = (clinical?.labRequests || []).find(r => r.labRequestId === req.params.reqId);
+  if (!labReq || labReq.status !== 'APPROVED' || !lab.findAttachment(clinical, req.params.reqId, req.params.cid)) {
+    return res.status(404).json({ success: false, error: 'Attachment not found' });
+  }
+  return lab.sendAttachment(res, await fetchByCID(req.params.cid));
 }));
 
 // ── GET /visits/:id/history ───────────────────────────────────────────────────

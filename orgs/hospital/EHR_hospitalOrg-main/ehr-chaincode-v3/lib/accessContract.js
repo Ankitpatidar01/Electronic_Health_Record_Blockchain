@@ -70,7 +70,7 @@ class AccessContract extends Contract {
       if (isNaN(Date.parse(expiresAt))) {
         throw new Error('expiresAt must be a valid ISO date string or empty string');
       }
-      if (expiresAt <= now()) {
+      if (expiresAt <= now(ctx)) {
         throw new Error('expiresAt must be in the future');
       }
     }
@@ -82,15 +82,15 @@ class AccessContract extends Contract {
         patientId,
         grants:   [],
         auditLog: [],
-        createdAt: now(),
-        updatedAt: now(),
+        createdAt: now(ctx),
+        updatedAt: now(ctx),
       };
     }
 
     // If grantee already has an active grant, revoke it first (replace)
     accessRecord.grants = accessRecord.grants.map(g => {
       if (g.granteeId === granteeId && !g.revoked) {
-        return { ...g, revoked: true, revokedAt: now(), revokedBy: userId, revokedReason: 'REPLACED_BY_NEW_GRANT' };
+        return { ...g, revoked: true, revokedAt: now(ctx), revokedBy: userId, revokedReason: 'REPLACED_BY_NEW_GRANT' };
       }
       return g;
     });
@@ -102,7 +102,7 @@ class AccessContract extends Contract {
       granteeRole,
       sections,
       grantedBy:   userId,   // always the patient
-      grantedAt:   now(),
+      grantedAt:   now(ctx),
       expiresAt:   expiresAt || '',
       revoked:     false,
       revokedAt:   '',
@@ -120,7 +120,7 @@ class AccessContract extends Contract {
       sections,
       expiresAt: expiresAt || '',
       by:        userId,
-      at:        now(),
+      at:        now(ctx),
     });
 
     await putState(ctx, accessKey(patientId), accessRecord);
@@ -156,7 +156,7 @@ class AccessContract extends Contract {
         return {
           ...g,
           revoked:       true,
-          revokedAt:     now(),
+          revokedAt:     now(ctx),
           revokedBy:     userId,
           revokedReason: reason || 'REVOKED_BY_PATIENT',
         };
@@ -175,7 +175,7 @@ class AccessContract extends Contract {
       granteeId,
       reason:    reason || '',
       by:        userId,
-      at:        now(),
+      at:        now(ctx),
     });
 
     await putState(ctx, accessKey(patientId), accessRecord);
@@ -207,7 +207,7 @@ class AccessContract extends Contract {
       return JSON.stringify({ hasAccess: false, grant: null });
     }
 
-    const nowIso = new Date().toISOString();
+    const nowIso = now(ctx);
     const sec    = section || 'all';
     const grant  = accessRecord.grants.find(g =>
       g.granteeId === granteeId &&
@@ -259,7 +259,7 @@ class AccessContract extends Contract {
     const accessRecord = await getState(ctx, accessKey(patientId));
     if (!accessRecord) return JSON.stringify([]);
 
-    const nowIso = new Date().toISOString();
+    const nowIso = now(ctx);
     const active = (accessRecord.grants || []).filter(g =>
       !g.revoked &&
       (g.expiresAt === '' || g.expiresAt > nowIso)
@@ -286,8 +286,8 @@ class AccessContract extends Contract {
         patientId,
         grants:    [],
         auditLog:  [],
-        createdAt: now(),
-        updatedAt: now(),
+        createdAt: now(ctx),
+        updatedAt: now(ctx),
       };
     }
 
@@ -298,7 +298,7 @@ class AccessContract extends Contract {
       by:      userId,
       role,
       section: section || 'unspecified',
-      at:      now(),
+      at:      now(ctx),
     });
 
     await putState(ctx, accessKey(patientId), accessRecord);
@@ -335,7 +335,7 @@ class AccessContract extends Contract {
 
     let accessRecord = await getState(ctx, accessKey(patientId));
     if (!accessRecord) {
-      accessRecord = { patientId, grants: [], requests: [], auditLog: [], createdAt: now(), updatedAt: now() };
+      accessRecord = { patientId, grants: [], requests: [], auditLog: [], createdAt: now(ctx), updatedAt: now(ctx) };
     }
     if (!accessRecord.requests) accessRecord.requests = [];
 
@@ -354,7 +354,7 @@ class AccessContract extends Contract {
       sections,
       reason:        reason || '',
       status:        'PENDING',
-      requestedAt:   now(),
+      requestedAt:   now(ctx),
       respondedAt:   '',
       respondedBy:   '',
       rejectReason:  '',
@@ -367,9 +367,9 @@ class AccessContract extends Contract {
       requesterId:   userId,
       requesterRole: role,
       sections,
-      at:            now(),
+      at:            now(ctx),
     });
-    accessRecord.updatedAt = now();
+    accessRecord.updatedAt = now(ctx);
 
     await putState(ctx, accessKey(patientId), accessRecord);
     return JSON.stringify(request);
@@ -396,7 +396,7 @@ class AccessContract extends Contract {
     // Revoke any existing active grant from same requester (replace)
     accessRecord.grants = (accessRecord.grants || []).map(g => {
       if (g.granteeId === req.requesterId && !g.revoked) {
-        return { ...g, revoked: true, revokedAt: now(), revokedBy: userId, revokedReason: 'REPLACED_BY_REQUEST_APPROVAL' };
+        return { ...g, revoked: true, revokedAt: now(ctx), revokedBy: userId, revokedReason: 'REPLACED_BY_REQUEST_APPROVAL' };
       }
       return g;
     });
@@ -408,7 +408,7 @@ class AccessContract extends Contract {
       granteeRole: req.requesterRole,
       sections:    req.sections,
       grantedBy:   userId,
-      grantedAt:   now(),
+      grantedAt:   now(ctx),
       expiresAt:   expiresAt || '',
       revoked:     false,
       revokedAt:   '',
@@ -420,7 +420,7 @@ class AccessContract extends Contract {
 
     // Update request status
     req.status       = 'APPROVED';
-    req.respondedAt  = now();
+    req.respondedAt  = now(ctx);
     req.respondedBy  = userId;
 
     accessRecord.auditLog.push({
@@ -430,10 +430,10 @@ class AccessContract extends Contract {
       sections:  req.sections,
       expiresAt: expiresAt || '',
       by:        userId,
-      at:        now(),
+      at:        now(ctx),
       fromRequestId: requestId,
     });
-    accessRecord.updatedAt = now();
+    accessRecord.updatedAt = now(ctx);
 
     await putState(ctx, accessKey(patientId), accessRecord);
     return JSON.stringify({ request: req, grant });
@@ -457,7 +457,7 @@ class AccessContract extends Contract {
     if (req.status !== 'PENDING') throw new Error(`Request is already ${req.status}`);
 
     req.status       = 'REJECTED';
-    req.respondedAt  = now();
+    req.respondedAt  = now(ctx);
     req.respondedBy  = userId;
     req.rejectReason = rejectReason || '';
 
@@ -467,9 +467,9 @@ class AccessContract extends Contract {
       requesterId:  req.requesterId,
       rejectReason: rejectReason || '',
       by:           userId,
-      at:           now(),
+      at:           now(ctx),
     });
-    accessRecord.updatedAt = now();
+    accessRecord.updatedAt = now(ctx);
 
     await putState(ctx, accessKey(patientId), accessRecord);
     return JSON.stringify(req);

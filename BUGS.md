@@ -8,8 +8,15 @@
 | A3 | `start.sh` now creates the network when no identities exist and calls new `ehr-network/scripts/ensure-chaincode.sh`, which deploys or upgrades `ehr` when the source changed; `stop.sh --reset` wipes everything; `setup.sh` pulls the image tags the compose files use | `bash -n` only; live run pending |
 | A5 | `VITE_AI_AGENT_TARGET` set for `h-hospital-portal` in compose | YAML parses; live run pending |
 | A6 | Credentials banner removed from `start.sh` (it printed `password123`, which matches no account) | — |
+| A1, A3 | (same fix as above) | **Verified live on WSL2, 2026-11-19:** `./start.sh` detected stale identities, rebuilt the network, joined 5 peers, deployed `ehr` sequence 1, started every service; all 16 health checks passed |
+| B2 | All contracts take time from `ctx.stub.getTxTimestamp()` | Unit test `labWorkflow.test.js`; live upgrade pending |
+| B4 | `ListAllVisits` requires a staff role | Loads; live pending |
+| B6, C4, C5 | Lab orders have their own ledger record (`LABREQ:<id>`) with an enforced state machine; API no longer swaps identities; API and chaincode role lists match; approver must differ from the person who entered the result; `RejectLabResult` added; `LabResultsBackToDoctor` removed (approval releases the report) | 6 unit tests in `test/labWorkflow.test.js` pass; live pending |
+| B8 | `role=admin` is scoped by MSP (`admin` / `labadmin` / `provideradmin`) | Unit test; live pending |
+| C6, C7, C8, C9, C10 | Structured lab report (`shared/labReport.js`): parameters with unit, reference range and computed flag, specimen, comments, attachments, SHA-256 of the report on the ledger. New Lab worklist page with role worklist, status filters with counts, search, validated result entry (values never pre-filled), review/sign/return, print or save as PDF. Same report component in the doctor view and the patient portal; patients see a report only after verification. Queue reads `LabContract:ListLabRequests` instead of scanning every visit | JSX compiles; helper checked with node; live and browser pending |
+| E6 | 30 s timeout on AI calls from the hospital portal; Lab page shows a message when the AI check is unavailable | Live pending |
 
-Status on 2026-11-19: **static audit only.** Every entry below was found by reading code at commit
+Status on 2026-11-19: started as a static audit; a first live pass followed once the stack ran on WSL2 (see "Live confirmation" below). The text of the original static note follows. **Static audit:** Every entry below was found by reading code at commit
 `9b23b5b`, or by running the unit tests that can run without Docker. The system has not been started,
 so page-by-page UI checks, browser console errors, failed network requests, endpoint probing and peer CLI
 checks are still to do; they are listed at the end. "Confirm live" marks entries whose runtime effect is
@@ -17,6 +24,34 @@ inferred from code and needs to be seen on a running stack.
 
 Severity: **S1** blocks startup or a core flow, or breaks a stated security/privacy rule · **S2** feature
 wrong or misleading · **S3** minor / cosmetic / hygiene.
+
+## Live confirmation (WSL2, 2026-11-19, through nginx on http://localhost)
+
+Core flow worked end to end by API: login → register patient → open visit → assign doctor → diagnosis → forward to lab → lab result → doctor sees result.
+
+| ID | Observed |
+| --- | --- |
+| B1 | `GET /patients/:id` returned name, age, contact and address from world state |
+| B6 | Technician submitted a result for an order that was never acknowledged: HTTP 200 |
+| C4 | Technician called approve: HTTP 200, ledger recorded `labsupervisor` as the approver |
+| C5 | Technician called acknowledge: API let it through, chaincode answered 403 with raw text |
+| C1 | `GET /api/lab/records` returned sample record `labresult1` / `PAT-DEMO-001` on a brand-new ledger |
+| C3 | `POST /api/lab/records` with no token reached validation (400 for missing fields, not 401) |
+| F2 | `GET /api/pharmacy/api/inventory` with no token returned stock (`MED-001 Amoxicillin…`) on a brand-new ledger, i.e. from the local store (F1) |
+| G4 | `GET /auth/staff` with no token: 200 |
+| E2 | `POST /ai-agent/api/v1/agent/analyze-report` with no token: 200 |
+| D1 | Not confirmed in the browser (gateway port not reachable from the test page); stands on code reading |
+
+## Found during Phase 3
+
+| ID | Sev | Location | Problem | Status |
+| --- | --- | --- | --- | --- |
+| B8 | S1 | `ehr-network/scripts/enroll.sh`, `lib/accessControl.js` | `hospitaladmin`, `labadmin` and `provideradmin` all carry `role=admin`, and chaincode ignored the MSP, so the lab or insurer administrator could register patients and discharge visits | Fixed (see fix log) |
+| C10 | S1 | old `hospital-portal/pages/LabQueue.jsx` | The result form was pre-filled with normal-looking values ("Hemoglobin 13.5 g/dL", "Dengue NS1 Negative") and had "auto-approve" on by default, so one click could file invented normal results as approved | Fixed: page rewritten |
+| B9 | S2 | every `gatewayManager.js` | The Fabric identity is chosen by role, not by user: `dr_smith` and `doctor` both sign as `doctor`, so the ledger cannot tell two people with the same role apart | Open |
+| A9 | S3 | `ehr-network/scripts/test-chaincode-v2.sh` | Calls lab functions with argument lists that match neither the old nor the new chaincode | Open |
+| A10 | S2 | `setup.sh` | Exited silently on the first failed host-side `npm install` (`--silent` hid the error) | Fixed: errors are shown and setup continues |
+| G8 | S3 | `hospital-portal/pages/Login.jsx` | Lab role cards show the hint `recpw`, which happens to be the lab accounts' password; the removed `start.sh` banner advertised `password123`, which matched nothing | Open (login hints to be reviewed with G6) |
 
 ## A. Startup and scripts
 

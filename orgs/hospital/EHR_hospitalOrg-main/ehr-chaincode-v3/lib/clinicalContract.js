@@ -43,7 +43,7 @@ class ClinicalContract extends Contract {
     }
     if (!visitCID) throw new Error('visitCID is required');
 
-    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'DIAGNOSIS_NOTES_UPDATED' });
+    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'DIAGNOSIS_NOTES_UPDATED' });
     visit.visitCID = visitCID;
 
     await putState(ctx, visitKey(visitId), visit);
@@ -63,7 +63,7 @@ class ClinicalContract extends Contract {
     }
     if (!visitCID) throw new Error('visitCID is required');
 
-    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'VITALS_RECORDED' });
+    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'VITALS_RECORDED' });
     visit.visitCID = visitCID;
 
     await putState(ctx, visitKey(visitId), visit);
@@ -83,7 +83,7 @@ class ClinicalContract extends Contract {
     }
     if (!visitCID) throw new Error('visitCID is required');
 
-    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'CARE_NOTE_ADDED' });
+    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'CARE_NOTE_ADDED' });
     visit.visitCID = visitCID;
 
     await putState(ctx, visitKey(visitId), visit);
@@ -103,7 +103,7 @@ class ClinicalContract extends Contract {
     }
     if (!visitCID) throw new Error('visitCID is required');
 
-    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'PRESCRIPTION_UPDATED' });
+    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'PRESCRIPTION_UPDATED' });
     visit.visitCID = visitCID;
 
     await putState(ctx, visitKey(visitId), visit);
@@ -123,7 +123,7 @@ class ClinicalContract extends Contract {
     }
     if (!visitCID) throw new Error('visitCID is required');
 
-    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'MEDICATION_DISPENSED' });
+    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'MEDICATION_DISPENSED' });
     visit.visitCID = visitCID;
 
     await putState(ctx, visitKey(visitId), visit);

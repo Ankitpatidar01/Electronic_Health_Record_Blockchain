@@ -47,13 +47,13 @@ class EhrContract extends Contract {
         {
           cid:       initialCID,
           updatedBy: userId,
-          updatedAt: now(),
+          updatedAt: now(ctx),
           reason:    'EHR_INITIALISED',
           section:   'all',
         },
       ],
-      createdAt:  now(),
-      updatedAt:  now(),
+      createdAt:  now(ctx),
+      updatedAt:  now(ctx),
     };
 
     await putState(ctx, ehrKey(patientId), ehr);
@@ -89,7 +89,7 @@ class EhrContract extends Contract {
     ehr.cidHistory.push({
       cid:       newCID,
       updatedBy: userId,
-      updatedAt: now(),
+      updatedAt: now(ctx),
       reason:    reason || '',
       section:   section || 'unspecified',
     });

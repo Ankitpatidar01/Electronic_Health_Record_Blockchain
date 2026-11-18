@@ -46,8 +46,8 @@ class PatientContract extends Contract {
       // IPFS EHR reference — set by backend after pinning, or via InitEHR
       ehrCID:       initialEhrCID || '',
       registeredBy: userId,
-      createdAt:    now(),
-      updatedAt:    now(),
+      createdAt:    now(ctx),
+      updatedAt:    now(ctx),
     };
 
     await putState(ctx, patientKey(patientId), patient);

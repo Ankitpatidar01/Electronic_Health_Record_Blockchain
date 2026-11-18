@@ -34,7 +34,7 @@ class ForwardContract extends Contract {
 
     visit.status = VISIT_STATUS.WITH_NURSE;
     if (visitCID) {
-      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'FORWARD_TO_NURSE' });
+      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'FORWARD_TO_NURSE' });
       visit.visitCID = visitCID;
     }
 
@@ -59,7 +59,7 @@ class ForwardContract extends Contract {
 
     visit.status = VISIT_STATUS.WITH_DOCTOR;
     if (visitCID) {
-      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'FORWARD_TO_DOCTOR' });
+      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'FORWARD_TO_DOCTOR' });
       visit.visitCID = visitCID;
     }
 
@@ -84,9 +84,13 @@ class ForwardContract extends Contract {
     if (!labRequestId) throw new Error('labRequestId is required');
     if (!visitCID)     throw new Error('visitCID is required');
 
+    // Lazy require: labContract and this file both depend on visitContract.
+    const { createLabRequest } = require('./labContract');
+    await createLabRequest(ctx, visit, labRequestId, userId);
+
     visit.status = VISIT_STATUS.WITH_LAB;
     visit.cidHistory.push({
-      cid: visitCID, updatedBy: userId, updatedAt: now(),
+      cid: visitCID, updatedBy: userId, updatedAt: now(ctx),
       reason: `FORWARD_TO_LAB:${labRequestId}`,
     });
     visit.visitCID = visitCID;
@@ -95,27 +99,8 @@ class ForwardContract extends Contract {
     return JSON.stringify(visit);
   }
 
-  // ── LabResultsBackToDoctor ────────────────────────────────────────────────
-  // After lab supervisor approves results. Status → WITH_DOCTOR.
-  // visitCID: backend has updated IPFS JSON with approval info.
-  async LabResultsBackToDoctor(ctx, visitId, labRequestId, visitCID) {
-    const { userId } = requireRole(ctx, 'labsupervisor', 'labadmin', 'admin');
-
-    const visit = await getState(ctx, visitKey(visitId));
-    if (!visit) throw new Error(`Visit not found: ${visitId}`);
-
-    visit.status = VISIT_STATUS.WITH_DOCTOR;
-    if (visitCID) {
-      visit.cidHistory.push({
-        cid: visitCID, updatedBy: userId, updatedAt: now(),
-        reason: `LAB_RESULTS_RETURNED:${labRequestId}`,
-      });
-      visit.visitCID = visitCID;
-    }
-
-    await putState(ctx, visitKey(visitId), visit);
-    return JSON.stringify(visit);
-  }
+  // LabResultsBackToDoctor was removed: approving a result
+  // (LabContract:ApproveLabResult) is what releases it to the doctor.
 }
 
 module.exports = { ForwardContract };

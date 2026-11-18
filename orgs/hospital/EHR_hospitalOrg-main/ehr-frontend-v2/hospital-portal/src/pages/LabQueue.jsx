@@ -1,662 +1,605 @@
-import React, { useState, useEffect } from 'react'
-import { useAuth } from '../context/AuthContext'
+// Lab portal — the diagnostic laboratory's worklist.
+//
+//   Reception   accepts the order and sample          (REQUESTED → ACKNOWLEDGED)
+//   Technician  enters results                        (→ RESULT_SUBMITTED)
+//   Supervisor  verifies and signs, or sends it back  (→ APPROVED | REJECTED)
+//
+// The person who entered a result cannot verify it; the ledger enforces that.
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 import {
-  FlaskConical,
-  TestTube2,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  Sparkles,
-  RefreshCw,
-  AlertTriangle,
-  FileText,
-  User,
-  Stethoscope,
-  ChevronRight,
-  ExternalLink,
-  Plus,
-  Trash2,
-  ShieldCheck,
-  Bot
+  FlaskConical, RefreshCw, Search, Plus, Trash2, Paperclip, ClipboardCheck,
+  TestTube2, FileText, ShieldCheck, Undo2, Bot, X,
 } from 'lucide-react'
-import { Card, Button, Modal, Alert, EmptyState } from '../components/ui'
-import Avatar from '../design-system/components/Avatar'
+import { useAuth } from '../context/AuthContext'
+import { Card, Button, Modal, Alert, EmptyState, Spinner } from '../components/ui'
+import LabReport, { LabStatusPill, LAB_STATUS, referenceText } from '../components/LabReport'
 import { analyzeReportWithAI } from '../utils/api'
+
+const RECEPTION   = ['labreceptionist', 'labadmin']
+const BENCH       = ['labtechnician', 'radiologist', 'labadmin']
+const SUPERVISORS = ['labsupervisor', 'labadmin']
+const FILTERS     = ['MINE', 'ALL', 'REQUESTED', 'ACKNOWLEDGED', 'RESULT_SUBMITTED', 'REJECTED', 'APPROVED']
+const NUMERIC     = /^-?\d+(\.\d+)?$/
+const MAX_FILE    = 3 * 1024 * 1024
+const FILE_TYPES  = ['application/pdf', 'image/png', 'image/jpeg']
+
+// Which statuses need action from this role.
+function worklistStatuses(role) {
+  const s = []
+  if (RECEPTION.includes(role))   s.push('REQUESTED')
+  if (BENCH.includes(role))       s.push('ACKNOWLEDGED', 'REJECTED')
+  if (SUPERVISORS.includes(role)) s.push('RESULT_SUBMITTED')
+  return s
+}
+
+function errorText(err, fallback) {
+  if (err?.response?.data?.error) return err.response.data.error
+  if (err?.code === 'ECONNABORTED') return 'The request timed out. Please try again.'
+  if (!err?.response) return 'The lab service is not reachable. Check your connection and try again.'
+  return fallback
+}
+
+function when(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+function previewFlag(row) {
+  const lo = row.refLow === '' ? null : Number(row.refLow)
+  const hi = row.refHigh === '' ? null : Number(row.refHigh)
+  if (!NUMERIC.test(row.value.trim()) || (lo === null && hi === null)) return ''
+  const n = Number(row.value)
+  if (lo !== null && n < lo) return 'LOW'
+  if (hi !== null && n > hi) return 'HIGH'
+  return 'NORMAL'
+}
+
+const blankRow = (name = '') => ({ name, value: '', unit: '', refLow: '', refHigh: '', refText: '', flag: '' })
 
 export default function LabQueue() {
   const { user, token } = useAuth()
-  const [visits, setVisits] = useState([])
+  const role = user?.role
+
+  const api = useMemo(() => {
+    const client = axios.create({ baseURL: '/api/hospital/ext', timeout: 60000 })
+    if (token) client.defaults.headers.common.Authorization = `Bearer ${token}`
+    return client
+  }, [token])
+
+  const [orders, setOrders]   = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [statusMsg, setStatusMsg] = useState('')
-  const [filter, setFilter] = useState('ALL') // ALL, REQUESTED, ACKNOWLEDGED, COMPLETED, APPROVED
+  const [error, setError]     = useState('')
+  const [notice, setNotice]   = useState('')
+  const [filter, setFilter]   = useState('MINE')
+  const [search, setSearch]   = useState('')
+  const [busyId, setBusyId]   = useState('')
+  const [entry, setEntry]     = useState(null)   // order being resulted
+  const [viewing, setViewing] = useState(null)   // order whose report is open
 
-  // Modal State for Entering Findings (Step B)
-  const [activeModal, setActiveModal] = useState(null) // { visit, req }
-  const [findingsFields, setFindingsFields] = useState([])
-  const [submitting, setSubmitting] = useState(false)
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiReport, setAiReport] = useState(null)
-  const [autoApprove, setAutoApprove] = useState(true)
-
-  const extClient = axios.create({ baseURL: '/api/hospital/ext' })
-  if (token) extClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
-
-  const fetchVisits = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await extClient.get('/lab/visits')
-      if (res.data.success) {
-        setVisits(res.data.data || [])
-      }
+      const res = await api.get('/lab/requests')
+      setOrders(res.data.data || [])
     } catch (err) {
-      console.error('Fetch lab visits error:', err)
-      setError(err.response?.data?.error || 'Failed to fetch lab orders queue')
+      setError(errorText(err, 'Could not load the lab worklist.'))
     } finally {
       setLoading(false)
     }
-  }
+  }, [api])
 
-  useEffect(() => {
-    fetchVisits()
-  }, [])
+  useEffect(() => { load() }, [load])
 
-  // Flatten all lab requests across all visits
-  const allOrders = []
-  visits.forEach(v => {
-    const requests = v.clinical?.labRequests || []
-    requests.forEach(lr => {
-      allOrders.push({
-        visit: v,
-        req: lr
-      })
+  const mine = worklistStatuses(role)
+  const counts = useMemo(() => {
+    const c = { ALL: orders.length, MINE: 0 }
+    for (const o of orders) {
+      c[o.status] = (c[o.status] || 0) + 1
+      if (mine.includes(o.status)) c.MINE += 1
+    }
+    return c
+  }, [orders, mine])
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return orders.filter(o => {
+      if (filter === 'MINE' && !mine.includes(o.status)) return false
+      if (filter !== 'MINE' && filter !== 'ALL' && o.status !== filter) return false
+      if (!q) return true
+      return [o.labRequestId, o.patientId, o.patient?.name, o.requestedBy, ...(o.tests || [])]
+        .some(v => String(v || '').toLowerCase().includes(q))
     })
-  })
+  }, [orders, filter, search, mine])
 
-  const filteredOrders = allOrders.filter(item => {
-    if (filter === 'ALL') return true
-    return item.req.status === filter
-  })
-
-  // ── Step A: Acknowledge Order ──────────────────────────────────────────────
-  const handleAcknowledge = async (visitId, labRequestId) => {
-    setStatusMsg('')
-    setError('')
+  const acknowledge = async (order) => {
+    setBusyId(order.labRequestId); setError(''); setNotice('')
     try {
-      await extClient.put(`/lab/visits/${visitId}/request/${labRequestId}/acknowledge`)
-      setStatusMsg(`Order ${labRequestId} acknowledged successfully! Ready for test processing.`)
-      await fetchVisits()
+      await api.put(`/lab/visits/${order.visitId}/request/${order.labRequestId}/acknowledge`)
+      setNotice(`Order ${order.labRequestId} accepted. It is now on the bench worklist.`)
+      await load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to acknowledge lab order')
-    }
-  }
-
-  // ── Step B: Open Findings Modal ────────────────────────────────────────────
-  const openFindingsModal = (visit, req) => {
-    setActiveModal({ visit, req })
-    setAiReport(null)
-
-    // Pre-populate fields based on requested tests
-    const defaultFields = []
-    const tests = req.tests || []
-
-    if (tests.some(t => /cbc|blood/i.test(t))) {
-      defaultFields.push({ key: 'Hemoglobin', value: '13.5 g/dL' })
-      defaultFields.push({ key: 'Platelet Count', value: '240,000 /uL' })
-      defaultFields.push({ key: 'WBC Count', value: '6,800 /uL' })
-    }
-    if (tests.some(t => /sugar|glucose|hba1c/i.test(t))) {
-      defaultFields.push({ key: 'Fasting Blood Glucose', value: '98 mg/dL' })
-      defaultFields.push({ key: 'HbA1c', value: '5.6 %' })
-    }
-    if (tests.some(t => /dengue|ns1/i.test(t))) {
-      defaultFields.push({ key: 'Dengue NS1 Antigen', value: 'Negative' })
-      defaultFields.push({ key: 'Dengue IgM/IgG', value: 'Negative' })
-    }
-    if (tests.some(t => /x-ray|chest/i.test(t))) {
-      defaultFields.push({ key: 'Chest X-Ray Findings', value: 'Bilateral lung fields clear. Normal cardiac silhouette.' })
-    }
-
-    if (defaultFields.length === 0) {
-      tests.forEach(t => {
-        defaultFields.push({ key: t, value: 'Normal / Within baseline' })
-      })
-    }
-
-    // If existing results already present, use those
-    if (req.results && Object.keys(req.results).length > 0) {
-      const existing = Object.entries(req.results).map(([k, v]) => ({ key: k, value: String(v) }))
-      setFindingsFields(existing)
-    } else {
-      setFindingsFields(defaultFields)
-    }
-  }
-
-  // ── Step B Demo Fill Helper ────────────────────────────────────────────────
-  const fillDemoAbnormal = () => {
-    setFindingsFields([
-      { key: 'Hemoglobin (Hb)', value: '9.1 g/dL (Low)' },
-      { key: 'Platelet Count', value: '95,000 /uL (Low)' },
-      { key: 'WBC Count', value: '11,200 /uL (Elevated)' },
-      { key: 'Fasting Blood Glucose', value: '142 mg/dL (High)' },
-      { key: 'Dengue IgM Antibody', value: 'Positive (Elevated)' },
-      { key: 'Chest X-Ray', value: 'Clear lung fields, no active parenchymal lesion' }
-    ])
-    setAiReport(null)
-  }
-
-  // ── AI Diagnostics Analysis ────────────────────────────────────────────────
-  const runAiAnalysis = async () => {
-    setAiLoading(true)
-    setError('')
-    try {
-      const textSummary = findingsFields.map(f => `${f.key}: ${f.value}`).join('. ')
-      const reportText = `Patient: ${activeModal.visit.patientId}. Tests: ${activeModal.req.tests?.join(', ')}. Findings: ${textSummary}`
-      const result = await analyzeReportWithAI(reportText, activeModal.visit.patientId, activeModal.req.tests?.join(', ') || 'Lab Panel')
-      setAiReport(result)
-    } catch (err) {
-      console.error('AI Analysis failed:', err)
-      setError('AI agent service unavailable on port 8000')
+      setError(errorText(err, 'Could not accept the order.'))
     } finally {
-      setAiLoading(false)
+      setBusyId('')
     }
   }
 
-  // ── Step B Commit Findings to Ledger ───────────────────────────────────────
-  const handleSubmitFindings = async (e) => {
-    e.preventDefault()
-    if (!activeModal) return
-    setSubmitting(true)
-    setError('')
-    setStatusMsg('')
+  const openAttachment = (order) => async (att) => {
+    const res = await api.get(
+      `/lab/visits/${order.visitId}/request/${order.labRequestId}/attachments/${att.cid}`,
+      { responseType: 'blob' }
+    ).catch((err) => { throw new Error(errorText(err, 'Could not open the attachment.')) })
+    const url = URL.createObjectURL(res.data)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 60000)
+  }
 
-    try {
-      const resultsObj = {}
-      findingsFields.forEach(f => {
-        if (f.key.trim()) {
-          resultsObj[f.key.trim()] = f.value.trim()
+  const action = (order) => {
+    const busy = busyId === order.labRequestId
+    if (order.status === 'REQUESTED' && RECEPTION.includes(role)) {
+      return <Button size="sm" loading={busy} onClick={() => acknowledge(order)}><ClipboardCheck size={13} /> Accept order</Button>
+    }
+    if (['ACKNOWLEDGED', 'REJECTED'].includes(order.status) && BENCH.includes(role)) {
+      return <Button size="sm" onClick={() => setEntry(order)}><TestTube2 size={13} /> {order.status === 'REJECTED' ? 'Re-enter results' : 'Enter results'}</Button>
+    }
+    if (order.status === 'RESULT_SUBMITTED' && SUPERVISORS.includes(role)) {
+      return <Button size="sm" variant="success" onClick={() => setViewing(order)}><ShieldCheck size={13} /> Review &amp; sign</Button>
+    }
+    return <Button size="sm" variant="secondary" onClick={() => setViewing(order)}><FileText size={13} /> View</Button>
+  }
+
+  const filterLabel = (f) => (f === 'MINE' ? 'My worklist' : f === 'ALL' ? 'All orders' : LAB_STATUS[f].label)
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="eyebrow">Diagnostics organisation</p>
+          <h1 className="section-heading">Lab worklist</h1>
+          <p className="text-sm text-slate-500">Orders from doctors, results entry, verification and release.</p>
+        </div>
+        <Button variant="secondary" size="sm" onClick={load} disabled={loading}>
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
+        </Button>
+      </div>
+
+      {error && <Alert type="error">{error} <button className="underline ml-2" onClick={load}>Retry</button></Alert>}
+      {notice && <Alert type="success">{notice}</Alert>}
+
+      <Card className="p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {FILTERS.map(f => (
+            <button key={f} type="button" onClick={() => setFilter(f)} aria-pressed={filter === f}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                filter === f ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+              {filterLabel(f)} <span className="opacity-70">({counts[f] || 0})</span>
+            </button>
+          ))}
+          <label className="relative ml-auto w-full sm:w-72">
+            <span className="sr-only">Search orders</span>
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search patient, order ID or test"
+              className="w-full pl-9 pr-8 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            {search && (
+              <button type="button" aria-label="Clear search" onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><X size={14} /></button>
+            )}
+          </label>
+        </div>
+      </Card>
+
+      <Card className="p-0 overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-16"><Spinner /></div>
+        ) : visible.length === 0 ? (
+          <EmptyState icon={FlaskConical}
+            title={orders.length === 0 ? 'No lab orders yet' : 'Nothing matches'}
+            desc={orders.length === 0
+              ? 'Orders appear here when a doctor sends a patient for tests.'
+              : filter === 'MINE' && !search ? 'Nothing is waiting for you right now.' : 'Try another filter or clear the search.'} />
+        ) : (
+          <div className="premium-table-wrap overflow-x-auto">
+            <table className="premium-table w-full text-sm">
+              <thead>
+                <tr>
+                  <th className="text-left">Order</th>
+                  <th className="text-left">Patient</th>
+                  <th className="text-left">Tests</th>
+                  <th className="text-left">Ordered</th>
+                  <th className="text-left">Status</th>
+                  <th className="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map(o => (
+                  <tr key={o.labRequestId}>
+                    <td className="font-mono text-xs">{o.labRequestId}</td>
+                    <td>
+                      <p className="font-medium">{o.patient?.name || o.patientId}</p>
+                      <p className="text-xs text-slate-400">{o.patientId}{o.patient?.age != null ? ` · ${o.patient.age} y` : ''}{o.patient?.gender ? ` · ${o.patient.gender}` : ''}</p>
+                    </td>
+                    <td>
+                      <p>{(o.tests || []).join(', ') || '—'}</p>
+                      {o.instructions && <p className="text-xs text-slate-400 max-w-xs truncate" title={o.instructions}>{o.instructions}</p>}
+                    </td>
+                    <td>
+                      <p>{when(o.requestedAt)}</p>
+                      <p className="text-xs text-slate-400">by {o.requestedBy}</p>
+                    </td>
+                    <td><LabStatusPill status={o.status} /></td>
+                    <td className="text-right whitespace-nowrap">{action(o)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {entry && (
+        <ResultEntryModal order={entry} api={api} userRole={role}
+          onClose={() => setEntry(null)}
+          onDone={async (msg) => { setEntry(null); setNotice(msg); await load() }} />
+      )}
+
+      {viewing && (
+        <ReviewModal order={viewing} api={api} canSign={SUPERVISORS.includes(role)} currentUser={user?.userId}
+          openAttachment={openAttachment(viewing)}
+          onClose={() => setViewing(null)}
+          onDone={async (msg) => { setViewing(null); setNotice(msg); await load() }} />
+      )}
+    </div>
+  )
+}
+
+// ── Result entry ─────────────────────────────────────────────────────────────
+function ResultEntryModal({ order, api, onClose, onDone }) {
+  const [rows, setRows]         = useState([])
+  const [specimen, setSpecimen] = useState(order.report?.specimen || '')
+  const [notes, setNotes]       = useState(order.report?.notes || '')
+  const [files, setFiles]       = useState(order.report?.attachments || [])
+  const [ai, setAi]             = useState(null)
+  const [aiBusy, setAiBusy]     = useState(false)
+  const [loading, setLoading]   = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving]     = useState(false)
+  const [error, setError]       = useState('')
+  const [touched, setTouched]   = useState(false)
+
+  // Start from the previous entry (a rejected result) or from the test catalog:
+  // names, units and reference ranges are filled in; values are always typed.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      if (order.report?.parameters?.length) {
+        setRows(order.report.parameters.map(p => ({
+          name: p.name, value: p.value, unit: p.unit || '',
+          refLow: p.refLow ?? '', refHigh: p.refHigh ?? '', refText: p.refText || '', flag: p.flag || '',
+        })))
+        setLoading(false)
+        return
+      }
+      try {
+        const res = await api.get('/lab/catalog', { params: { gender: order.patient?.gender || '' } })
+        if (cancelled) return
+        const catalog = res.data.data || {}
+        const byLower = Object.fromEntries(Object.entries(catalog).map(([k, v]) => [k.toLowerCase(), v]))
+        const labels  = Object.fromEntries(Object.entries(catalog).map(([k, v]) => [v.label.toLowerCase(), v]))
+        const next = []
+        let spec = ''
+        for (const t of order.tests || []) {
+          const def = byLower[t.trim().toLowerCase()] || labels[t.trim().toLowerCase()]
+          if (def) {
+            spec = spec || def.specimen
+            def.parameters.forEach(p => next.push({ ...blankRow(p.name), unit: p.unit, refLow: p.refLow ?? '', refHigh: p.refHigh ?? '' }))
+          } else {
+            next.push(blankRow(t))
+          }
         }
-      })
-
-      if (aiReport) {
-        resultsObj['aiProvenanceHash'] = aiReport.provenance_hash || ''
-        resultsObj['aiAbnormalitiesFlagged'] = (aiReport.abnormalities_flagged || []).join('; ')
-        resultsObj['aiSuggestedFollowups'] = (aiReport.suggested_followups || []).join('; ')
+        setRows(next.length ? next : [blankRow()])
+        setSpecimen(s => s || spec)
+      } catch {
+        if (!cancelled) setRows((order.tests || ['']).map(t => blankRow(t)))
+      } finally {
+        if (!cancelled) setLoading(false)
       }
+    })()
+    return () => { cancelled = true }
+  }, [api, order])
 
-      const { visit, req } = activeModal
+  const setRow = (i, patch) => setRows(rs => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)))
 
-      // 1. Submit results (Step B)
-      await extClient.put(`/lab/visits/${visit.visitId}/request/${req.labRequestId}/submit`, {
-        results: resultsObj,
-        resultsHash: aiReport?.provenance_hash || ''
+  const rowError = (r) => {
+    if (!r.name.trim()) return 'Name required'
+    if (!r.value.trim()) return 'Value required'
+    const ranged = r.refLow !== '' || r.refHigh !== ''
+    if (ranged && !NUMERIC.test(r.value.trim())) return 'Must be a number'
+    if (r.refLow !== '' && r.refHigh !== '' && Number(r.refLow) > Number(r.refHigh)) return 'Range is reversed'
+    return ''
+  }
+  const duplicate = (() => {
+    const seen = new Set()
+    for (const r of rows) {
+      const k = r.name.trim().toLowerCase()
+      if (k && seen.has(k)) return r.name
+      seen.add(k)
+    }
+    return ''
+  })()
+  const invalid = rows.length === 0 || rows.some(rowError) || Boolean(duplicate)
+
+  const upload = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setError('')
+    if (!FILE_TYPES.includes(file.type)) return setError('Only PDF, PNG and JPEG files can be attached.')
+    if (file.size > MAX_FILE) return setError('The file is larger than 3 MB.')
+    if (files.length >= 5) return setError('At most 5 files can be attached.')
+    setUploading(true)
+    try {
+      const dataBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result).split(',')[1] || '')
+        reader.onerror = () => reject(new Error('Could not read the file'))
+        reader.readAsDataURL(file)
       })
-
-      // 2. Auto-approve & return to doctor if checked (Step C & D)
-      if (autoApprove) {
-        await extClient.put(`/lab/visits/${visit.visitId}/request/${req.labRequestId}/approve`)
-        await extClient.put(`/lab/visits/${visit.visitId}/request/${req.labRequestId}/return`)
-        setStatusMsg(`Findings for ${req.labRequestId} endorsed to blockchain and returned to Dr. ${visit.assignedDoctor || 'Smith'}!`)
-      } else {
-        setStatusMsg(`Findings for ${req.labRequestId} submitted to blockchain (Status: COMPLETED). Pending supervisor approval.`)
-      }
-
-      setActiveModal(null)
-      await fetchVisits()
+      const res = await api.post(
+        `/lab/visits/${order.visitId}/request/${order.labRequestId}/attachments`,
+        { filename: file.name, mimeType: file.type, dataBase64 }
+      )
+      setFiles(f => [...f, res.data.data])
     } catch (err) {
-      console.error('Submit findings error:', err)
-      setError(err.response?.data?.error || 'Failed to submit test findings')
+      setError(errorText(err, 'Could not upload the file.'))
     } finally {
-      setSubmitting(false)
+      setUploading(false)
     }
   }
 
-  // ── Step C: Approve & Return Directly ──────────────────────────────────────
-  const handleApproveAndReturn = async (visitId, labRequestId, doctorId) => {
-    setStatusMsg('')
-    setError('')
+  const crossCheck = async () => {
+    setAiBusy(true); setError('')
     try {
-      await extClient.put(`/lab/visits/${visitId}/request/${labRequestId}/approve`)
-      await extClient.put(`/lab/visits/${visitId}/request/${labRequestId}/return`)
-      setStatusMsg(`Order ${labRequestId} approved and returned to Dr. ${doctorId || 'physician'}!`)
-      await fetchVisits()
+      const text = rows.filter(r => r.name && r.value)
+        .map(r => `${r.name}: ${r.value} ${r.unit} (reference ${referenceText({ refLow: r.refLow === '' ? null : Number(r.refLow), refHigh: r.refHigh === '' ? null : Number(r.refHigh), refText: r.refText })})`)
+        .join('\n')
+      const out = await analyzeReportWithAI(text, order.patientId, (order.tests || []).join(', '))
+      setAi({
+        findings: out.findings || [],
+        abnormalities: out.abnormalities_flagged || [],
+        followups: out.suggested_followups || [],
+        source: 'clinical-ai-agent',
+      })
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to approve lab result')
+      setAi(null)
+      setError('The AI cross-check is unavailable right now. You can still submit the results.')
+    } finally {
+      setAiBusy(false)
+    }
+  }
+
+  const submit = async () => {
+    setTouched(true)
+    if (invalid) return
+    setSaving(true); setError('')
+    try {
+      await api.put(`/lab/visits/${order.visitId}/request/${order.labRequestId}/submit`, {
+        parameters: rows.map(r => ({
+          name: r.name.trim(), value: r.value.trim(), unit: r.unit.trim(),
+          refLow: r.refLow === '' ? null : Number(r.refLow),
+          refHigh: r.refHigh === '' ? null : Number(r.refHigh),
+          refText: r.refText.trim(), flag: r.flag,
+        })),
+        specimen, notes, attachments: files, aiAnalysis: ai,
+      })
+      onDone(`Results for ${order.labRequestId} submitted. They are waiting for supervisor verification.`)
+    } catch (err) {
+      setError(errorText(err, 'Could not submit the results.'))
+      setSaving(false)
+    }
+  }
+
+  const cell = 'w-full px-2 py-1.5 text-sm border border-slate-200 rounded-md bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500'
+
+  return (
+    <Modal open onClose={saving ? () => {} : onClose} size="xl" title={`Enter results · ${order.labRequestId}`}>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div><p className="text-xs text-slate-400">Patient</p><p className="font-medium">{order.patient?.name || order.patientId}</p></div>
+          <div><p className="text-xs text-slate-400">Age / Sex</p><p>{[order.patient?.age != null ? `${order.patient.age} y` : '', order.patient?.gender].filter(Boolean).join(' / ') || '—'}</p></div>
+          <div><p className="text-xs text-slate-400">Tests ordered</p><p>{(order.tests || []).join(', ')}</p></div>
+          <div><p className="text-xs text-slate-400">Ordered by</p><p>{order.requestedBy}</p></div>
+        </div>
+        {order.instructions && <p className="text-sm text-slate-600"><span className="font-medium">Doctor's note:</span> {order.instructions}</p>}
+        {order.status === 'REJECTED' && (
+          <Alert type="warning">Returned by {order.rejectedBy || 'the supervisor'}: {order.rejectionReason || 'no reason recorded'}</Alert>
+        )}
+        {error && <Alert type="error">{error}</Alert>}
+
+        {loading ? <div className="flex justify-center py-10"><Spinner /></div> : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-slate-500 uppercase tracking-wide">
+                    <th className="pb-2 pr-2 min-w-[11rem]">Parameter</th>
+                    <th className="pb-2 pr-2 w-28">Result</th>
+                    <th className="pb-2 pr-2 w-24">Unit</th>
+                    <th className="pb-2 pr-2 w-20">Ref. low</th>
+                    <th className="pb-2 pr-2 w-20">Ref. high</th>
+                    <th className="pb-2 pr-2 w-28">Flag</th>
+                    <th className="pb-2 w-8"><span className="sr-only">Remove</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => {
+                    const err = touched ? rowError(r) : ''
+                    const auto = previewFlag(r)
+                    const ranged = r.refLow !== '' || r.refHigh !== ''
+                    return (
+                      <tr key={i} className="align-top">
+                        <td className="pr-2 pb-2"><input aria-label="Parameter name" className={cell} value={r.name} onChange={e => setRow(i, { name: e.target.value })} /></td>
+                        <td className="pr-2 pb-2">
+                          <input aria-label={`Result for ${r.name || 'parameter'}`} aria-invalid={Boolean(err)} inputMode={ranged ? 'decimal' : 'text'}
+                            className={`${cell} ${err ? 'border-red-400' : ''} ${auto && auto !== 'NORMAL' ? 'font-bold text-red-600' : ''}`}
+                            value={r.value} onChange={e => setRow(i, { value: e.target.value })} />
+                          {err && <p className="text-[11px] text-red-600 mt-0.5">{err}</p>}
+                        </td>
+                        <td className="pr-2 pb-2"><input aria-label="Unit" className={cell} value={r.unit} onChange={e => setRow(i, { unit: e.target.value })} /></td>
+                        <td className="pr-2 pb-2"><input aria-label="Reference low" type="number" step="any" className={cell} value={r.refLow} onChange={e => setRow(i, { refLow: e.target.value })} /></td>
+                        <td className="pr-2 pb-2"><input aria-label="Reference high" type="number" step="any" className={cell} value={r.refHigh} onChange={e => setRow(i, { refHigh: e.target.value })} /></td>
+                        <td className="pr-2 pb-2">
+                          {ranged ? (
+                            auto ? <span className={`status-pill ${auto === 'NORMAL' ? 'is-ok' : 'is-danger'}`}>{auto === 'NORMAL' ? 'Normal' : auto === 'LOW' ? 'Low' : 'High'}</span>
+                                 : <span className="text-xs text-slate-400">auto</span>
+                          ) : (
+                            <select aria-label="Flag" className={cell} value={r.flag} onChange={e => setRow(i, { flag: e.target.value })}>
+                              <option value="">Not set</option>
+                              <option value="NORMAL">Normal</option>
+                              <option value="ABNORMAL">Abnormal</option>
+                            </select>
+                          )}
+                        </td>
+                        <td className="pb-2">
+                          <button type="button" aria-label={`Remove ${r.name || 'row'}`} onClick={() => setRows(rs => rs.filter((_, j) => j !== i))}
+                            className="p-1.5 text-slate-400 hover:text-red-600"><Trash2 size={14} /></button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {touched && duplicate && <p className="text-xs text-red-600">"{duplicate}" is listed more than once.</p>}
+            {touched && rows.length === 0 && <p className="text-xs text-red-600">Add at least one parameter.</p>}
+            <Button size="sm" variant="secondary" onClick={() => setRows(rs => [...rs, blankRow()])}><Plus size={13} /> Add parameter</Button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-slate-700">Specimen</span>
+                <input className={cell} value={specimen} maxLength={120} onChange={e => setSpecimen(e.target.value)} placeholder="e.g. Whole blood (EDTA)" />
+              </label>
+              <div className="text-sm">
+                <p className="font-medium text-slate-700 mb-1">Attached files <span className="font-normal text-slate-400">(PDF, PNG, JPEG · up to 3 MB · max 5)</span></p>
+                <ul className="space-y-1 mb-2">
+                  {files.map(f => (
+                    <li key={f.cid} className="flex items-center gap-2">
+                      <Paperclip size={13} className="text-slate-400" /> <span className="truncate">{f.filename}</span>
+                      <button type="button" aria-label={`Remove ${f.filename}`} onClick={() => setFiles(fs => fs.filter(x => x.cid !== f.cid))}
+                        className="text-slate-400 hover:text-red-600"><X size={13} /></button>
+                    </li>
+                  ))}
+                </ul>
+                <label className={`obs-btn-ghost !px-3 !py-1.5 !text-xs inline-flex items-center gap-1.5 cursor-pointer ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                  <Paperclip size={13} /> {uploading ? 'Uploading…' : 'Attach file'}
+                  <input type="file" accept=".pdf,.png,.jpg,.jpeg" className="sr-only" onChange={upload} disabled={uploading} />
+                </label>
+              </div>
+            </div>
+
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium text-slate-700">Laboratory comments</span>
+              <textarea rows={3} maxLength={2000} className={cell} value={notes} onChange={e => setNotes(e.target.value)}
+                placeholder="Interpretation, sample quality, method notes" />
+            </label>
+
+            <div className="p-3 rounded-xl border border-violet-200 bg-violet-50/60 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <p className="flex items-center gap-1.5 font-semibold text-violet-800 text-xs uppercase tracking-wide">
+                  <Bot size={13} /> AI cross-check — assistive only, not a diagnosis
+                </p>
+                <Button size="sm" variant="secondary" loading={aiBusy} disabled={rows.every(r => !r.value.trim())} onClick={crossCheck}>Run</Button>
+              </div>
+              {ai && (
+                <div className="mt-2 text-slate-700">
+                  {ai.abnormalities.length ? <ul className="list-disc ml-5">{ai.abnormalities.map((a, i) => <li key={i}>{a}</li>)}</ul> : <p>No abnormality flagged.</p>}
+                  {ai.followups.length > 0 && <p className="mt-1"><span className="font-medium">Suggested follow-up:</span> {ai.followups.join('; ')}</p>}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button onClick={submit} loading={saving} disabled={loading || uploading}>Submit for verification</Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+// ── Report view, verification and sign-off ───────────────────────────────────
+function ReviewModal({ order, api, canSign, currentUser, openAttachment, onClose, onDone }) {
+  const [busy, setBusy]         = useState('')
+  const [error, setError]       = useState('')
+  const [rejecting, setRejecting] = useState(false)
+  const [reason, setReason]     = useState('')
+  const awaiting = order.status === 'RESULT_SUBMITTED'
+  const ownResult = order.submittedBy === currentUser
+
+  const approve = async () => {
+    setBusy('approve'); setError('')
+    try {
+      await api.put(`/lab/visits/${order.visitId}/request/${order.labRequestId}/approve`, { resultsHash: order.resultsHash })
+      onDone(`Report ${order.labRequestId} verified and released to ${order.assignedDoctor || 'the doctor'} and the patient.`)
+    } catch (err) {
+      setError(errorText(err, 'Could not approve the report.'))
+      setBusy('')
+    }
+  }
+
+  const reject = async () => {
+    if (reason.trim().length < 3) return setError('Give a reason of at least 3 characters.')
+    setBusy('reject'); setError('')
+    try {
+      await api.put(`/lab/visits/${order.visitId}/request/${order.labRequestId}/reject`, { reason: reason.trim() })
+      onDone(`Report ${order.labRequestId} returned to the bench.`)
+    } catch (err) {
+      setError(errorText(err, 'Could not return the report.'))
+      setBusy('')
     }
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/70 dark:bg-slate-900/70 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm backdrop-blur-md">
-        <div className="flex items-center gap-4">
-          <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
-            <FlaskConical size={26} />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display">
-              Diagnostic Laboratory Orders Queue
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Fulfill clinical physician lab orders, accession specimens, run AI interpretations, and endorse findings to Fabric LabMSP.
-            </p>
-          </div>
-        </div>
+    <Modal open onClose={busy ? () => {} : onClose} size="xl" title={`Lab report · ${order.labRequestId}`}>
+      <LabReport order={order} patient={order.patient} openAttachment={openAttachment} />
 
-        <div className="flex items-center gap-2 self-start md:self-auto">
-          <a
-            href="/lab/"
-            target="_blank"
-            rel="noreferrer"
-            className="obs-btn-ghost text-xs flex items-center gap-1.5"
-            title="Open standalone CareGrid Lab Deck on Port 3006"
-          >
-            <span>Lab Deck Workstation</span>
-            <ExternalLink size={13} />
-          </a>
-          <Button variant="secondary" size="sm" onClick={fetchVisits} loading={loading} className="gap-1.5">
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            <span>Refresh</span>
-          </Button>
-        </div>
-      </div>
+      {error && <div className="mt-4"><Alert type="error">{error}</Alert></div>}
 
-      {statusMsg && <Alert type="success">{statusMsg}</Alert>}
-      {error && <Alert type="error">{error}</Alert>}
-
-      {/* Filter Tabs & Quick Counters */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-          {[
-            { id: 'ALL', label: 'All Orders', count: allOrders.length },
-            { id: 'REQUESTED', label: 'Step A: Intake (Requested)', count: allOrders.filter(o => o.req.status === 'REQUESTED').length },
-            { id: 'ACKNOWLEDGED', label: 'Step B: Processing', count: allOrders.filter(o => o.req.status === 'ACKNOWLEDGED').length },
-            { id: 'COMPLETED', label: 'Step C: Review', count: allOrders.filter(o => o.req.status === 'COMPLETED').length },
-            { id: 'APPROVED', label: 'Finalized & With Doctor', count: allOrders.filter(o => o.req.status === 'APPROVED').length },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                filter === tab.id
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                filter === tab.id
-                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold'
-                  : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-              }`}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        <div className="text-xs text-slate-400 font-mono">
-          Fabric Gateway: <span className="text-amber-600 dark:text-amber-400 font-semibold">peer0.diagnostic.example.com</span>
-        </div>
-      </div>
-
-      {/* Orders List */}
-      {filteredOrders.length === 0 ? (
-        <Card className="p-12 text-center">
-          <EmptyState
-            icon={FlaskConical}
-            title={filter === 'ALL' ? 'No Lab Orders in Queue' : `No orders with status "${filter}"`}
-            desc={filter === 'ALL'
-              ? 'When a doctor orders lab tests in their consultation visit, they will appear here in real-time.'
-              : 'Try selecting "All Orders" to view other stages of the diagnostic pipeline.'}
-          />
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredOrders.map(({ visit, req }) => {
-            const isRequested = req.status === 'REQUESTED'
-            const isAck = req.status === 'ACKNOWLEDGED'
-            const isCompleted = req.status === 'COMPLETED'
-            const isApproved = req.status === 'APPROVED'
-
-            const statusBadgeConfig = {
-              REQUESTED:    { bg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-400/40', label: 'Step A: Intake Required' },
-              ACKNOWLEDGED: { bg: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-400/40', label: 'Step B: Specimen In Testing' },
-              COMPLETED:    { bg: 'bg-blue-500/15 text-blue-700 dark:text-sky-300 border-blue-400/40', label: 'Step C: Findings Ready for Review' },
-              APPROVED:     { bg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-400/40', label: 'Returned to Doctor Chart' },
-            }[req.status] || { bg: 'bg-slate-100 text-slate-600 border-slate-300', label: req.status }
-
-            return (
-              <div
-                key={req.labRequestId}
-                className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm transition-all hover:shadow-md"
-              >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-3">
-                    <Avatar id={visit.patientId} name={visit.patientId} size={40} />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
-                          {req.labRequestId}
-                        </span>
-                        <span className="text-slate-300 dark:text-slate-700">·</span>
-                        <span className="text-xs font-semibold text-blue-600 dark:text-sky-400 font-mono">
-                          {visit.patientId}
-                        </span>
-                        <span className="text-slate-300 dark:text-slate-700">·</span>
-                        <span className="text-xs text-slate-400 font-mono">
-                          {visit.visitId}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Chief Complaint: <span className="text-slate-700 dark:text-slate-300 font-medium">{visit.clinical?.chiefComplaint || 'Consultation'}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${statusBadgeConfig.bg}`}>
-                      {statusBadgeConfig.label}
-                    </span>
-                    <div className="text-right hidden sm:block">
-                      <p className="text-[11px] text-slate-400">Ordering Physician</p>
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                        Dr. {visit.assignedDoctor || 'Smith'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tests Requested Badges */}
-                <div className="py-4 space-y-3">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                      Requested Diagnostic Tests ({req.tests?.length || 0})
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {(req.tests || []).map((t, idx) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1 rounded-xl text-xs font-semibold bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-300/40"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {req.instructions && (
-                    <div className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-200/50 dark:border-slate-800">
-                      <span className="font-semibold text-slate-700 dark:text-slate-200">Doctor's Clinical Instructions: </span>
-                      {req.instructions}
-                    </div>
-                  )}
-
-                  {/* Display existing results if already submitted */}
-                  {req.results && Object.keys(req.results).length > 0 && (
-                    <div className="mt-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                          Committed Laboratory Findings
-                        </span>
-                        {req.submittedBy && (
-                          <span className="text-[11px] font-mono text-slate-400">
-                            Technician: {req.submittedBy}
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                        {Object.entries(req.results).map(([k, v]) => {
-                          if (k.startsWith('ai')) return null
-                          return (
-                            <div key={k} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-xs">
-                              <span className="text-slate-400 block">{k}</span>
-                              <span className="font-semibold text-slate-900 dark:text-white font-mono mt-0.5 block">{String(v)}</span>
-                            </div>
-                          )
-                        })}
-                      </div>
-
-                      {/* Display AI flags if present */}
-                      {req.results.aiAbnormalitiesFlagged && (
-                        <div className="mt-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/60 text-xs">
-                          <span className="font-bold text-red-700 dark:text-red-400 flex items-center gap-1.5">
-                            <Bot size={13} /> AI Flagged Abnormalities:
-                          </span>
-                          <p className="text-red-600 dark:text-red-300 mt-0.5">{req.results.aiAbnormalitiesFlagged}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Action Handshake Buttons (Steps A, B, C) */}
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
-                  <div className="text-[11px] text-slate-400">
-                    Requested on: {new Date(req.requestedAt).toLocaleString()}
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Step A Button */}
-                    {isRequested && (
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        onClick={() => handleAcknowledge(visit.visitId, req.labRequestId)}
-                        className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
-                      >
-                        <CheckCircle2 size={14} />
-                        <span>Step A: Acknowledge Sample Intake</span>
-                      </Button>
-                    )}
-
-                    {/* Step B Button */}
-                    {(isAck || isRequested) && (
-                      <Button
-                        size="sm"
-                        variant={isAck ? 'primary' : 'secondary'}
-                        onClick={() => openFindingsModal(visit, req)}
-                        className="gap-1.5"
-                      >
-                        <TestTube2 size={14} />
-                        <span>Step B: Enter Findings &amp; AI Analysis</span>
-                      </Button>
-                    )}
-
-                    {/* Step C Button */}
-                    {isCompleted && (
-                      <Button
-                        size="sm"
-                        variant="success"
-                        onClick={() => handleApproveAndReturn(visit.visitId, req.labRequestId, visit.assignedDoctor)}
-                        className="gap-1.5"
-                      >
-                        <CheckCircle2 size={14} />
-                        <span>Step C: Approve &amp; Return to Doctor</span>
-                      </Button>
-                    )}
-
-                    {isApproved && (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-                        <CheckCircle2 size={14} />
-                        <span>Available in Dr. {visit.assignedDoctor}'s Chart</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
+      {canSign && awaiting && (
+        <div className="mt-5 pt-4 border-t border-slate-200 no-print">
+          {ownResult ? (
+            <Alert type="warning">You entered these results, so another supervisor must verify them.</Alert>
+          ) : rejecting ? (
+            <div className="space-y-2">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-slate-700">Reason for returning to the bench</span>
+                <textarea rows={2} maxLength={500} value={reason} onChange={e => setReason(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. haemolysed sample, repeat required" />
+              </label>
+              <div className="flex justify-end gap-2">
+                <Button variant="secondary" onClick={() => { setRejecting(false); setError('') }} disabled={Boolean(busy)}>Back</Button>
+                <Button variant="danger" size="md" className="px-4 py-2.5 text-sm" loading={busy === 'reject'} onClick={reject}><Undo2 size={14} /> Return to bench</Button>
               </div>
-            )
-          })}
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-slate-600 max-w-xl">
+                By verifying, you sign this report with your laboratory identity. It is then released to the ordering doctor and the patient.
+              </p>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setRejecting(true)} disabled={Boolean(busy)}><Undo2 size={14} /> Return to bench</Button>
+                <Button variant="success" size="md" className="px-4 py-2.5 text-sm" loading={busy === 'approve'} onClick={approve}><ShieldCheck size={14} /> Verify &amp; sign</Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
-
-      {/* Modal for Entering Findings (Step B) */}
-      {activeModal && (
-        <Modal
-          open={Boolean(activeModal)}
-          onClose={() => setActiveModal(null)}
-          title={`Enter Test Findings — ${activeModal.req.labRequestId}`}
-          size="lg"
-        >
-          <form onSubmit={handleSubmitFindings} className="space-y-5">
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Order for Patient</p>
-                <p className="text-sm font-bold text-slate-800 dark:text-slate-200 font-mono">
-                  {activeModal.visit.patientId} · Visit {activeModal.visit.visitId}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={fillDemoAbnormal}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-300 hover:bg-amber-500/20 transition-colors"
-                title="Populate realistic abnormal values to test AI scan"
-              >
-                ⚡ Fill Demo Values
-              </button>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                  Diagnostic Measurement Findings
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setFindingsFields(prev => [...prev, { key: '', value: '' }])}
-                  className="text-xs text-blue-600 dark:text-sky-400 font-semibold flex items-center gap-1 hover:underline"
-                >
-                  <Plus size={13} /> Add Metric
-                </button>
-              </div>
-
-              <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
-                {findingsFields.map((f, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={f.key}
-                      onChange={e => {
-                        const updated = [...findingsFields]
-                        updated[idx].key = e.target.value
-                        setFindingsFields(updated)
-                      }}
-                      placeholder="e.g. Hemoglobin / Fasting Sugar"
-                      required
-                      className="w-1/2 px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                    <input
-                      type="text"
-                      value={f.value}
-                      onChange={e => {
-                        const updated = [...findingsFields]
-                        updated[idx].value = e.target.value
-                        setFindingsFields(updated)
-                      }}
-                      placeholder="e.g. 13.8 g/dL / Normal"
-                      required
-                      className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setFindingsFields(prev => prev.filter((_, i) => i !== idx))}
-                      className="text-slate-400 hover:text-red-500 p-1"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* AI Agent Integration Trigger */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-sky-500/10 dark:from-indigo-950/30 dark:to-sky-950/30 border border-indigo-200/60 dark:border-indigo-800/60">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Bot size={18} className="text-indigo-600 dark:text-sky-400" />
-                  <div>
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                      Autonomous Clinical AI Agent
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Extract markers, flag diagnostic abnormalities &amp; generate cryptographic provenance
-                    </p>
-                  </div>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={runAiAnalysis}
-                  loading={aiLoading}
-                  className="gap-1.5 bg-white dark:bg-slate-900 border-indigo-200 text-indigo-700 dark:text-sky-300"
-                >
-                  <Sparkles size={13} />
-                  <span>Run AI Scan</span>
-                </Button>
-              </div>
-
-              {aiReport && (
-                <div className="mt-3 pt-3 border-t border-indigo-200/60 dark:border-indigo-800/60 space-y-2 text-xs">
-                  {aiReport.abnormalities_flagged?.length > 0 && (
-                    <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 text-red-800 dark:text-red-300">
-                      <span className="font-bold block mb-1">🚨 Flagged Abnormalities:</span>
-                      <ul className="list-disc pl-4 space-y-0.5">
-                        {aiReport.abnormalities_flagged.map((ab, i) => (
-                          <li key={i}>{ab}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {aiReport.suggested_followups?.length > 0 && (
-                    <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-sky-950/40 border border-blue-200 text-blue-800 dark:text-sky-300">
-                      <span className="font-bold block mb-1">💡 Suggested Follow-ups:</span>
-                      <ul className="list-disc pl-4 space-y-0.5">
-                        {aiReport.suggested_followups.map((f, i) => (
-                          <li key={i}>{f}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono pt-1">
-                    <span>Provenance Hash: {aiReport.provenance_hash?.slice(0, 20)}...</span>
-                    <span className="text-emerald-600 font-bold">✓ Verified</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Auto-Approve Checkbox */}
-            <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-700 dark:text-slate-300">
-              <input
-                type="checkbox"
-                checked={autoApprove}
-                onChange={e => setAutoApprove(e.target.checked)}
-                className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300"
-              />
-              <span className="font-medium">
-                Auto-approve and return findings directly to Dr. {activeModal.visit.assignedDoctor}'s consultation chart
-              </span>
-            </label>
-
-            {/* Submit Action Buttons */}
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <Button type="button" variant="secondary" onClick={() => setActiveModal(null)}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" loading={submitting} className="gap-1.5">
-                <CheckCircle2 size={14} />
-                <span>Commit Findings to Fabric Ledger</span>
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-    </div>
+    </Modal>
   )
 }

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Card, Spinner, VisitStatusBadge, SectionTitle, Alert } from '../components/ui'
 import { formatDate, formatDateTime } from '../utils/api'
+import LabReport, { LabStatusPill } from '../components/LabReport'
 import {
   Calendar, ChevronRight, FlaskConical, Pill, Activity, FileText,
   ChevronDown, ChevronUp, ArrowLeft,
@@ -408,7 +409,7 @@ export function VisitDetailPage() {
           </div>
           <div className="space-y-3">
             {clinical.labRequests.map((lr, i) => (
-              <LabResultCard key={i} lr={lr} />
+              <LabResultCard key={lr.labRequestId || i} lr={lr} visitId={data.visitId} patientId={data.patientId} />
             ))}
           </div>
         </Card>
@@ -459,33 +460,43 @@ function MiniInfo({ label, value }) {
   )
 }
 
-function LabResultCard({ lr }) {
-  const [open, setOpen] = useState(lr.status === 'APPROVED')
-  const statusColor = {
-    REQUESTED:    'text-slate-500',
-    ACKNOWLEDGED: 'text-amber-600',
-    COMPLETED:    'text-blue-600',
-    APPROVED:     'text-green-600',
-  }[lr.status] || 'text-gray-500'
+function LabResultCard({ lr, visitId, patientId }) {
+  const { api, patient } = useAuth()
+  const released = lr.status === 'APPROVED'
+  const [open, setOpen] = useState(released)
+
+  const openAttachment = async (att) => {
+    let res
+    try {
+      res = await api().get(`/visits/${visitId}/lab/${lr.labRequestId}/attachments/${att.cid}`, { responseType: 'blob' })
+    } catch (err) {
+      throw new Error(err.response?.status === 404 ? 'This attachment is no longer available.' : 'Could not open the attachment.')
+    }
+    const url = URL.createObjectURL(res.data)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 60000)
+  }
 
   return (
     <div className="border border-slate-100 rounded-xl overflow-hidden">
-      <button onClick={() => setOpen(!open)}
+      <button onClick={() => setOpen(!open)} aria-expanded={open}
         className="w-full flex items-center justify-between p-3 text-left hover:bg-slate-50 transition-colors">
         <div>
           <p className="text-sm font-semibold text-slate-800">{lr.tests?.join(', ')}</p>
-          <p className={`text-xs font-medium mt-0.5 ${statusColor}`}>{lr.status}</p>
+          <div className="mt-1"><LabStatusPill status={released ? 'APPROVED' : lr.status === 'REQUESTED' ? 'REQUESTED' : 'ACKNOWLEDGED'} /></div>
         </div>
         {open ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
       </button>
-      {open && lr.results && Object.keys(lr.results).length > 0 && (
-        <div className="border-t border-slate-100 p-3 space-y-2 bg-slate-50">
-          {Object.entries(lr.results).map(([k, v]) => (
-            <div key={k} className="flex justify-between items-center">
-              <span className="text-xs text-slate-500">{k}</span>
-              <span className="text-sm font-semibold text-slate-800">{v}</span>
-            </div>
-          ))}
+      {open && (
+        <div className="border-t border-slate-100 p-4">
+          {released ? (
+            <LabReport order={lr} openAttachment={openAttachment}
+              patient={{ patientId, name: patient?.name, age: patient?.age, gender: patient?.gender }} />
+          ) : (
+            <p className="text-sm text-slate-500">
+              Your report will appear here once the laboratory has verified it.
+            </p>
+          )}
         </div>
       )}
     </div>

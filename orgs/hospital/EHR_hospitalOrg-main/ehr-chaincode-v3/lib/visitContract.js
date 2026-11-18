@@ -3,6 +3,7 @@
 const { Contract } = require('fabric-contract-api');
 const {
   requireRole,
+  STAFF_ROLES,
   assertReadAccess,
   getCallerIdentity,
   makeVisitId,
@@ -84,7 +85,7 @@ class VisitContract extends Contract {
         {
           cid:       visitCID,
           updatedBy: userId,
-          updatedAt: now(),
+          updatedAt: now(ctx),
           reason:    'VISIT_OPENED',
         },
       ],
@@ -98,8 +99,8 @@ class VisitContract extends Contract {
       claimStatus:      '',
       claimReason:      '',
 
-      createdAt: now(),
-      updatedAt: now(),
+      createdAt: now(ctx),
+      updatedAt: now(ctx),
     };
 
     await putState(ctx, visitKey(visitId), visit);
@@ -107,7 +108,7 @@ class VisitContract extends Contract {
     // Update patient record
     patient.visitIds.push(visitId);
     patient.visitCount = visitNumber;
-    patient.updatedAt  = now();
+    patient.updatedAt  = now(ctx);
     await ctx.stub.putState(patientKey(patientId), Buffer.from(JSON.stringify(patient)));
 
     return JSON.stringify(visit);
@@ -144,7 +145,7 @@ class VisitContract extends Contract {
     visit.cidHistory.push({
       cid:       newCID,
       updatedBy: userId,
-      updatedAt: now(),
+      updatedAt: now(ctx),
       reason:    reason || '',
     });
     visit.visitCID = newCID;
@@ -180,7 +181,7 @@ class VisitContract extends Contract {
 
     // Update CID if backend passed updated visit JSON (with forwardingLog entry)
     if (visitCID) {
-      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'DOCTOR_ASSIGNED' });
+      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'DOCTOR_ASSIGNED' });
       visit.visitCID = visitCID;
     }
 
@@ -201,7 +202,7 @@ class VisitContract extends Contract {
     visit.assignedNurse = nurseId;
 
     if (visitCID) {
-      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'NURSE_ASSIGNED' });
+      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'NURSE_ASSIGNED' });
       visit.visitCID = visitCID;
     }
 
@@ -225,8 +226,8 @@ class VisitContract extends Contract {
 
     visit.status      = VISIT_STATUS.VISIT_FINALIZED;
     visit.finalizedBy = userId;
-    visit.finalizedAt = now();
-    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'VISIT_FINALIZED' });
+    visit.finalizedAt = now(ctx);
+    visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'VISIT_FINALIZED' });
     visit.visitCID = visitCID;
 
     await putState(ctx, visitKey(visitId), visit);
@@ -249,7 +250,7 @@ class VisitContract extends Contract {
     visit.recordFinalizedBy = userId;
 
     if (visitCID) {
-      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'RECORD_FINALIZED' });
+      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'RECORD_FINALIZED' });
       visit.visitCID = visitCID;
     }
 
@@ -277,7 +278,7 @@ class VisitContract extends Contract {
     visit.dischargedBy = userId;
 
     if (visitCID) {
-      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'PATIENT_DISCHARGED' });
+      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'PATIENT_DISCHARGED' });
       visit.visitCID = visitCID;
     }
 
@@ -317,7 +318,7 @@ class VisitContract extends Contract {
   // ── ListAllVisits ─────────────────────────────────────────────────────────
   // Returns all visit records. Used by backends to list and filter by role.
   async ListAllVisits(ctx) {
-    getCallerIdentity(ctx);
+    requireRole(ctx, ...STAFF_ROLES);
     const iterator = await ctx.stub.getStateByRange(`${VISIT_PREFIX}:`, `${VISIT_PREFIX};`);
     const results = [];
     while (true) {

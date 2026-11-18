@@ -6,6 +6,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { peerContext }  = require('../middleware/peerContext');
 const { wrap, parseResult } = require('../middleware/errorHandler');
 const { fetchByCID, pinJSON } = require('../fabric/ipfsClient');
+const lab = require('../../../shared/labReport');
 const logger = require('../config/logger');
 
 const asDoctor = [authenticate, requireRole('doctor'), peerContext];
@@ -223,6 +224,16 @@ router.put('/visits/:id/forward/lab',
     return res.json({ success: true, data: parseResult(result) });
   })
 );
+
+// ── GET /doctor/visits/:id/lab/:reqId/attachments/:cid ───────
+// A file attached to a lab report on this visit.
+router.get('/visits/:id/lab/:reqId/attachments/:cid', ...asDoctor, wrap(async (req, res) => {
+  const { clinical } = await getVisitWithContent(req.contract, req.params.id);
+  if (!lab.findAttachment(clinical, req.params.reqId, req.params.cid)) {
+    return res.status(404).json({ success: false, error: 'Attachment not found on this lab request' });
+  }
+  return lab.sendAttachment(res, await fetchByCID(req.params.cid));
+}));
 
 // ── PUT /doctor/visits/:id/finalize — FinalizeVisit ──────────
 router.put('/visits/:id/finalize',

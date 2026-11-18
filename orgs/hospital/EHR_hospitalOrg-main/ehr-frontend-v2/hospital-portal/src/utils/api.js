@@ -47,7 +47,7 @@ export async function analyzeReportWithAI(reportText, patientId, reportType = 'D
       report_text: reportText,
       patient_id: patientId,
       report_type: reportType,
-    })
+    }, { timeout: 30000 })
     return res.data
   } catch (err) {
     console.error('AI Report Analysis error:', err)
@@ -60,7 +60,7 @@ export async function queryClinicalAgent(question, patientId) {
     const res = await axios.post('/api/ai-agent/api/v1/agent/query', {
       question,
       patient_id: patientId,
-    })
+    }, { timeout: 30000 })
     return res.data
   } catch (err) {
     console.error('Clinical Agent query error:', err)

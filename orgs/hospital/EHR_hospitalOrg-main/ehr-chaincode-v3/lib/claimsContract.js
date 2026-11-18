@@ -46,7 +46,7 @@ class ClaimsContract extends Contract {
     visit.status           = VISIT_STATUS.CLAIM_SUBMITTED;
 
     if (visitCID) {
-      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'CLAIM_SUBMITTED' });
+      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'CLAIM_SUBMITTED' });
       visit.visitCID = visitCID;
     }
 
@@ -73,7 +73,7 @@ class ClaimsContract extends Contract {
     visit.status      = VISIT_STATUS.CLAIM_UNDER_AUDIT;
 
     if (visitCID) {
-      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: 'CLAIM_AUDITED' });
+      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: 'CLAIM_AUDITED' });
       visit.visitCID = visitCID;
     }
 
@@ -109,7 +109,7 @@ class ClaimsContract extends Contract {
       : VISIT_STATUS.CLAIM_REJECTED;
 
     if (visitCID) {
-      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(), reason: `CLAIM_${dec}` });
+      visit.cidHistory.push({ cid: visitCID, updatedBy: userId, updatedAt: now(ctx), reason: `CLAIM_${dec}` });
       visit.visitCID = visitCID;
     }
 
