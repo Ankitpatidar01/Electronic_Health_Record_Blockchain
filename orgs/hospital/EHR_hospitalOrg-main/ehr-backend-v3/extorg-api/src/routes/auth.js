@@ -42,6 +42,11 @@ router.post('/login',
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
+    if (user.status === 'revoked') {
+      logger.warn('Login blocked: account revoked', { username });
+      return res.status(403).json({ success: false, error: 'This staff account has been revoked by Hospital Administration.' });
+    }
+
     const token = issueToken(username, user.role, user.mspId, user.peer);
     logger.info('Login OK', { username, role: user.role, mspId: user.mspId });
     return res.json({

@@ -45,6 +45,11 @@ router.post('/login',
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
+    if (user.status === 'revoked') {
+      logger.warn('Login blocked: account revoked', { username });
+      return res.status(403).json({ success: false, error: 'This staff account has been revoked by Hospital Administration.' });
+    }
+
     const token = issueToken(username, user.role, user.mspId, user.peer);
     logger.info('Login OK', { username, role: user.role });
     return res.json({
@@ -68,10 +73,11 @@ router.get('/me', authenticate, (req, res) => {
 router.get('/staff', (req, res) => {
   const USERS = getUsers();
   const staff = Object.keys(USERS)
-    .filter(username => ['doctor', 'nurse', 'pharmacist', 'medrecordofficer'].includes(USERS[username].role))
+    .filter(username => ['doctor', 'nurse', 'pharmacist', 'medrecordofficer'].includes(USERS[username].role) && USERS[username].status !== 'revoked')
     .map(username => ({
       username,
-      role: USERS[username].role
+      role: USERS[username].role,
+      status: USERS[username].status || 'active'
     }));
   return res.json({ success: true, data: staff });
 });
@@ -81,7 +87,7 @@ router.get('/users', authenticate, (req, res) => {
   const USERS = getUsers();
   const safeUsers = Object.keys(USERS).reduce((acc, key) => {
     const { password, ...rest } = USERS[key];
-    acc[key] = { username: key, ...rest };
+    acc[key] = { username: key, ...rest, status: rest.status || 'active' };
     return acc;
   }, {});
   return res.json({ success: true, data: Object.values(safeUsers) });
@@ -106,7 +112,7 @@ router.post('/users', authenticate, [
   if (['nurse', 'pharmacist', 'medrecordofficer'].includes(role)) peer = 'peer2';
 
   const hash = await bcrypt.hash(password, 10);
-  USERS[username] = { password: hash, role, mspId: 'HospitalMSP', peer };
+  USERS[username] = { password: hash, role, mspId: 'HospitalMSP', peer, status: 'active' };
 
   try {
     fs.writeFileSync(USERS_FILE, JSON.stringify(USERS, null, 2));
@@ -144,8 +150,82 @@ router.post('/users', authenticate, [
     }
 
     logger.info('Fabric identity enrolled successfully', { username, role });
-    return res.status(201).json({ success: true, data: { username, role, mspId: 'HospitalMSP', peer } });
+    return res.status(201).json({ success: true, data: { username, role, mspId: 'HospitalMSP', peer, status: 'active' } });
   });
+});
+
+// ── Admin: Revoke or Reinstate User ──────────────────────────
+router.patch('/users/:username/status', authenticate, [
+  body('status').isIn(['active', 'revoked']).withMessage('Status must be "active" or "revoked"')
+], (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Only administrators can update staff status' });
+  }
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
+
+  const { username } = req.params;
+  const { status } = req.body;
+
+  if (username === 'hospitaladmin') {
+    return res.status(400).json({ success: false, error: 'Cannot revoke root administrator account' });
+  }
+  if (username === req.user.userId) {
+    return res.status(400).json({ success: false, error: 'Cannot modify your own account status' });
+  }
+
+  const USERS = getUsers();
+  if (!USERS[username]) {
+    return res.status(404).json({ success: false, error: 'User not found' });
+  }
+
+  USERS[username].status = status;
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(USERS, null, 2));
+    logger.info('Staff status updated', { username, status, updatedBy: req.user.userId });
+    return res.json({
+      success: true,
+      message: `Staff member ${username} is now ${status}`,
+      data: { username, role: USERS[username].role, status }
+    });
+  } catch (err) {
+    logger.error('Failed to update user status in users.json', err);
+    return res.status(500).json({ success: false, error: 'Internal server error saving status update' });
+  }
+});
+
+// ── Admin: Permanently Delete User ────────────────────────────
+router.delete('/users/:username', authenticate, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Only administrators can delete staff accounts' });
+  }
+
+  const { username } = req.params;
+
+  if (username === 'hospitaladmin') {
+    return res.status(400).json({ success: false, error: 'Cannot delete root administrator account' });
+  }
+  if (username === req.user.userId) {
+    return res.status(400).json({ success: false, error: 'Cannot delete your own account' });
+  }
+
+  const USERS = getUsers();
+  if (!USERS[username]) {
+    return res.status(404).json({ success: false, error: 'User not found' });
+  }
+
+  delete USERS[username];
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(USERS, null, 2));
+    logger.info('Staff user deleted permanently', { username, deletedBy: req.user.userId });
+    return res.json({
+      success: true,
+      message: `Staff member ${username} permanently removed`
+    });
+  } catch (err) {
+    logger.error('Failed to delete user from users.json', err);
+    return res.status(500).json({ success: false, error: 'Internal server error deleting user' });
+  }
 });
 
 module.exports = router;

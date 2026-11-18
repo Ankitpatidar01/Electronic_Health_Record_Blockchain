@@ -3,138 +3,161 @@
     "password": "$2a$10$UfoEtPuQt5WU95nY5QpFN.on4/.PAy3IjBWiCZi.xTrDQnKboSif.",
     "role": "receptionist",
     "mspId": "HospitalMSP",
-    "peer": "peer0"
+    "peer": "peer0",
+    "status": "active"
   },
   "hospitaladmin": {
     "password": "$2a$10$gwCT1U5wFHPgmZH7Q4qzUObeqfTo.6wLxuOjXZoDlt.7HMaUAGZvm",
     "role": "admin",
     "mspId": "HospitalMSP",
-    "peer": "peer0"
+    "peer": "peer0",
+    "status": "active"
   },
   "doctor": {
     "password": "$2a$10$n5cZ7M9bf4.Gs7QCQE3XiOcQes/ARLhgiEQVsAfvNvmN2jifUxCbe",
     "role": "doctor",
     "mspId": "HospitalMSP",
-    "peer": "peer1"
+    "peer": "peer1",
+    "status": "active"
   },
   "nurse": {
     "password": "$2a$10$M1haSuLRTzVWNzTpBOTjke8tygyqpGc7JtLMYCzPEYqCM0yIiBNMO",
     "role": "nurse",
     "mspId": "HospitalMSP",
-    "peer": "peer2"
+    "peer": "peer2",
+    "status": "active"
   },
   "pharmacist": {
     "password": "$2a$10$hMLqRPpLOmDACCj5MJafo.DMA/m/iyvbxDt0gs/Sq5AIkEgWWATRu",
     "role": "pharmacist",
     "mspId": "HospitalMSP",
-    "peer": "peer2"
+    "peer": "peer2",
+    "status": "active"
   },
   "medrecordofficer": {
     "password": "$2a$10$wfni3qmrBtiao9tT30k4OuatADYNM/g3dwOaAaKMsfMnkWHbm.rlG",
     "role": "medrecordofficer",
     "mspId": "HospitalMSP",
-    "peer": "peer2"
+    "peer": "peer2",
+    "status": "active"
   },
   "labreceptionist": {
     "password": "$2a$10$F5xKYd1KZWs86euUgB8NoueU3Lj6StWRcQ76ZyMv8FTFOpesgedNO",
     "role": "labreceptionist",
     "mspId": "DiagnosticsMSP",
-    "peer": "peer0.diagnostic"
+    "peer": "peer0.diagnostic",
+    "status": "active"
   },
   "labtechnician": {
     "password": "$2a$10$1RzgP4LIJDJEoxvsemyeouoT1/dm4EBinngbjHro2dX18TVAfrNE.",
     "role": "labtechnician",
     "mspId": "DiagnosticsMSP",
-    "peer": "peer0.diagnostic"
+    "peer": "peer0.diagnostic",
+    "status": "active"
   },
   "radiologist": {
     "password": "$2a$10$5eTRONy1MwQxXICcMGipTO5eXB8gEsh2vqNfSF9VhQ3KMJKkvVIvu",
     "role": "radiologist",
     "mspId": "DiagnosticsMSP",
-    "peer": "peer0.diagnostic"
+    "peer": "peer0.diagnostic",
+    "status": "active"
   },
   "labsupervisor": {
     "password": "$2a$10$lHsUv1lFm4pQTDmzYctX8OhUrv9BHU5eTpcqiBg5qJSSCocGcVHVe",
     "role": "labsupervisor",
     "mspId": "DiagnosticsMSP",
-    "peer": "peer0.diagnostic"
+    "peer": "peer0.diagnostic",
+    "status": "active"
   },
   "labadmin": {
     "password": "$2a$10$Fr2YmLn1n.cL1UikTc/tXOzbXoYSwLGCvHMtiAJqtOf9H/46Smj2i",
     "role": "labadmin",
     "mspId": "DiagnosticsMSP",
-    "peer": "peer0.diagnostic"
+    "peer": "peer0.diagnostic",
+    "status": "active"
   },
   "billingofficer": {
     "password": "$2a$10$9dXX/2FGzb7PGBAY9La7DuGc7dHHeZ8bVA/aA0JjZOyFZAkc.ZQEW",
     "role": "billingofficer",
     "mspId": "ProviderMSP",
-    "peer": "peer0.provider"
+    "peer": "peer0.provider",
+    "status": "active"
   },
   "claimsauditor": {
     "password": "$2a$10$WaTOZq63pD2bgWyjK5.aJehYP/iWPmmrUpxqynZrLJ6fmr7xRUFRG",
     "role": "claimsauditor",
     "mspId": "ProviderMSP",
-    "peer": "peer0.provider"
+    "peer": "peer0.provider",
+    "status": "active"
   },
   "insuranceofficer": {
     "password": "$2a$10$1bGFNAzqEimQVkBr1vipu.i7ZaW59h5UaPftdrc.sMpD1JD/s8pTa",
     "role": "insuranceofficer",
     "mspId": "ProviderMSP",
-    "peer": "peer0.provider"
+    "peer": "peer0.provider",
+    "status": "active"
   },
   "provideradmin": {
     "password": "$2a$10$4zzNDMUq6RgevUaT.lYPp.px2e.0Wd0jHRMme40r7zqgmAlWDdsJq",
     "role": "provideradmin",
     "mspId": "ProviderMSP",
-    "peer": "peer0.provider"
+    "peer": "peer0.provider",
+    "status": "active"
   },
   "dr_smith": {
     "password": "$2a$10$OtNZZEh.YA0RpK14.g2qa.G.yQncMl/5tHazMC0LlO.QyphwDRuc6",
     "role": "doctor",
     "mspId": "HospitalMSP",
-    "peer": "peer1"
+    "peer": "peer1",
+    "status": "active"
   },
   "doc-001": {
     "password": "$2a$10$xH/CRV3UxyGd6lP2DIZdXuvKWYTZzC4baR6J6AB78JdM19A3q7vWC",
     "role": "doctor",
     "mspId": "HospitalMSP",
-    "peer": "peer1"
+    "peer": "peer1",
+    "status": "active"
   },
   "doc-002": {
     "password": "$2a$10$5jCJMtVAe6wVV0YAM6O5mOZkTGOxMb.MBg5Qe5/cBuGRcbJdPK67O",
     "role": "doctor",
     "mspId": "HospitalMSP",
-    "peer": "peer1"
+    "peer": "peer1",
+    "status": "active"
   },
   "doc-003": {
     "password": "$2a$10$sqfJvs0CzJZ.wDJqVk7oUev7Rz2MY3A9RDsTuc0TEbXY4N/ngfJ7e",
     "role": "doctor",
     "mspId": "HospitalMSP",
-    "peer": "peer1"
+    "peer": "peer1",
+    "status": "active"
   },
   "dr_new": {
     "password": "$2a$10$mec.BW.69SPvXwEfodAD2u4Rb8ieJI8U5BaMVCGyD1MeJ/YQgUnsy",
     "role": "doctor",
     "mspId": "HospitalMSP",
-    "peer": "peer1"
+    "peer": "peer1",
+    "status": "active"
   },
   "DOC-004": {
     "password": "$2a$10$P4G6K3QWKBczqfHkXo71v.Ek5YrDr3izKpJkW6kfpV00PvwDB1mge",
     "role": "doctor",
     "mspId": "HospitalMSP",
-    "peer": "peer1"
+    "peer": "peer1",
+    "status": "active"
   },
   "D5": {
     "password": "$2a$10$SXOgGjKJbtSCh/hu.k/7eeLOUxYCoFZ0hqUF6WVyspTWSeH.p.dRm",
     "role": "doctor",
     "mspId": "HospitalMSP",
-    "peer": "peer1"
+    "peer": "peer1",
+    "status": "active"
   },
   "dr_arjun": {
     "password": "$2a$10$Fk5WsnYz2.FPKFdHf7oKBunOiKvciyNculX6mnT9btEqRLsD0qjZe",
     "role": "doctor",
     "mspId": "HospitalMSP",
-    "peer": "peer1"
+    "peer": "peer1",
+    "status": "active"
   }
 }
