@@ -55,4 +55,4 @@ cp "$DS_DIR/observatory-theme.css" "$ROOT_DIR/orgs/lab/EHR-LABORG-main/client/no
 cp "$DS_DIR/assets/favicon.svg" "$ROOT_DIR/orgs/lab/EHR-LABORG-main/client/node-gateway/public/favicon.svg"
 cp "$DS_DIR/assets/logo.svg" "$ROOT_DIR/orgs/lab/EHR-LABORG-main/client/node-gateway/public/logo.svg"
 
-echo "=== Vitalis Design System Sync Complete ==="
+echo "=== CareGrid NITW Design System Sync Complete ==="

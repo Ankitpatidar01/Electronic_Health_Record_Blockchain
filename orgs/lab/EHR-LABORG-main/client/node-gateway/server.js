@@ -21,6 +21,8 @@ const {
   approveWorkflowRun,
   getWorkflowState,
 } = require('./orchestrator/orchestrator');
+
+
 const {
   createLabResult,
   getAllLabResults,
@@ -44,11 +46,7 @@ const {
   readRawFromIpfs,
   sha256Hex,
 } = require('./ipfs');
-const {
-  runWorkflow,
-  approveWorkflowRun,
-  getWorkflowState,
-} = require('./orchestrator/orchestrator');
+
 const { createIntegrityChecker } = require('./integrity-check');
 const telemetry = require('./dashboard-telemetry');
 const { randomUUID } = require('crypto');
@@ -533,7 +531,6 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
       if (ai && (ai.ok === false || ai.warning)) {
         telemetry.emit('AI_FALLBACK_USED', { agentId: 'lab-agent', status: 'FALLBACK', model: aiModel, fallbackUsed: true },
           { correlationId: traceId, severity: 'WARNING' });
-      }
       }
 
       aiIpfs = await addJsonToIpfs(ai, {

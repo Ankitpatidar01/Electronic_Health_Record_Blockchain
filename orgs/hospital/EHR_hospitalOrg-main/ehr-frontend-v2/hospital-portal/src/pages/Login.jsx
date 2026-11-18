@@ -183,7 +183,7 @@ export default function LoginPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">Vitalis EHR</span>
+              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">CareGrid NITW</span>
               <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-700 dark:text-sky-300 border border-blue-500/30">
                 Hospital Gateway
               </span>

@@ -22,8 +22,8 @@ export function Layout({ user, onLogout }) {
     <header className="dashboard-topbar sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 px-4 py-3 backdrop-blur-xl md:px-8">
       <div className="dashboard-topbar-inner mx-auto flex max-w-[1600px] flex-wrap items-center gap-4">
         <div className="flex min-w-[220px] items-center gap-3">
-          <img src="/logo.svg" alt="Vitalis" className="h-8 w-8 object-contain" />
-          <div><div className="font-bold tracking-tight text-slate-900 dark:text-white">Vitalis <span className="text-teal-600 dark:text-teal-400">Observatory</span></div><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-slate-400">Zero-PHI Network Ledger</div></div>
+          <img src="/logo.svg" alt="CareGrid NITW" className="h-8 w-8 object-contain" />
+          <div><div className="font-bold tracking-tight text-slate-900 dark:text-white">CareGrid <span className="text-blue-600 dark:text-blue-400">Observatory</span></div><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-slate-400">NIT Warangal Health Center</div></div>
         </div>
         <nav className="dashboard-nav flex flex-1 items-center gap-1 overflow-x-auto" aria-label="Dashboard navigation">
           {navItems.filter(item => allowedViews(user?.role).includes(item.key)).map(item => <NavLink key={item.path} to={item.path} className={({ isActive }) => `dashboard-nav-link ${isActive ? 'is-active' : ''}`}><item.icon size={16}/><span>{item.label}</span></NavLink>)}

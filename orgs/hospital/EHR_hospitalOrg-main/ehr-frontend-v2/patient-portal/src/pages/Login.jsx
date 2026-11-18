@@ -67,13 +67,13 @@ export default function LoginPage() {
         {/* Branding Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 p-2 shadow-xl mb-3 border border-slate-200/80 dark:border-slate-800">
-            <img src="/logo.svg" alt="Vitalis" className="w-10 h-10 object-contain" />
+            <img src="/logo.svg" alt="CareGrid NITW" className="w-10 h-10 object-contain" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Vitalis
+            CareGrid NITW
           </h1>
           <p className="text-xs uppercase tracking-wider font-semibold text-blue-600 dark:text-sky-400 mt-1">
-            Patient EHR &amp; Consent Deck
+            NIT Warangal Health Center · Patient Deck
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Secure Care, Verified on Chain

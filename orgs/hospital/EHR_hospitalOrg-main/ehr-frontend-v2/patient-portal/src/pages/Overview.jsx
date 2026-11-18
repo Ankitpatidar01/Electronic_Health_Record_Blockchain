@@ -73,7 +73,7 @@ export default function OverviewPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs uppercase font-bold tracking-wider text-blue-600 dark:text-sky-400 bg-blue-50 dark:bg-sky-950/50 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-sky-800">
-                Vitalis Health Identity
+                CareGrid Health Identity
               </span>
               <DataSourceTag source="live" />
             </div>

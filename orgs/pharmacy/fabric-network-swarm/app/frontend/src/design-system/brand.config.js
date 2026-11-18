@@ -1,40 +1,40 @@
 /**
- * Vitalis Design System — Brand Configuration
+ * CareGrid NITW Design System — Brand Configuration
  * Single source of truth for branding, typography, and portal sub-labels.
  */
 export const BRAND = {
-  name: 'Vitalis',
-  tagline: 'Secure Care, Verified on Chain.',
-  fullName: 'Vitalis Health Network',
-  description: 'Enterprise Electronic Health Record System built on Hyperledger Fabric and Decentralized IPFS.',
+  name: 'CareGrid NITW',
+  tagline: 'Smart care, absolute privacy—your health records, decentralized and immutable.',
+  fullName: 'CareGrid NITW · NIT Warangal Health Center',
+  description: 'Empowering the NIT Warangal Health Center with next-gen Hyperledger Fabric security and AI-driven clinical intelligence.',
   portals: {
     hub: {
-      title: 'Vitalis Workspace',
-      subtitle: 'Single secure starting point for the clinical ecosystem',
-      accent: '#0E9AA7',
+      title: 'CareGrid NITW Hub',
+      subtitle: 'NIT Warangal Health Center Launchpad',
+      accent: '#2563EB',
     },
     hospital: {
-      title: 'Vitalis Clinical',
+      title: 'CareGrid NITW Clinical',
       subtitle: 'Hospital Operations, Encounters & Medical Governance',
-      accent: '#1E4DFF',
+      accent: '#2563EB',
     },
     patient: {
-      title: 'Vitalis Patient',
+      title: 'CareGrid NITW Patient',
       subtitle: 'Patient Health Portal & Consent Vault',
-      accent: '#0E9AA7',
+      accent: '#0284C7',
     },
     dashboard: {
-      title: 'Vitalis Observatory',
+      title: 'CareGrid NITW Observatory',
       subtitle: 'Real-Time Blockchain Observability & Agent Telemetry',
-      accent: '#5B8CFF',
+      accent: '#2563EB',
     },
     pharmacy: {
-      title: 'Vitalis Pharmacy',
+      title: 'CareGrid NITW Pharmacy',
       subtitle: 'Decentralized Medication Ledgers & Dispensing',
       accent: '#10B981',
     },
     lab: {
-      title: 'Vitalis Lab',
+      title: 'CareGrid NITW Lab',
       subtitle: 'Diagnostic Control Deck & Pathological Telemetry',
       accent: '#8B5CF6',
     },

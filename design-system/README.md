@@ -1,6 +1,6 @@
-# Vitalis Design System
+# CareGrid NITW Design System
 
-> **Brand:** Vitalis  
+> **Brand:** CareGrid NITW  
 > **Tagline:** *Secure Care, Verified on Chain.*  
 > **Aesthetic Foundation:** Blend of Reference 1 (Pastel Tiles), Reference 2 (Hospital UI with clean blue palette & pill buttons), and Reference 3 (Doctor Dashboard with teal-to-navy gradient and rounded profile cards).
 
@@ -31,12 +31,12 @@ design-system/
 
 ## 2. Portals & Sub-labels
 
-- **Vitalis Workspace** (`nginx/hub/` on `:80`): Main launchpad and reachability dashboard.
-- **Vitalis Clinical** (`hospital-portal` on `:5173`): Staff portal with Doctor, Nurse, Receptionist, Pharmacist, and Admin roles.
-- **Vitalis Patient** (`patient-portal` on `:5174`): Patient self-service health records and consent vault.
-- **Vitalis Observatory** (`dashboard-portal` on `:5176`): Real-time Hyperledger Fabric metrics, agent telemetry, and block stream (Zero-PHI compliant).
-- **Vitalis Pharmacy** (`orgs/pharmacy/...` on `:5175`, `:3001`–`:3005`): Medication inventory, billing, POS dispensing, and patient status.
-- **Vitalis Lab** (`orgs/lab/...` on `:8080` / `:3006`): Diagnostic control deck and result reporting.
+- **CareGrid NITW Workspace** (`nginx/hub/` on `:80`): Main launchpad and reachability dashboard.
+- **CareGrid NITW Clinical** (`hospital-portal` on `:5173`): Staff portal with Doctor, Nurse, Receptionist, Pharmacist, and Admin roles.
+- **CareGrid NITW Patient** (`patient-portal` on `:5174`): Patient self-service health records and consent vault.
+- **CareGrid NITW Observatory** (`dashboard-portal` on `:5176`): Real-time Hyperledger Fabric metrics, agent telemetry, and block stream (Zero-PHI compliant).
+- **CareGrid NITW Pharmacy** (`orgs/pharmacy/...` on `:5175`, `:3001`–`:3005`): Medication inventory, billing, POS dispensing, and patient status.
+- **CareGrid NITW Lab** (`orgs/lab/...` on `:8080` / `:3006`): Diagnostic control deck and result reporting.
 
 ---
 
