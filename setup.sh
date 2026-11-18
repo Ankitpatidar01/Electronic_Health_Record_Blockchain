@@ -73,14 +73,26 @@ MODULES=(
   "orgs/pharmacy/fabric-network-swarm/app/frontend"
 )
 
+# These host-side installs are only needed for running unit tests and for the
+# chaincode package. Containers install their own packages on first start, so a
+# failure here is reported but does not stop setup.
+FAILED_MODULES=()
 for mod in "${MODULES[@]}"; do
   target="${ROOT_DIR}/${mod}"
   if [ -d "$target" ]; then
     echo "  [*] Installing dependencies in $mod..."
-    (cd "$target" && npm install --silent)
-    echo "  ✓ $mod ready"
+    if (cd "$target" && npm install --no-audit --no-fund --loglevel=error); then
+      echo "  ✓ $mod ready"
+    else
+      echo "  ✖ npm install failed in $mod (see the error above)"
+      FAILED_MODULES+=("$mod")
+    fi
   fi
 done
+if [ "${#FAILED_MODULES[@]}" -gt 0 ]; then
+  echo "  [!] ${#FAILED_MODULES[@]} module(s) failed to install on the host: ${FAILED_MODULES[*]}"
+  echo "      The Docker stack can still start; host unit tests for those modules will not run."
+fi
 
 # 5. Initialize environment configs if missing
 echo "[5/5] Checking configuration files..."

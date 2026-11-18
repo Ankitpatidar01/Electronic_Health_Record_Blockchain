@@ -64,15 +64,52 @@ docker network inspect ehr_network >/dev/null 2>&1 || docker network create ehr_
 PEER_MSP="${ORGS_DIR}/peerOrganizations/hospital.example.com/peers/peer0.hospital.example.com/msp"
 ORDERER_MSP="${ORGS_DIR}/ordererOrganizations/example.com/orderers/orderer.example.com/msp"
 
+# Prints "yes" when peer0.hospital has joined ehrchannel, "no" when it answers
+# but has not, and fails when the peer never answers.
+peer_on_channel() {
+  local out attempt
+  for attempt in $(seq 1 20); do
+    if out="$(FABRIC_CFG_PATH="${FABRIC_DIR}/configtx" CORE_PEER_TLS_ENABLED=true \
+        CORE_PEER_LOCALMSPID=HospitalMSP CORE_PEER_ADDRESS=localhost:7051 \
+        CORE_PEER_TLS_ROOTCERT_FILE="${ORGS_DIR}/peerOrganizations/hospital.example.com/peers/peer0.hospital.example.com/tls/ca.crt" \
+        CORE_PEER_MSPCONFIGPATH="${ORGS_DIR}/peerOrganizations/hospital.example.com/users/hospitaladmin/msp" \
+        peer channel list 2>&1)"; then
+      if echo "${out}" | grep -qx "ehrchannel"; then echo yes; else echo no; fi
+      return 0
+    fi
+    sleep 3
+  done
+  echo "${out}" >&2
+  return 1
+}
+
+build_network() {
+  ( cd "${FABRIC_DIR}" && bash scripts/network-up.sh )
+}
+
 if [[ -d "${PEER_MSP}" && -d "${ORDERER_MSP}" ]]; then
   step "1/5" "Starting the existing Fabric network (data preserved)"
   docker compose -f "${CA_COMPOSE}" up -d
   docker compose -f "${FABRIC_COMPOSE}" up -d
   ok "CAs, orderer, 5 peers and IPFS node started"
+
+  JOINED="$(peer_on_channel)" || die "peer0.hospital is not answering. Check: docker logs docker-peer0.hospital.example.com-1 --tail 50"
+  if [[ "${JOINED}" == "no" ]]; then
+    # Identity files exist but this machine has no ledger for them (for example
+    # the folder was copied from another computer, or Docker volumes were removed).
+    # There is no channel data to preserve, so rebuild the network cleanly.
+    echo -e "  ${YELLOW}Peers are running but ehrchannel does not exist on this machine.${RESET}"
+    echo -e "  ${YELLOW}Rebuilding the Fabric network from scratch (old identity files are replaced).${RESET}"
+    ( cd "${FABRIC_DIR}" && bash scripts/network-down.sh )
+    rm -rf "${FABRIC_DIR}/.generated"
+    docker network inspect ehr_network >/dev/null 2>&1 || docker network create ehr_network >/dev/null
+    build_network
+    ok "Fabric network rebuilt"
+  fi
 else
   step "1/5" "No Fabric identities found — creating the network from scratch"
   note "This enrols every identity, starts peers/orderer, creates ehrchannel and sets anchor peers."
-  ( cd "${FABRIC_DIR}" && bash scripts/network-up.sh )
+  build_network
   ok "Fabric network created"
 fi
 
