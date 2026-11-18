@@ -168,9 +168,9 @@ export default function App() {
 
       {/* Header */}
       <header className="patient-header">
-        <a className="brand" href="#home" aria-label="Vitalis Pharmacy patient home" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/logo.svg" alt="Vitalis" style={{ width: 32, height: 32, objectFit: 'contain' }} />
-          <span>Vitalis<small>PHARMACY PATIENT PORTAL</small></span>
+        <a className="brand" href="#home" aria-label="CareGrid NITW Pharmacy patient home" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <img src="/logo.svg" alt="CareGrid NITW" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+          <span>CareGrid<small>PHARMACY PATIENT PORTAL</small></span>
         </a>
 
         <div className="header-actions">
@@ -687,7 +687,7 @@ export default function App() {
         </section>
 
         <footer>
-          Vitalis Pharmacy Suite · Backed by Hyperledger Fabric &amp; IPFS · Verifiable Dispensing &amp; Inventory Ledger
+          CareGrid NITW Pharmacy Suite · Backed by Hyperledger Fabric &amp; IPFS · Verifiable Dispensing &amp; Inventory Ledger
         </footer>
       </main>
     </div>

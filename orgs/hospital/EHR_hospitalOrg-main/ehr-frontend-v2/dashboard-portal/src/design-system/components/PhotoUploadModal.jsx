@@ -80,7 +80,7 @@ export default function PhotoUploadModal({
           {preview ? (
             <img src={preview} alt="Preview" className="w-24 h-24 rounded-2xl object-cover shadow-md mb-2" />
           ) : (
-            <div className="w-20 h-20 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-2">
+            <div className="w-20 h-20 rounded-2xl bg-blue-50 dark:bg-sky-950/60 text-blue-600 dark:text-sky-400 flex items-center justify-center mb-2">
               <ImageIcon size={32} />
             </div>
           )}

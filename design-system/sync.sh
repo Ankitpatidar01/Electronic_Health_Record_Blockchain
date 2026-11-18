@@ -11,6 +11,7 @@ echo "=== Syncing the shared design system across all apps ==="
 REACT_APPS=(
   "orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/hospital-portal"
   "orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/patient-portal"
+  "orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/dashboard-portal"
   "orgs/pharmacy/fabric-network-swarm/app/patient"
   "orgs/pharmacy/fabric-network-swarm/app/frontend"
   "orgs/pharmacy/fabric-network-swarm/app/billing"

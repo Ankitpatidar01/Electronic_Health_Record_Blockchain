@@ -1,4 +1,4 @@
-// Vitalis Lab Deck - Diagnostic Workstation Client
+// CareGrid NITW Lab Deck - Diagnostic Workstation Client
 'use strict';
 
 // DOM References

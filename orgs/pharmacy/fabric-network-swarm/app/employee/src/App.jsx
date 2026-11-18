@@ -114,8 +114,8 @@ export default function App() {
     <div className="app">
       <nav className="nav">
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src="/logo.svg" alt="Vitalis" style={{ width: 26, height: 26, objectFit: 'contain' }} />
-          <span>Vitalis <span style={{ fontWeight: 300, color: 'var(--obs-accent)' }}>Pharmacist Station</span></span>
+          <img src="/logo.svg" alt="CareGrid NITW" style={{ width: 26, height: 26, objectFit: 'contain' }} />
+          <span>CareGrid <span style={{ fontWeight: 300, color: 'var(--obs-accent)' }}>Pharmacist Station</span></span>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           {loggedIn && (

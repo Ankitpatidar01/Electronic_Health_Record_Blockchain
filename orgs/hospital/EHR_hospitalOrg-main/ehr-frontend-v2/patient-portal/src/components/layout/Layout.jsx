@@ -41,33 +41,19 @@ export default function Layout({ children }) {
 
   return (
     <div className="dashboard-shell min-h-screen">
-      <header className="dashboard-topbar sticky top-0 z-30 border-b px-4 py-3 md:px-8">
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-4">
-          <div className="flex min-w-[200px] items-center gap-3">
-            <img src="/logo.svg" alt="" className="h-8 w-8 object-contain" />
+      <header className="dashboard-topbar sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl px-4 py-3 md:px-8">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <img src="/logo.svg" alt="CareGrid NITW" className="h-8 w-8 object-contain" />
             <div>
               <div className="font-bold tracking-tight text-slate-900 dark:text-white">
-                Vitalis <span className="text-blue-600 dark:text-sky-400">Patient</span>
+                CareGrid <span className="text-blue-600 dark:text-sky-400">Patient</span>
               </div>
-              <div className="text-[10px] font-semibold uppercase tracking-[.18em] text-slate-400">Personal Health Vault</div>
+              <div className="text-[10px] font-semibold uppercase tracking-[.18em] text-slate-400">NIT Warangal Health Center · Personal Health Vault</div>
             </div>
           </div>
 
-          <nav className="hidden lg:flex flex-1 items-center gap-1 overflow-x-auto" aria-label="Patient navigation">
-            {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
-              <Link
-                key={to}
-                to={to}
-                aria-current={isActive(to) ? 'page' : undefined}
-                className={`dashboard-nav-link ${isActive(to) ? 'is-active' : ''}`}
-              >
-                <Icon size={16} />
-                <span>{label}</span>
-              </Link>
-            ))}
-          </nav>
-
-          <div className="ml-auto flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <span className={`status-pill ${HEALTH_PILL[health].tone} hidden md:inline-flex`} role="status">
               <span className="status-pill-dot" />
               {HEALTH_PILL[health].label}
@@ -84,6 +70,27 @@ export default function Layout({ children }) {
           </div>
         </div>
       </header>
+
+      {/* Clean Sub-navbar below topbar — no scrollbars, clean pill navigation */}
+      <nav className="hidden lg:block sticky top-[57px] z-20 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 py-2.5 md:px-8" aria-label="Patient navigation sub-navbar">
+        <div className="mx-auto flex max-w-[1600px] items-center gap-2 overflow-x-auto no-scrollbar">
+          {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
+            <Link
+              key={to}
+              to={to}
+              aria-current={isActive(to) ? 'page' : undefined}
+              className={`dashboard-nav-link whitespace-nowrap !px-3.5 !py-1.5 !text-xs !font-semibold rounded-full transition-all ${
+                isActive(to)
+                  ? '!bg-blue-600 !text-white shadow-xs shadow-blue-500/20 dark:!bg-blue-600 dark:!text-white'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+              }`}
+            >
+              <Icon size={15} />
+              <span>{label}</span>
+            </Link>
+          ))}
+        </div>
+      </nav>
 
       <main className="mx-auto w-full max-w-[1600px] p-4 pb-28 md:p-8 lg:pb-8">
         {children}
