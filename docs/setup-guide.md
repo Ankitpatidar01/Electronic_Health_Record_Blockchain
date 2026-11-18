@@ -120,11 +120,11 @@ Open `http://localhost:5173` in a browser. Log in as `receptionist` to register 
 
 ### 7. Verify the FHIR anchor end-to-end
 
-Default login (all roles share one password in the current `shared/users.json`):
+Default demo logins (see `SETUP_AND_RUN.md` for the full table):
 
 | role | username | password |
 |---|---|---|
-| receptionist | `receptionist` | `password123` |
+| receptionist | `receptionist` | `recpw` |
 
 1. Login and register a patient — the response now carries a `fhirAnchor`.
    Use a **fresh `patientId` each run** (a duplicate id fails with "already exists" and returns no `fhirAnchor`):
@@ -132,7 +132,7 @@ Default login (all roles share one password in the current `shared/users.json`):
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:4001/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"username":"receptionist","password":"password123"}' | jq -r '.data.token')
+  -d '{"username":"receptionist","password":"recpw"}' | jq -r '.data.token')
 
 curl -s -X POST http://localhost:4001/patients \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \

@@ -99,7 +99,7 @@ Login and register a fresh patient (note the `fhirAnchor` in the response):
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:4001/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"username":"receptionist","password":"password123"}' | jq -r '.data.token')
+  -d '{"username":"receptionist","password":"recpw"}' | jq -r '.data.token')
 
 curl -s -X POST http://localhost:4001/patients \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \

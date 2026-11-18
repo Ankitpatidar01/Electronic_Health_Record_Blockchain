@@ -362,7 +362,7 @@ Use these three core shell scripts to setup, run, and terminate the entire EHR B
 The FHIR interoperability layer is wired into the chaincode (`FhirContract`) and the
 backend write paths. After the stack is up (`./start.sh`), verify it end-to-end:
 
-1. Open the hospital portal at `http://localhost:5173` and log in as `receptionist` / `password123`.
+1. Open the hospital portal at `http://localhost:5173` and log in as `receptionist` / `recpw`.
 2. Register a patient — the `POST /patients` response now carries a **`fhirAnchor`** (a
    zero-PHI `resourceType` + `patientRecordHash` + IPFS `dataCID`).
 3. The FHIR resource is pinned to IPFS; only its digest + CID go on-chain, under
@@ -372,7 +372,7 @@ backend write paths. After the stack is up (`./start.sh`), verify it end-to-end:
 # login + register a patient, then inspect the FHIR anchor
 TOKEN=$(curl -s -X POST http://localhost:4001/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"username":"receptionist","password":"password123"}' | jq -r '.data.token')
+  -d '{"username":"receptionist","password":"recpw"}' | jq -r '.data.token')
 
 curl -s -X POST http://localhost:4001/patients \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
