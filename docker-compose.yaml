@@ -68,6 +68,7 @@ services:
       - h-peer0-api-modules:/app/node_modules
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+      - ./fhir:/fhir:ro
     environment:
       <<: *hospital-api-env
       PORT: 4001
@@ -90,6 +91,7 @@ services:
       - h-peer1-api-modules:/app/node_modules
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+      - ./fhir:/fhir:ro
     environment:
       <<: *hospital-api-env
       PORT: 4002
@@ -112,6 +114,7 @@ services:
       - h-peer2-api-modules:/app/node_modules
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+      - ./fhir:/fhir:ro
     environment:
       <<: *hospital-api-env
       PORT: 4003
@@ -134,6 +137,7 @@ services:
       - h-extorg-api-modules:/app/node_modules
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+      - ./fhir:/fhir:ro
     environment:
       <<: *hospital-api-env
       PORT: 4004
@@ -157,6 +161,7 @@ services:
       - h-patient-api-modules:/app/node_modules
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
+      - ./fhir:/fhir:ro
     environment:
       <<: *hospital-api-env
       PORT: 4005
