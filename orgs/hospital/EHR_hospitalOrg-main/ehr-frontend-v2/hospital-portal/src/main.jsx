@@ -90,7 +90,7 @@ function AppRoutes() {
 
       {/* Pharmacist */}
       <Route path="/dispense" element={
-        <ProtectedRoute allowedRoles={['pharmacist']}>
+        <ProtectedRoute allowedRoles={['pharmacist', 'admin']}>
           <Layout><PharmacistPage /></Layout>
         </ProtectedRoute>
       } />

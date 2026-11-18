@@ -18,7 +18,7 @@
     "role": "doctor",
     "mspId": "HospitalMSP",
     "peer": "peer1",
-    "status": "revoked"
+    "status": "active"
   },
   "nurse": {
     "password": "$2a$10$M1haSuLRTzVWNzTpBOTjke8tygyqpGc7JtLMYCzPEYqCM0yIiBNMO",

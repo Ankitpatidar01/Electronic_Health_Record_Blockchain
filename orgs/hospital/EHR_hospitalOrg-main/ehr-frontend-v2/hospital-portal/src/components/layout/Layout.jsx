@@ -29,6 +29,7 @@ const ROLE_CONFIG = {
       { to: '/staff',      icon: Users,        label: 'Doctors & Staff' },
       { to: '/visits',     icon: Calendar,     label: 'Encounters' },
       { to: '/lab-queue',  icon: FlaskConical, label: 'Lab Orders' },
+      { to: '/dispense',   icon: Pill,         label: 'Pharmacy' },
       { to: '/register',   icon: Users,        label: 'Register Patient' },
       { to: '/open-visit', icon: Calendar,     label: 'Open Visit' },
       { to: '/discharge',  icon: LogOut,       label: 'Discharge' },

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { Card, Button, Alert, StatusBadge, Spinner, EmptyState, Modal, Badge } from '../components/ui'
-import { Pill, Search, CheckCircle, ChevronRight, ArrowLeft } from 'lucide-react'
+import { Pill, Search, CheckCircle, ChevronRight, ArrowLeft, ExternalLink } from 'lucide-react'
 
 // ── Pharmacist Page ───────────────────────────────────────────────────────────
 export function PharmacistPage() {
@@ -53,7 +53,18 @@ export function PharmacistPage() {
           <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Pharmacy</h1>
           <p className="text-sm text-slate-500 mt-0.5">Verify prescription and dispense medication</p>
         </div>
-        {!visit && <Button variant="secondary" onClick={loadAll} loading={listLoading}>Refresh</Button>}
+        <div className="flex items-center gap-2">
+          <a
+            href="http://localhost:5175/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition-colors shadow-sm"
+          >
+            <span>Unified Pharmacy Suite</span>
+            <ExternalLink size={13} />
+          </a>
+          {!visit && <Button variant="secondary" onClick={loadAll} loading={listLoading}>Refresh</Button>}
+        </div>
       </div>
 
       {!visit && (

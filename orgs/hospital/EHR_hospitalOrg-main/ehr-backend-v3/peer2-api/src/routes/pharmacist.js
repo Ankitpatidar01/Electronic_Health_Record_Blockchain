@@ -12,7 +12,7 @@ const asPharmacist = [authenticate, requireRole('pharmacist'), peerContext];
 
 // ── GET /pharmacist/visits — finalized visits ready to dispense
 const DISPENSE_STATUSES = ['VISIT_FINALIZED', 'RECORD_FINALIZED', 'CLAIM_SUBMITTED',
-  'CLAIM_UNDER_AUDIT', 'CLAIM_APPROVED', 'CLAIM_REJECTED'];
+  'CLAIM_UNDER_AUDIT', 'CLAIM_APPROVED', 'CLAIM_REJECTED', 'DISCHARGED'];
 router.get('/visits', ...asPharmacist, wrap(async (req, res) => {
   const result = await req.contract.evaluateTransaction('VisitContract:ListAllVisits');
   const all = parseResult(result) || [];

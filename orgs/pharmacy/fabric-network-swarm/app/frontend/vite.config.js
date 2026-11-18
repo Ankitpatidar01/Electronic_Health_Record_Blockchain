@@ -12,6 +12,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/api\/pharmacy/, ''),
       },
+      '/api/hospital/peer2': {
+        target: process.env.VITE_PEER2_API_TARGET || 'http://h-peer2-api:4003',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/hospital\/peer2/, ''),
+      },
     },
   },
 })
