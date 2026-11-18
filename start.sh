@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
-# Start the existing Fabric network and application services without resetting
-# crypto material, channel data, chaincode, or Docker volumes.
+# start.sh — bring the whole EHR system up.
+#
+# Safe to run on a fresh clone and on an existing installation:
+#   • no Fabric identities yet  → creates the network (CAs, enrolment, peers,
+#                                 orderer, channel, anchor peers)
+#   • identities already exist  → starts the existing network, keeps all data
+#   • chaincode missing/changed → deploys or upgrades `ehr` automatically
+#   • then starts every application service, the dashboard and nginx,
+#     and waits for each health endpoint.
+#
+# Usage:  ./start.sh [--build] [--no-dashboard] [--skip-chaincode]
+# Target: Ubuntu 22.04/24.04 (also runs under WSL2 with Docker Desktop).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,196 +18,163 @@ FABRIC_DIR="${ROOT_DIR}/orgs/hospital/EHR_hospitalOrg-main/ehr-network"
 FABRIC_COMPOSE="${FABRIC_DIR}/docker/docker-compose-network.yaml"
 CA_COMPOSE="${FABRIC_DIR}/docker/docker-compose-ca.yaml"
 APP_COMPOSE="${ROOT_DIR}/docker-compose.yaml"
+ORGS_DIR="${FABRIC_DIR}/organizations"
 export COMPOSE_IGNORE_ORPHANS=true
+export PATH="${ROOT_DIR}/bin:${PATH}"
 
-# ANSI styling
-BOLD="\033[1m"
-CYAN="\033[1;36m"
-GREEN="\033[1;32m"
-YELLOW="\033[1;33m"
-BLUE="\033[1;34m"
-MAGENTA="\033[1;35m"
-RED="\033[1;31m"
-GRAY="\033[0;90m"
-RESET="\033[0m"
+BOLD="\033[1m"; CYAN="\033[1;36m"; GREEN="\033[1;32m"; YELLOW="\033[1;33m"
+BLUE="\033[1;34m"; RED="\033[1;31m"; GRAY="\033[0;90m"; RESET="\033[0m"
 
-echo -e "${CYAN}══════════════════════════════════════════════════════════════════════════════${RESET}"
-echo -e "${BOLD}${CYAN}            EHR BLOCKCHAIN NETWORK & APPLICATION LAUNCHER                     ${RESET}"
-echo -e "${CYAN}══════════════════════════════════════════════════════════════════════════════${RESET}"
+step() { echo -e "\n${BOLD}${BLUE}[$1] $2${RESET}"; }
+ok()   { echo -e "  ${GREEN}✓ $1${RESET}"; }
+note() { echo -e "  ${GRAY}$1${RESET}"; }
+die()  { echo -e "${RED}✖ $1${RESET}" >&2; exit 1; }
 
-# Check for --build or -b flag
-BUILD_FLAG=""
+BUILD_FLAG=""; WITH_DASHBOARD=true; SKIP_CHAINCODE=false
 for arg in "$@"; do
-  if [[ "$arg" == "--build" || "$arg" == "-b" ]]; then
-    BUILD_FLAG="--build"
-  fi
+  case "$arg" in
+    --build|-b)       BUILD_FLAG="--build" ;;
+    --no-dashboard)   WITH_DASHBOARD=false ;;
+    --skip-chaincode) SKIP_CHAINCODE=true ;;
+    --help|-h)        sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) die "Unknown option: $arg (try --help)" ;;
+  esac
 done
 
-if [[ -n "$BUILD_FLAG" ]]; then
-  echo -e "  ${YELLOW}ℹ Build flag active: Rebuilding modified container images...${RESET}\n"
-else
-  echo -e "  ${GRAY}ℹ Fast startup active. (Pass --build to rebuild Docker images)${RESET}\n"
-fi
+echo -e "${CYAN}══════════════════════════════════════════════════════════════════${RESET}"
+echo -e "${BOLD}${CYAN}        EHR BLOCKCHAIN — NETWORK & APPLICATION LAUNCHER${RESET}"
+echo -e "${CYAN}══════════════════════════════════════════════════════════════════${RESET}"
 
-if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
-  echo -e "${RED}Docker Engine and the Docker Compose plugin are required.${RESET}" >&2
-  exit 1
-fi
-if ! docker info >/dev/null 2>&1; then
-  echo -e "${RED}Docker is not accessible. Start Docker and ensure your account can run 'docker ps'.${RESET}" >&2
-  exit 1
-fi
-if [[ ! -f "${FABRIC_COMPOSE}" || ! -f "${CA_COMPOSE}" || ! -f "${APP_COMPOSE}" ]]; then
-  echo -e "${RED}Required Fabric or application Compose file is missing.${RESET}" >&2
-  exit 1
-fi
-
-for identity_dir in \
-  "${FABRIC_DIR}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp" \
-  "${FABRIC_DIR}/organizations/peerOrganizations/hospital.example.com/peers/peer0.hospital.example.com/msp"; do
-  if [[ ! -d "${identity_dir}" ]]; then
-    echo -e "${RED}Existing Fabric identity material was not found at: ${identity_dir}${RESET}" >&2
-    echo "This startup script will not enroll identities or initialize a network." >&2
-    echo "Use the team's first-time Fabric setup procedure, then run ./start.sh again." >&2
-    exit 1
-  fi
+# ── Prerequisites ────────────────────────────────────────────────────────────
+for tool in docker node curl jq; do
+  command -v "$tool" >/dev/null 2>&1 || die "Missing prerequisite: $tool (run ./setup.sh for details)"
 done
-
-for ca_state in \
-  "${FABRIC_DIR}/organizations/ordererOrganizations/example.com/ca" \
-  "${FABRIC_DIR}/organizations/peerOrganizations/hospital.example.com/ca" \
-  "${FABRIC_DIR}/organizations/peerOrganizations/diagnostic.example.com/ca" \
-  "${FABRIC_DIR}/organizations/peerOrganizations/provider.example.com/ca"; do
-  if [[ ! -s "${ca_state}/ca-cert.pem" || ! -s "${ca_state}/fabric-ca-server.db" ]]; then
-    echo -e "${RED}Existing Fabric CA state was not found at: ${ca_state}${RESET}" >&2
-    echo "This startup script will not initialize or replace a certificate authority." >&2
-    exit 1
-  fi
+docker compose version >/dev/null 2>&1 || die "The Docker Compose plugin is required."
+docker info >/dev/null 2>&1 || die "Docker is not accessible. Start Docker and make sure your user can run 'docker ps'."
+for f in "${FABRIC_COMPOSE}" "${CA_COMPOSE}" "${APP_COMPOSE}"; do
+  [[ -f "$f" ]] || die "Missing compose file: $f"
 done
 
 # Root .env carries the shared secrets docker-compose.yaml requires.
-if ! node "${ROOT_DIR}/scripts/init-env.js"; then
-  echo -e "${RED}Could not prepare ${ROOT_DIR}/.env (is Node.js installed?).${RESET}" >&2
-  exit 1
+node "${ROOT_DIR}/scripts/init-env.js" || die "Could not prepare ${ROOT_DIR}/.env"
+
+docker network inspect ehr_network >/dev/null 2>&1 || docker network create ehr_network >/dev/null
+
+# ── 1. Fabric network ────────────────────────────────────────────────────────
+PEER_MSP="${ORGS_DIR}/peerOrganizations/hospital.example.com/peers/peer0.hospital.example.com/msp"
+ORDERER_MSP="${ORGS_DIR}/ordererOrganizations/example.com/orderers/orderer.example.com/msp"
+
+if [[ -d "${PEER_MSP}" && -d "${ORDERER_MSP}" ]]; then
+  step "1/5" "Starting the existing Fabric network (data preserved)"
+  docker compose -f "${CA_COMPOSE}" up -d
+  docker compose -f "${FABRIC_COMPOSE}" up -d
+  ok "CAs, orderer, 5 peers and IPFS node started"
+else
+  step "1/5" "No Fabric identities found — creating the network from scratch"
+  note "This enrols every identity, starts peers/orderer, creates ehrchannel and sets anchor peers."
+  ( cd "${FABRIC_DIR}" && bash scripts/network-up.sh )
+  ok "Fabric network created"
 fi
 
-if ! docker network inspect ehr_network >/dev/null 2>&1; then
-  echo -e "  ${YELLOW}Creating the shared Docker network ehr_network...${RESET}"
-  docker network create ehr_network >/dev/null
+# ── 2. Chaincode ─────────────────────────────────────────────────────────────
+if [[ "${SKIP_CHAINCODE}" == true ]]; then
+  step "2/5" "Chaincode check skipped (--skip-chaincode)"
+else
+  step "2/5" "Checking the ehr chaincode on ehrchannel"
+  bash "${FABRIC_DIR}/scripts/ensure-chaincode.sh"
+  ok "Chaincode is current"
 fi
 
-echo -e "${BOLD}${BLUE}[1/6] 🔐 Starting Fabric certificate authorities...${RESET}"
-docker compose -f "${CA_COMPOSE}" up -d
-echo -e "  ${GREEN}✓ Fabric CAs online (Orderer, Hospital, Diagnostic, Provider)${RESET}"
-
-echo -e "\n${BOLD}${BLUE}[2/6] ⛓️  Starting Fabric peers and orderer (ehrchannel)...${RESET}"
-docker compose -f "${FABRIC_COMPOSE}" up -d
-echo -e "  ${GREEN}✓ Fabric ledger nodes online on ehrchannel${RESET}"
-
-echo -e "\n${BOLD}${BLUE}[3/6] 🏥 Starting hospital, patient, lab, and IPFS services...${RESET}"
+# ── 3. Application services ──────────────────────────────────────────────────
+step "3/5" "Starting backends, AI agent, lab, pharmacy and portals"
 docker compose -f "${APP_COMPOSE}" up -d ${BUILD_FLAG} \
   h-ipfs-service h-peer0-api h-peer1-api h-peer2-api h-extorg-api h-patient-api \
-  h-digilocker-service clinical-ai-agent \
-  h-hospital-portal h-patient-portal l-node-gateway
-echo -e "  ${GREEN}✓ Core hospital backends, IPFS, and web portals initialized${RESET}"
+  h-digilocker-service clinical-ai-agent l-node-gateway p-backend \
+  h-hospital-portal h-patient-portal p-frontend
+ok "Application containers started"
 
-if [[ -f "${ROOT_DIR}/orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/.env" ]]; then
-  echo -e "\n${BOLD}${BLUE}[4/6] 📊 Starting the realtime blockchain dashboard...${RESET}"
-  if ! docker compose -f "${APP_COMPOSE}" --profile dashboard up -d ${BUILD_FLAG} h-dashboard-api h-dashboard-portal 2>/dev/null; then
-    docker rm -f ehr_blockchain-h-dashboard-api-1 ehr_blockchain-h-dashboard-portal-1 >/dev/null 2>&1 || true
-    docker compose -f "${APP_COMPOSE}" --profile dashboard up -d ${BUILD_FLAG} h-dashboard-api h-dashboard-portal
-  fi
-  echo -e "  ${GREEN}✓ Dashboard API & Realtime Portal active${RESET}"
+# ── 4. Dashboard ─────────────────────────────────────────────────────────────
+if [[ "${WITH_DASHBOARD}" == true ]]; then
+  step "4/5" "Starting the realtime dashboard"
+  docker compose -f "${APP_COMPOSE}" --profile dashboard up -d ${BUILD_FLAG} h-dashboard-api h-dashboard-portal
+  ok "Dashboard API and portal started"
 else
-  echo -e "\n${BOLD}${BLUE}[4/6] 📊 Realtime dashboard skipped (configure dashboard-api/.env to enable)${RESET}"
+  step "4/5" "Dashboard skipped (--no-dashboard)"
 fi
 
-echo -e "\n${BOLD}${BLUE}[5/6] 💊 Starting the six pharmacy services and portals...${RESET}"
-docker compose -f "${APP_COMPOSE}" up -d ${BUILD_FLAG} \
-  p-backend p-manager p-employee p-inventory p-billing p-frontend p-patient
-echo -e "  ${GREEN}✓ Pharmacy backend API and portals started${RESET}"
-
-echo -e "\n${BOLD}${BLUE}[6/6] 🌐 Refreshing Nginx Gateway and verifying mesh health...${RESET}"
+# ── 5. Gateway + health ──────────────────────────────────────────────────────
+step "5/5" "Starting nginx and waiting for services to become healthy"
 docker compose -f "${APP_COMPOSE}" up -d nginx
-docker compose -f "${APP_COMPOSE}" restart nginx >/dev/null 2>&1
-echo -e "  ${GREEN}✓ Nginx gateway routed to all active services${RESET}\n"
+docker compose -f "${APP_COMPOSE}" restart nginx >/dev/null 2>&1 || true
 
-declare -A DESCRIPTIONS=(
-  ["nginx"]="Reverse Proxy & Entry Hub"
-  ["h-hospital-portal"]="Hospital Web Portal"
-  ["h-patient-portal"]="Patient Web Portal"
-  ["h-dashboard-portal"]="Realtime Dashboard Portal"
-  ["h-peer0-api"]="Reception / Admin API"
-  ["h-peer1-api"]="Doctor API"
-  ["h-peer2-api"]="Nurse / Pharmacy API"
-  ["h-extorg-api"]="Lab / Claims API"
-  ["h-patient-api"]="Patient Records API"
-  ["h-digilocker-service"]="DigiLocker Vault Service"
-  ["h-ipfs-service"]="IPFS Storage Service"
-  ["h-dashboard-api"]="Dashboard Realtime API"
-  ["l-node-gateway"]="Lab Node Gateway"
-  ["p-frontend"]="Pharmacy Main Portal"
-  ["p-manager"]="Pharmacy Manager Portal"
-  ["p-employee"]="Pharmacy Employee Portal"
-  ["p-inventory"]="Pharmacy Inventory Portal"
-  ["p-patient"]="Pharmacy Patient Portal"
-  ["p-billing"]="Pharmacy Billing Portal"
-  ["p-backend"]="Pharmacy Backend API"
+# name|url — first start installs npm packages inside each container, which can
+# take several minutes on a slow machine or under WSL2.
+CHECKS=(
+  "IPFS service|http://localhost:4006/health"
+  "Reception/Admin API|http://localhost:4001/health"
+  "Doctor API|http://localhost:4002/health"
+  "Nurse/Pharmacist API|http://localhost:4003/health"
+  "Lab/Claims API|http://localhost:4004/health"
+  "Patient API|http://localhost:4005/health"
+  "DigiLocker service|http://localhost:4007/health"
+  "Clinical AI agent|http://localhost:8000/health"
+  "Lab gateway|http://localhost:3006/api/health"
+  "Pharmacy backend|http://localhost:3000/health"
+  "Hospital portal|http://localhost:5173/"
+  "Patient portal|http://localhost:5174/"
+  "Pharmacy suite|http://localhost:5175/"
+  "Hub (nginx)|http://localhost/"
 )
+if [[ "${WITH_DASHBOARD}" == true ]]; then
+  CHECKS+=("Dashboard API|http://localhost:4010/health" "Dashboard portal|http://localhost:5176/dashboard/")
+fi
 
-printf "  ${BOLD}%-24s %-10s %-8s %s${RESET}\n" "SERVICE" "STATUS" "PORT" "DESCRIPTION"
-printf "  ${GRAY}%-24s %-10s %-8s %s${RESET}\n" "────────────────────────" "──────────" "────────" "──────────────────────────────"
+WAIT_SECONDS="${EHR_START_TIMEOUT:-600}"
+deadline=$(( $(date +%s) + WAIT_SECONDS ))
+declare -A UP=()
+while :; do
+  pending=0
+  for entry in "${CHECKS[@]}"; do
+    name="${entry%%|*}"; url="${entry#*|}"
+    [[ -n "${UP[$name]:-}" ]] && continue
+    if curl -fsS -m 4 -o /dev/null "$url" 2>/dev/null; then
+      UP[$name]=1; ok "${name}"
+    else
+      pending=$((pending + 1))
+    fi
+  done
+  (( pending == 0 )) && break
+  (( $(date +%s) >= deadline )) && break
+  sleep 5
+done
 
-while IFS="|" read -r svc status ports; do
-  [[ -z "$svc" ]] && continue
-  port_str="-"
-  if [[ "$ports" =~ :([0-9]+)-\> ]]; then
-    port_str=":${BASH_REMATCH[1]}"
+FAILED=0
+for entry in "${CHECKS[@]}"; do
+  name="${entry%%|*}"; url="${entry#*|}"
+  if [[ -z "${UP[$name]:-}" ]]; then
+    echo -e "  ${RED}✖ ${name} did not answer at ${url}${RESET}"
+    FAILED=$((FAILED + 1))
   fi
-  desc="${DESCRIPTIONS[$svc]:-Microservice}"
-  if [[ "$status" =~ ^Up ]]; then
-    status_fmt="${GREEN}✔ UP${RESET}"
-  else
-    status_fmt="${RED}✖ DOWN${RESET}"
-  fi
-  printf "  %-24s %-19b %-8s %s\n" "$svc" "$status_fmt" "$port_str" "$desc"
-done < <(docker compose -f "${APP_COMPOSE}" --profile dashboard ps --format "{{.Service}}|{{.Status}}|{{.Ports}}")
+done
 
-echo -e "\n${CYAN}══════════════════════════════════════════════════════════════════════════════${RESET}"
-echo -e "${BOLD}${CYAN}                     EHR SYSTEM IS LIVE AND ACCESSIBLE                        ${RESET}"
-echo -e "${CYAN}══════════════════════════════════════════════════════════════════════════════${RESET}"
-echo -e ""
-echo -e "  ${BOLD}${MAGENTA}🌐 Web Applications & Portals (Open in Browser):${RESET}"
-echo -e "     • System Dashboard      : ${BOLD}${GREEN}http://localhost/dashboard/${RESET} ${GRAY}(direct port :5176)${RESET}"
-echo -e "     • Unified Entry Hub     : ${BOLD}${GREEN}http://localhost/${RESET}"
-echo -e "     • Hospital Web Portal   : ${BOLD}${GREEN}http://localhost:5173/${RESET}"
-echo -e "     • Patient Web Portal    : ${BOLD}${GREEN}http://localhost:5174/${RESET}"
-echo -e "     • Pharmacy Main Portal  : ${BOLD}${GREEN}http://localhost:5175/${RESET}"
-echo -e "     • Pharmacy Sub-Portals  : ${GRAY}Manager:   http://localhost:3001/${RESET}"
-echo -e "                               ${GRAY}Employee:  http://localhost:3002/${RESET}"
-echo -e "                               ${GRAY}Inventory: http://localhost:3003/${RESET}"
-echo -e "                               ${GRAY}Patient:   http://localhost:3004/${RESET}"
-echo -e "                               ${GRAY}Billing:   http://localhost:3005/${RESET}"
-echo -e "     • Lab Service & Portal  : ${BOLD}${GREEN}http://localhost/lab/${RESET} ${GRAY}(gateway :3006)${RESET}"
-echo -e "     • IPFS Web Gateway      : ${BOLD}${GREEN}http://localhost:8090/ipfs/<CID>${RESET}"
-echo -e "     • IPFS Node API         : ${BOLD}${GREEN}http://localhost:5001/${RESET}"
-echo -e ""
-echo -e "  ${BOLD}${MAGENTA}⚙️ Headless Backend APIs (REST Health Endpoints — Not Web Pages):${RESET}"
-echo -e "     • Reception / Admin API : ${BOLD}http://localhost:4001/health${RESET}"
-echo -e "     • Doctor API            : ${BOLD}http://localhost:4002/health${RESET}"
-echo -e "     • Nurse / Pharmacy API  : ${BOLD}http://localhost:4003/health${RESET}"
-echo -e "     • Lab / Claims API      : ${BOLD}http://localhost:4004/health${RESET}"
-echo -e "     • Patient API           : ${BOLD}http://localhost:4005/health${RESET}"
-echo -e "     • DigiLocker Vault API  : ${BOLD}http://localhost:4007/health${RESET}"
-echo -e "     • IPFS Storage Service  : ${BOLD}http://localhost:4006/health${RESET}"
-echo -e "     • Dashboard Stream API  : ${BOLD}http://localhost:4010/health${RESET}"
-echo -e "     • Pharmacy Backend API  : ${BOLD}http://localhost:3000/health${RESET}"
-echo -e ""
-echo -e "  ${BOLD}${MAGENTA}🔐 Default Login Credentials:${RESET}"
-echo -e "     • Receptionist          : ${YELLOW}receptionist${RESET}   / ${YELLOW}password123${RESET}"
-echo -e "     • Doctor                : ${YELLOW}doctor${RESET}         / ${YELLOW}password123${RESET}"
-echo -e "     • Pharmacist            : ${YELLOW}pharmacist${RESET}     / ${YELLOW}password123${RESET}"
-echo -e "     • Hospital Admin        : ${YELLOW}hospitaladmin${RESET}  / ${YELLOW}password123${RESET}"
-echo -e "     • Patient               : ${YELLOW}testuser${RESET}       / ${YELLOW}password123${RESET}"
-echo -e "     • Lab Technician        : ${YELLOW}labtech${RESET}        / ${YELLOW}password123${RESET}"
-echo -e "${CYAN}══════════════════════════════════════════════════════════════════════════════${RESET}\n"
+echo -e "\n${CYAN}══════════════════════════════════════════════════════════════════${RESET}"
+if (( FAILED > 0 )); then
+  echo -e "${YELLOW}${BOLD}  ${FAILED} service(s) are not healthy after ${WAIT_SECONDS}s.${RESET}"
+  echo -e "  Inspect with:  docker compose --profile dashboard ps"
+  echo -e "                 docker compose logs <service> --tail 80"
+else
+  echo -e "${GREEN}${BOLD}  All services are healthy.${RESET}"
+fi
+echo -e "
+  Hub                 http://localhost/
+  Hospital & Lab      http://localhost:5173/
+  Patient portal      http://localhost:5174/
+  Pharmacy suite      http://localhost:5175/
+  Lab control deck    http://localhost/lab/
+  Dashboard           http://localhost/dashboard/
+  IPFS gateway        http://localhost:8090/ipfs/<CID>
+
+  Demo accounts are shown on each portal's login page.
+  Stop with ./stop.sh   ·   wipe everything with ./stop.sh --reset"
+echo -e "${CYAN}══════════════════════════════════════════════════════════════════${RESET}\n"
+(( FAILED == 0 ))

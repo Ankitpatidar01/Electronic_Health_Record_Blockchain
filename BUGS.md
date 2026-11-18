@@ -1,5 +1,14 @@
 # BUGS — Phase 2 audit
 
+## Fix log
+
+| ID | Fix | Verified |
+| --- | --- | --- |
+| A1, A2 | `start.sh`, `start-sequential.sh`, `start-sequential.ps1` list only services that exist | `bash -n` only; live run pending |
+| A3 | `start.sh` now creates the network when no identities exist and calls new `ehr-network/scripts/ensure-chaincode.sh`, which deploys or upgrades `ehr` when the source changed; `stop.sh --reset` wipes everything; `setup.sh` pulls the image tags the compose files use | `bash -n` only; live run pending |
+| A5 | `VITE_AI_AGENT_TARGET` set for `h-hospital-portal` in compose | YAML parses; live run pending |
+| A6 | Credentials banner removed from `start.sh` (it printed `password123`, which matches no account) | — |
+
 Status on 2026-11-19: **static audit only.** Every entry below was found by reading code at commit
 `9b23b5b`, or by running the unit tests that can run without Docker. The system has not been started,
 so page-by-page UI checks, browser console errors, failed network requests, endpoint probing and peer CLI

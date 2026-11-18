@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 # Stop services while preserving Fabric identities, ledger data, and volumes.
+#
+#   ./stop.sh           stop everything, keep all data
+#   ./stop.sh --reset   remove containers, volumes, ledger, channel artifacts and
+#                       identities, so the next ./start.sh builds a new network
 set -euo pipefail
+
+RESET_ALL=false
+for arg in "$@"; do
+  case "$arg" in
+    --reset) RESET_ALL=true ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
+  esac
+done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FABRIC_DIR="${ROOT_DIR}/orgs/hospital/EHR_hospitalOrg-main/ehr-network"
@@ -22,6 +34,17 @@ echo -e "${CYAN}═════════════════════�
 
 # docker-compose.yaml refuses to parse without the root .env secrets.
 node "${ROOT_DIR}/scripts/init-env.js" >/dev/null 2>&1 || true
+
+if [[ "${RESET_ALL}" == true ]]; then
+  echo -e "\n  ${YELLOW}--reset: this deletes the ledger, all identities and every application volume.${RESET}"
+  read -r -p "  Type RESET to continue: " answer
+  [[ "${answer}" == "RESET" ]] || { echo "  Cancelled."; exit 1; }
+  docker compose -f "${APP_COMPOSE}" --profile dashboard down --volumes --remove-orphans || true
+  ( cd "${FABRIC_DIR}" && bash scripts/network-down.sh )
+  rm -rf "${FABRIC_DIR}/.generated"
+  echo -e "  ${GREEN}✓ Everything removed. Run ./start.sh to build a new network.${RESET}\n"
+  exit 0
+fi
 
 echo -e "\n  ${YELLOW}[1/3] Stopping application containers (portals, APIs, microservices)...${RESET}"
 docker compose -f "${APP_COMPOSE}" --profile dashboard stop >/dev/null 2>&1 || true

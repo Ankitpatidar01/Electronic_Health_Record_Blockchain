@@ -9,11 +9,6 @@ $apps = @(
     @{ dir = "orgs/digilocker/backend"; cmd = "npm start" },
     
     # Pharmacy Frontends
-    @{ dir = "orgs/pharmacy/fabric-network-swarm/app/manager"; cmd = "npm run dev -- --host 0.0.0.0 --port 3001"; isVite = $true },
-    @{ dir = "orgs/pharmacy/fabric-network-swarm/app/employee"; cmd = "npm run dev -- --host 0.0.0.0 --port 3002"; isVite = $true },
-    @{ dir = "orgs/pharmacy/fabric-network-swarm/app/inventory"; cmd = "npm run dev -- --host 0.0.0.0 --port 3003"; isVite = $true },
-    @{ dir = "orgs/pharmacy/fabric-network-swarm/app/patient"; cmd = "npm run dev -- --host 0.0.0.0 --port 3004"; isVite = $true },
-    @{ dir = "orgs/pharmacy/fabric-network-swarm/app/billing"; cmd = "npm run dev -- --host 0.0.0.0 --port 3005"; isVite = $true },
     @{ dir = "orgs/pharmacy/fabric-network-swarm/app/frontend"; cmd = "npm run dev -- --host 0.0.0.0 --port 5175"; isVite = $true },
 
     # Lab

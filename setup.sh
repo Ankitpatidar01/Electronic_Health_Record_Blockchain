@@ -12,7 +12,7 @@ echo "        EHR Blockchain System — Setup               "
 echo "════════════════════════════════════════════════════"
 
 # 1. Check prerequisites
-echo "[1/4] Checking prerequisites..."
+echo "[1/5] Checking prerequisites..."
 for tool in docker node npm curl jq; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "[-] Missing prerequisite: $tool"
@@ -23,7 +23,7 @@ for tool in docker node npm curl jq; do
 done
 
 # 2. Check Docker daemon & permissions
-echo "[2/4] Verifying Docker socket access..."
+echo "[2/5] Verifying Docker socket access..."
 if ! docker ps >/dev/null 2>&1; then
   echo "[-] Cannot connect to Docker daemon without sudo."
   echo "    Run: sudo usermod -aG docker \"$USER\" and then log out and back in."
@@ -33,10 +33,10 @@ fi
 echo "  ✓ Docker daemon is active and accessible."
 
 # 3. Pull required Docker images if missing
-echo "[3/4] Checking Fabric and IPFS Docker images..."
+echo "[3/5] Checking Fabric and IPFS Docker images..."
 REQUIRED_IMAGES=(
-  "hyperledger/fabric-peer:latest"
-  "hyperledger/fabric-orderer:latest"
+  "hyperledger/fabric-peer:2.5"
+  "hyperledger/fabric-orderer:2.5"
   "hyperledger/fabric-ca:latest"
   "hyperledger/fabric-ccenv:2.5"
   "hyperledger/fabric-nodeenv:2.5"
@@ -68,6 +68,8 @@ MODULES=(
   "orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/patient-portal"
   "orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/dashboard-portal"
   "orgs/lab/EHR-LABORG-main/client/node-gateway"
+  "orgs/pharmacy/fabric-network-swarm/app/backend"
+  "fhir"
   "orgs/pharmacy/fabric-network-swarm/app/frontend"
 )
 
@@ -92,17 +94,6 @@ fi
 
 echo ""
 echo "════════════════════════════════════════════════════"
-if [ ! -d "${ROOT_DIR}/orgs/hospital/EHR_hospitalOrg-main/ehr-network/organizations/peerOrganizations" ]; then
-  echo "  [!] FIRST-TIME SETUP REQUIRED:"
-  echo "      Cryptographic identities are not yet generated."
-  echo "      Run network bootstrap (only once):"
-  echo ""
-  echo "      cd orgs/hospital/EHR_hospitalOrg-main/ehr-network"
-  echo "      bash scripts/network-up.sh"
-  echo "      bash scripts/deployChaincode.sh"
-  echo "      cd ../../../.."
-  echo "      ./start.sh"
-else
-  echo "  ✓ Setup Complete! Next run: ./start.sh"
-fi
+echo "  ✓ Setup complete. Next: ./start.sh"
+echo "    (the first start creates the Fabric network and deploys the chaincode)"
 echo "════════════════════════════════════════════════════"

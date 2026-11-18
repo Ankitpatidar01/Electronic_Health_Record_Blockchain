@@ -310,6 +310,7 @@ services:
       VITE_PEER1_API_TARGET: http://h-peer1-api:4002
       VITE_PEER2_API_TARGET: http://h-peer2-api:4003
       VITE_EXTORG_API_TARGET: http://h-extorg-api:4004
+      VITE_AI_AGENT_TARGET: http://clinical-ai-agent:8000
       VITE_IPFS_API_TARGET: http://h-ipfs-service:4006
     ports:
       - "5173:5173"
