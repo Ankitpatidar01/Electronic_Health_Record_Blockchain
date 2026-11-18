@@ -344,16 +344,30 @@ function LabRequestCard({ lr }) {
       {open && (
         <div className="px-4 pb-4 border-t border-slate-100 pt-3">
           {lr.results && Object.keys(lr.results).length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Results</p>
-              {Object.entries(lr.results).map(([k, v]) => (
+              {Object.entries(lr.results).filter(([k]) => !k.startsWith('ai')).map(([k, v]) => (
                 <div key={k} className="flex justify-between py-1.5 border-b border-slate-50">
                   <span className="text-sm text-slate-600">{k}</span>
                   <span className="text-sm font-medium text-slate-900">{v}</span>
                 </div>
               ))}
+
+              {lr.results.aiAbnormalitiesFlagged && (
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 text-xs text-red-800 dark:text-red-300">
+                  <span className="font-bold block mb-1">🚨 AI Abnormality Flags:</span>
+                  <p>{lr.results.aiAbnormalitiesFlagged}</p>
+                  {lr.results.aiSuggestedFollowups && (
+                    <p className="mt-1.5 text-blue-700 dark:text-sky-300 font-medium">💡 Suggested Follow-up: {lr.results.aiSuggestedFollowups}</p>
+                  )}
+                  {lr.results.aiProvenanceHash && (
+                    <p className="mt-1 text-[10px] text-slate-400 font-mono">Provenance: {lr.results.aiProvenanceHash.slice(0, 16)}...</p>
+                  )}
+                </div>
+              )}
+
               {lr.approvedBy && (
-                <p className="text-xs text-emerald-600 mt-2">Approved by {lr.approvedBy}</p>
+                <p className="text-xs text-emerald-600 mt-2 font-medium">✓ Approved by {lr.approvedBy}</p>
               )}
             </div>
           ) : (

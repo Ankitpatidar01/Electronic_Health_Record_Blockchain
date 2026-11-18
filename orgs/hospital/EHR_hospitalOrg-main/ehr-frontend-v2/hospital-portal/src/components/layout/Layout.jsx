@@ -2,7 +2,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   Users, Calendar, FileText, LogOut, Activity,
-  Stethoscope, Pill, FolderOpen, ChevronRight, Menu, X
+  Stethoscope, Pill, FolderOpen, ChevronRight, Menu, X,
+  FlaskConical, TestTube2
 } from 'lucide-react'
 import { useState } from 'react'
 import ThemeToggle from '../ThemeToggle'
@@ -24,19 +25,20 @@ const ROLE_CONFIG = {
   admin: {
     label: 'Hospital Governance',
     nav: [
-      { to: '/patients',   icon: Users,    label: 'Patients' },
-      { to: '/staff',      icon: Users,    label: 'Doctors & Staff' },
-      { to: '/visits',     icon: Calendar, label: 'Encounters' },
-      { to: '/register',   icon: Users,    label: 'Register Patient' },
-      { to: '/open-visit', icon: Calendar, label: 'Open Visit' },
-      { to: '/discharge',  icon: LogOut,   label: 'Discharge' },
+      { to: '/patients',   icon: Users,        label: 'Patients' },
+      { to: '/staff',      icon: Users,        label: 'Doctors & Staff' },
+      { to: '/visits',     icon: Calendar,     label: 'Encounters' },
+      { to: '/lab-queue',  icon: FlaskConical, label: 'Lab Orders' },
+      { to: '/register',   icon: Users,        label: 'Register Patient' },
+      { to: '/open-visit', icon: Calendar,     label: 'Open Visit' },
+      { to: '/discharge',  icon: LogOut,       label: 'Discharge' },
     ],
   },
   doctor: {
     label: 'Clinical Physician',
     nav: [
-      { to: '/my-visits',    icon: Stethoscope, label: 'Doctor Queue' },
-      { to: '/visit-detail', icon: FileText,    label: 'Clinical Chart' },
+      { to: '/my-visits',    icon: Stethoscope,  label: 'Doctor Queue' },
+      { to: '/lab-queue',    icon: FlaskConical, label: 'Lab Orders' },
     ],
   },
   nurse: {
@@ -55,6 +57,38 @@ const ROLE_CONFIG = {
     label: 'Medical Records Audit',
     nav: [
       { to: '/finalize', icon: FolderOpen, label: 'Finalize & Archive' },
+    ],
+  },
+  labreceptionist: {
+    label: 'Diagnostic Lab Reception',
+    nav: [
+      { to: '/lab-queue', icon: FlaskConical, label: 'Lab Orders Queue' },
+      { to: '/patients',  icon: Users,        label: 'Patient Roster' },
+    ],
+  },
+  labtechnician: {
+    label: 'Diagnostic Laboratory',
+    nav: [
+      { to: '/lab-queue', icon: TestTube2,    label: 'Diagnostic Testing' },
+    ],
+  },
+  radiologist: {
+    label: 'Radiology & Imaging',
+    nav: [
+      { to: '/lab-queue', icon: FlaskConical, label: 'Imaging Queue' },
+    ],
+  },
+  labsupervisor: {
+    label: 'Lab Quality & Approval',
+    nav: [
+      { to: '/lab-queue', icon: FlaskConical, label: 'Verification Queue' },
+    ],
+  },
+  labadmin: {
+    label: 'Diagnostic Lab Admin',
+    nav: [
+      { to: '/lab-queue', icon: FlaskConical, label: 'Lab Orders Queue' },
+      { to: '/staff',     icon: Users,        label: 'Staff Governance' },
     ],
   },
 }

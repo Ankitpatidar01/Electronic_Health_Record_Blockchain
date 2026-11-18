@@ -7,6 +7,11 @@ const ROLE_APIS = {
   nurse:            '/api/hospital/peer2',
   pharmacist:       '/api/hospital/peer2',
   medrecordofficer: '/api/hospital/peer2',
+  labreceptionist:  '/api/hospital/ext',
+  labtechnician:    '/api/hospital/ext',
+  radiologist:      '/api/hospital/ext',
+  labsupervisor:    '/api/hospital/ext',
+  labadmin:         '/api/hospital/ext',
 }
 
 export function getApiBase(role) {
@@ -25,6 +30,7 @@ export async function loginUser(username, password) {
     '/api/hospital/peer0',
     '/api/hospital/peer1',
     '/api/hospital/peer2',
+    '/api/hospital/ext',
   ]
   for (const base of apis) {
     try {
@@ -33,6 +39,33 @@ export async function loginUser(username, password) {
     } catch {}
   }
   throw new Error('Invalid credentials')
+}
+
+export async function analyzeReportWithAI(reportText, patientId, reportType = 'Diagnostic Lab Panel') {
+  try {
+    const res = await axios.post('/api/ai-agent/api/v1/agent/analyze-report', {
+      report_text: reportText,
+      patient_id: patientId,
+      report_type: reportType,
+    })
+    return res.data
+  } catch (err) {
+    console.error('AI Report Analysis error:', err)
+    throw err
+  }
+}
+
+export async function queryClinicalAgent(question, patientId) {
+  try {
+    const res = await axios.post('/api/ai-agent/api/v1/agent/query', {
+      question,
+      patient_id: patientId,
+    })
+    return res.data
+  } catch (err) {
+    console.error('Clinical Agent query error:', err)
+    throw err
+  }
 }
 
 // Tone classes for the shared .status-pill component.

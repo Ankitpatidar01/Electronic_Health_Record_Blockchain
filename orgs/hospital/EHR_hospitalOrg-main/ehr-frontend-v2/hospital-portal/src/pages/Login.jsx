@@ -14,7 +14,9 @@ import {
   Pill,
   FolderOpen,
   CheckCircle2,
-  Server
+  Server,
+  FlaskConical,
+  TestTube2
 } from 'lucide-react'
 import ThemeToggle from '../components/ThemeToggle'
 import DataSourceTag from '../ui-kit/components/DataSourceTag'
@@ -100,6 +102,7 @@ const CLINICAL_ROLES = [
     label: 'Hospital Governance',
     username: 'hospitaladmin',
     hint: 'hadminpw',
+    mspId: 'HospitalMSP',
     peer: 'peer0-api (Port 4001)',
     badge: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-400/40',
     icon: ShieldCheck,
@@ -109,6 +112,38 @@ const CLINICAL_ROLES = [
     gradientSelected: 'bg-gradient-to-br from-indigo-500/25 via-blue-500/20 to-violet-600/25 dark:from-indigo-900/60 dark:via-blue-900/50 dark:to-violet-900/60 border-indigo-500 dark:border-indigo-400 ring-2 ring-indigo-500/40 shadow-lg shadow-indigo-500/15',
     iconGradient: 'bg-gradient-to-tr from-indigo-600 to-blue-700 text-white shadow-md shadow-indigo-500/30',
     accentColor: 'text-indigo-600 dark:text-indigo-400',
+  },
+  {
+    value: 'labreceptionist',
+    label: 'Lab Receptionist',
+    username: 'labreceptionist',
+    hint: 'recpw',
+    mspId: 'DiagnosticsMSP',
+    peer: 'peer0.diagnostic (Port 4004)',
+    badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-400/40',
+    icon: FlaskConical,
+    desc: 'Sample intake, doctor order accessioning & request acknowledgement.',
+    defaultPath: '/lab-queue',
+    gradientUnselected: 'bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-yellow-500/10 dark:from-amber-950/40 dark:via-orange-950/20 dark:to-yellow-950/40 border-amber-200/80 dark:border-amber-800/60 hover:border-amber-400 dark:hover:border-amber-600',
+    gradientSelected: 'bg-gradient-to-br from-amber-500/25 via-orange-500/20 to-yellow-600/25 dark:from-amber-900/60 dark:via-orange-900/50 dark:to-yellow-900/60 border-amber-500 dark:border-amber-400 ring-2 ring-amber-500/40 shadow-lg shadow-amber-500/15',
+    iconGradient: 'bg-gradient-to-tr from-amber-600 to-orange-500 text-white shadow-md shadow-amber-500/30',
+    accentColor: 'text-amber-600 dark:text-amber-400',
+  },
+  {
+    value: 'labtechnician',
+    label: 'Diagnostic Technician',
+    username: 'labtechnician',
+    hint: 'recpw',
+    mspId: 'DiagnosticsMSP',
+    peer: 'peer0.diagnostic (Port 4004)',
+    badge: 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-400/40',
+    icon: TestTube2,
+    desc: 'Diagnostic testing, AI clinical findings & submitting results to ledger.',
+    defaultPath: '/lab-queue',
+    gradientUnselected: 'bg-gradient-to-br from-teal-500/10 via-emerald-500/5 to-cyan-500/10 dark:from-teal-950/40 dark:via-emerald-950/20 dark:to-cyan-950/40 border-teal-200/80 dark:border-teal-800/60 hover:border-teal-400 dark:hover:border-teal-600',
+    gradientSelected: 'bg-gradient-to-br from-teal-500/25 via-emerald-500/20 to-cyan-600/25 dark:from-teal-900/60 dark:via-emerald-900/50 dark:to-cyan-900/60 border-teal-500 dark:border-teal-400 ring-2 ring-teal-500/40 shadow-lg shadow-teal-500/15',
+    iconGradient: 'bg-gradient-to-tr from-teal-600 to-emerald-500 text-white shadow-md shadow-teal-500/30',
+    accentColor: 'text-teal-600 dark:text-teal-400',
   },
 ]
 
@@ -247,8 +282,8 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* 6-Card Role Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 mb-8">
+          {/* Role Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-8">
             {CLINICAL_ROLES.map((r) => {
               const isSelected = selectedRole.value === r.value
               const Icon = r.icon
@@ -380,7 +415,7 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-              <span>MSP Identity: HospitalMSP</span>
+              <span>MSP Identity: {selectedRole.mspId || 'HospitalMSP'}</span>
               <span className="font-mono">Demo: {selectedRole.username} / {selectedRole.hint}</span>
             </div>
           </div>

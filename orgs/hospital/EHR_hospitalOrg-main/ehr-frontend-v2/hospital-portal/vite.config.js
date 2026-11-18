@@ -27,6 +27,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/hospital\/ext/, ''),
       },
+      '/api/ai-agent': {
+        target: process.env.VITE_AI_AGENT_TARGET || 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/ai-agent/, ''),
+      },
       '/api/ipfs': {
         target: process.env.VITE_IPFS_API_TARGET || 'http://127.0.0.1:4006',
         changeOrigin: true,

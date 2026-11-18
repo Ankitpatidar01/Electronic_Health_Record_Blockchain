@@ -11,6 +11,7 @@ import DoctorVisits from './pages/DoctorVisits'
 import NurseVisits from './pages/NurseVisits'
 import { PharmacistPage, MedRecordsPage } from './pages/PharmacistRecords'
 import Staff from './pages/Staff'
+import LabQueue from './pages/LabQueue'
 import './index.css'
 import './design-system/observatory-theme.css'
 
@@ -23,6 +24,8 @@ function ProtectedRoute({ children, allowedRoles }) {
       receptionist: '/patients', admin: '/patients',
       doctor: '/my-visits', nurse: '/my-visits',
       pharmacist: '/dispense', medrecordofficer: '/finalize',
+      labreceptionist: '/lab-queue', labtechnician: '/lab-queue',
+      radiologist: '/lab-queue', labsupervisor: '/lab-queue', labadmin: '/lab-queue',
     }
     return <Navigate to={defaults[user.role] || '/patients'} replace />
   }
@@ -96,6 +99,13 @@ function AppRoutes() {
       <Route path="/finalize" element={
         <ProtectedRoute allowedRoles={['medrecordofficer']}>
           <Layout><MedRecordsPage /></Layout>
+        </ProtectedRoute>
+      } />
+
+      {/* Diagnostic Lab Orders Queue */}
+      <Route path="/lab-queue" element={
+        <ProtectedRoute allowedRoles={['labreceptionist','labtechnician','radiologist','labsupervisor','labadmin','admin','doctor']}>
+          <Layout><LabQueue /></Layout>
         </ProtectedRoute>
       } />
 

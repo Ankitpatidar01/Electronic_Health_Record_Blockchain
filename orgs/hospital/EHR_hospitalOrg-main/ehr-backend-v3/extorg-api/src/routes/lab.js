@@ -8,7 +8,7 @@ const { wrap, parseResult } = require('../middleware/errorHandler');
 const { fetchByCID, pinJSON } = require('../fabric/ipfsClient');
 const logger = require('../config/logger');
 
-const LAB_ROLES = ['labreceptionist', 'labtechnician', 'radiologist', 'labsupervisor', 'labadmin'];
+const LAB_ROLES = ['labreceptionist', 'labtechnician', 'radiologist', 'labsupervisor', 'labadmin', 'admin'];
 
 async function getVisitJson(contract, visitId) {
   const onChain = parseResult(await contract.evaluateTransaction('VisitContract:GetVisit', visitId));
@@ -16,6 +16,29 @@ async function getVisitJson(contract, visitId) {
   const clinical = onChain.visitCID ? await fetchByCID(onChain.visitCID) : {};
   return { onChain, clinical };
 }
+
+// ── GET /lab/visits — List all visits with lab requests or status WITH_LAB ──
+router.get('/visits',
+  authenticate, requireRole(...LAB_ROLES), peerContext,
+  wrap(async (req, res) => {
+    const onChainResult = parseResult(await req.contract.evaluateTransaction('VisitContract:ListAllVisits'));
+    const allVisits = Array.isArray(onChainResult) ? onChainResult : [];
+    const visitsWithLabs = [];
+    for (const v of allVisits) {
+      try {
+        if (v.visitCID) {
+          const clinical = await fetchByCID(v.visitCID);
+          if (v.status === 'WITH_LAB' || (clinical && clinical.labRequests && clinical.labRequests.length > 0)) {
+            visitsWithLabs.push({ ...v, clinical });
+          }
+        }
+      } catch (e) {
+        logger.warn('Failed to fetch clinical data for visit in lab list', { visitId: v.visitId, error: e.message });
+      }
+    }
+    return res.json({ success: true, data: visitsWithLabs });
+  })
+);
 
 // ── GET /lab/visits/:id ───────────────────────────────────────
 router.get('/visits/:id',
@@ -39,7 +62,7 @@ router.get('/visits/:id/request/:reqId',
 
 // ── PUT /lab/visits/:id/request/:reqId/acknowledge ───────────
 router.put('/visits/:id/request/:reqId/acknowledge',
-  authenticate, requireRole('labreceptionist', 'labadmin'), peerContext,
+  authenticate, requireRole('labreceptionist', 'labadmin', 'labtechnician', 'admin'), peerContext,
   [param('id').trim().notEmpty(), param('reqId').trim().notEmpty()],
   wrap(async (req, res) => {
     const { id: visitId, reqId: labRequestId } = req.params;
@@ -70,7 +93,7 @@ router.put('/visits/:id/request/:reqId/acknowledge',
 
 // ── PUT /lab/visits/:id/request/:reqId/submit ─────────────────
 router.put('/visits/:id/request/:reqId/submit',
-  authenticate, requireRole('labtechnician', 'radiologist', 'labadmin'), peerContext,
+  authenticate, requireRole('labtechnician', 'radiologist', 'labadmin', 'admin'), peerContext,
   [
     param('id').trim().notEmpty(),
     param('reqId').trim().notEmpty(),
@@ -112,7 +135,7 @@ router.put('/visits/:id/request/:reqId/submit',
 
 // ── PUT /lab/visits/:id/request/:reqId/approve ───────────────
 router.put('/visits/:id/request/:reqId/approve',
-  authenticate, requireRole('labsupervisor', 'labadmin'), peerContext,
+  authenticate, requireRole('labsupervisor', 'labadmin', 'labtechnician', 'admin'), peerContext,
   [param('id').trim().notEmpty(), param('reqId').trim().notEmpty()],
   wrap(async (req, res) => {
     const { id: visitId, reqId: labRequestId } = req.params;
@@ -144,7 +167,7 @@ router.put('/visits/:id/request/:reqId/approve',
 
 // ── PUT /lab/visits/:id/request/:reqId/return ────────────────
 router.put('/visits/:id/request/:reqId/return',
-  authenticate, requireRole('labsupervisor', 'labadmin'), peerContext,
+  authenticate, requireRole('labsupervisor', 'labadmin', 'labtechnician', 'admin'), peerContext,
   [param('id').trim().notEmpty(), param('reqId').trim().notEmpty()],
   wrap(async (req, res) => {
     const { id: visitId, reqId: labRequestId } = req.params;
