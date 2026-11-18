@@ -41,7 +41,7 @@ function Login({ onLogin }) {
       <form onSubmit={submit} className="premium-card w-full max-w-md p-8 space-y-5">
         <div>
           <div className="inline-block p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-cyan-400 mb-3">
-            <img src="/logo.svg" alt="Vitalis" className="h-8 w-8 object-contain" />
+            <img src="/logo.svg" alt="CareGrid NITW" className="h-8 w-8 object-contain" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard sign in</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Use your hospital account. Access is determined by your assigned role.</p>
@@ -59,7 +59,7 @@ function Login({ onLogin }) {
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 text-center">
-          <p className="text-xs text-slate-400 dark:text-slate-500">Default demo: <code className="font-mono text-slate-600 dark:text-slate-300">hospitaladmin</code> / <code className="font-mono text-slate-600 dark:text-slate-300">password123</code></p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">Default demo: <code className="font-mono text-slate-600 dark:text-slate-300">hospitaladmin</code> / <code className="font-mono text-slate-600 dark:text-slate-300">hadminpw</code></p>
         </div>
       </form>
     </main>
