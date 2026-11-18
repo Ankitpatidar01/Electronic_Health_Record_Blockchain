@@ -1,0 +1,12 @@
+{
+  "_comment": "Bundled SNOMED-CT subset for common diagnoses. Used for Condition.code when a SNOMED coding is present.",
+  "system": "http://snomed.info/sct",
+  "codes": {
+    "271737000": "Anemia (disorder)",
+    "49727002": "Cough (finding)",
+    "386661006": "Fever (finding)",
+    "25064002": "Headache (finding)",
+    "233604007": "Pneumonia (disorder)",
+    "73211009": "Diabetes mellitus (disorder)"
+  }
+}

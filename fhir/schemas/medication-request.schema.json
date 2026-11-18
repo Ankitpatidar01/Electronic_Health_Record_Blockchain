@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "medication-request.schema.json",
+  "title": "FHIR R4 MedicationRequest (profile)",
+  "type": "object",
+  "required": ["resourceType", "id", "status", "intent", "subject"],
+  "properties": {
+    "resourceType": { "const": "MedicationRequest" },
+    "id": { "type": "string" },
+    "status": { "enum": ["active", "on-hold", "cancelled", "completed", "entered-in-error", "stopped", "draft", "unknown"] },
+    "intent": { "enum": ["proposal", "plan", "order", "original-order", "reflex-order", "filler-order", "instance-order", "option"] },
+    "subject": {
+      "type": "object",
+      "required": ["reference"],
+      "properties": { "reference": { "type": "string" } }
+    },
+    "medicationCodeableConcept": { "$ref": "#/definitions/codeableConcept" },
+    "dosageInstruction": { "type": "array" },
+    "authoredOn": { "type": "string" },
+    "requester": {
+      "type": "object",
+      "properties": { "reference": { "type": "string" } }
+    }
+  },
+  "definitions": {
+    "coding": {
+      "type": "object",
+      "required": ["system", "code"],
+      "properties": {
+        "system": { "type": "string" },
+        "code": { "type": "string" },
+        "display": { "type": "string" }
+      }
+    },
+    "codeableConcept": {
+      "type": "object",
+      "properties": {
+        "coding": { "type": "array", "items": { "$ref": "#/definitions/coding" } },
+        "text": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

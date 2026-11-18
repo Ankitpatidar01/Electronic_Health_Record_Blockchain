@@ -1,0 +1,8 @@
+{
+  "patientId": "PAT-001",
+  "granteeId": "doctor",
+  "granteeRole": "doctor",
+  "sections": ["ehr", "visits", "labResults"],
+  "expiresAt": "2026-12-31T23:59:59Z",
+  "grantedAt": "2026-09-16T09:30:00Z"
+}

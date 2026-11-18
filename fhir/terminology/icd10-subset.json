@@ -1,0 +1,11 @@
+{
+  "_comment": "Bundled ICD-10-CM subset for common diagnoses. Used for Condition.code when an ICD-10 coding is present.",
+  "system": "http://hl7.org/fhir/sid/icd-10",
+  "codes": {
+    "D64.9": "Anemia, unspecified",
+    "J18.9": "Pneumonia, unspecified organism",
+    "R50.9": "Fever, unspecified",
+    "G44.1": "Vascular headache, not elsewhere classified",
+    "E11.9": "Type 2 diabetes mellitus without complications"
+  }
+}

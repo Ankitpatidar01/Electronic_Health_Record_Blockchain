@@ -1,0 +1,21 @@
+{
+  "_comment": "Bundled UCUM unit subset. valueQuantity.system = http://unitsofmeasure.org, valueQuantity.code must be a member.",
+  "system": "http://unitsofmeasure.org",
+  "units": [
+    "g/dL",
+    "mg/dL",
+    "mmol/L",
+    "10*3/uL",
+    "10*6/uL",
+    "10*9/L",
+    "%",
+    "mg",
+    "mL",
+    "L",
+    "kg",
+    "cm",
+    "mm[Hg]",
+    "Cel",
+    "/min"
+  ]
+}

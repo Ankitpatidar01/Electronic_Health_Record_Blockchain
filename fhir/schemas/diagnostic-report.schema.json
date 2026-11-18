@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "diagnostic-report.schema.json",
+  "title": "FHIR R4 DiagnosticReport (profile)",
+  "type": "object",
+  "required": ["resourceType", "id", "status", "subject"],
+  "properties": {
+    "resourceType": { "const": "DiagnosticReport" },
+    "id": { "type": "string" },
+    "status": { "enum": ["registered", "partial", "preliminary", "final", "amended", "corrected", "appended", "cancelled", "entered-in-error", "unknown"] },
+    "subject": {
+      "type": "object",
+      "required": ["reference"],
+      "properties": { "reference": { "type": "string" } }
+    },
+    "code": { "$ref": "#/definitions/codeableConcept" },
+    "result": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": { "reference": { "type": "string" } }
+      }
+    },
+    "contained": { "type": "array", "items": { "type": "object" } },
+    "issued": { "type": "string" },
+    "performer": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": { "reference": { "type": "string" } }
+      }
+    }
+  },
+  "definitions": {
+    "coding": {
+      "type": "object",
+      "required": ["system", "code"],
+      "properties": {
+        "system": { "type": "string" },
+        "code": { "type": "string" },
+        "display": { "type": "string" }
+      }
+    },
+    "codeableConcept": {
+      "type": "object",
+      "properties": {
+        "coding": { "type": "array", "items": { "$ref": "#/definitions/coding" } },
+        "text": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

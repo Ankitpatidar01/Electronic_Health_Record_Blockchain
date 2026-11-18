@@ -1,0 +1,9 @@
+{
+  "patientId": "PAT-001",
+  "name": "Rahul Sharma",
+  "age": 32,
+  "gender": "male",
+  "bloodGroup": "O+",
+  "contact": "+91-98765-43210",
+  "address": "12 MG Road, Bengaluru"
+}

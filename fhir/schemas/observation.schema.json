@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "observation.schema.json",
+  "title": "FHIR R4 Observation (profile)",
+  "type": "object",
+  "required": ["resourceType", "id", "status", "subject", "code"],
+  "properties": {
+    "resourceType": { "const": "Observation" },
+    "id": { "type": "string" },
+    "status": { "enum": ["registered", "preliminary", "final", "amended", "corrected", "cancelled", "entered-in-error", "unknown"] },
+    "subject": { "$ref": "#/definitions/reference" },
+    "code": { "$ref": "#/definitions/codeableConcept" },
+    "valueQuantity": { "$ref": "#/definitions/quantity" },
+    "valueString": { "type": "string" },
+    "effectiveDateTime": { "type": "string" },
+    "referenceRange": { "type": "array" }
+  },
+  "definitions": {
+    "reference": {
+      "type": "object",
+      "required": ["reference"],
+      "properties": { "reference": { "type": "string" } }
+    },
+    "coding": {
+      "type": "object",
+      "required": ["system", "code"],
+      "properties": {
+        "system": { "type": "string" },
+        "code": { "type": "string" },
+        "display": { "type": "string" }
+      }
+    },
+    "codeableConcept": {
+      "type": "object",
+      "properties": {
+        "coding": { "type": "array", "items": { "$ref": "#/definitions/coding" } },
+        "text": { "type": "string" }
+      }
+    },
+    "quantity": {
+      "type": "object",
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "number" },
+        "unit": { "type": "string" },
+        "system": { "type": "string" },
+        "code": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

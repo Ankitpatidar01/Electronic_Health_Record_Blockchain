@@ -5,7 +5,8 @@ const { body, param, validationResult } = require('express-validator');
 const { authenticate, requireRole, requireAnyKnownRole } = require('../middleware/auth');
 const { peerContext }  = require('../middleware/peerContext');
 const { wrap, parseResult } = require('../middleware/errorHandler');
-const { initEHR }  = require('../fabric/ipfsClient');
+const ipfsClient = require('../fabric/ipfsClient');
+const { anchorFHIRRecord } = require('../../../shared/fhir-anchor');
 const logger = require('../config/logger');
 
 const canManage = [authenticate, requireRole('receptionist', 'admin'), peerContext];
@@ -41,7 +42,7 @@ router.post('/',
 
     // Step 1 — pin empty EHR to IPFS first (so we have the CID ready)
     const demographics = { name, age, gender, bloodGroup, contact, address };
-    const { cid: ehrCID } = await initEHR(patientId, demographics);
+    const { cid: ehrCID } = await ipfsClient.initEHR(patientId, demographics);
     logger.info('EHR initialised in IPFS', { patientId, ehrCID });
 
     // Step 2 — register patient on blockchain (pass ehrCID as 9th arg)
@@ -56,8 +57,22 @@ router.post('/',
       'EhrContract:InitEHR', patientId, ehrCID
     );
 
+    // Step 4 — anchor the FHIR Patient resource (best-effort, zero-PHI on-chain)
+    let fhirAnchor = null;
+    try {
+      fhirAnchor = await anchorFHIRRecord(req.contract, ipfsClient, {
+        sourceType: 'patient',
+        legacyJson: { patientId, name, age, gender, bloodGroup, contact, address },
+        recordId: patientId,
+        filename: `fhir-patient-${patientId}.json`,
+      });
+      logger.info('FHIR anchor created', { patientId, resourceType: fhirAnchor.anchor.resourceType });
+    } catch (err) {
+      logger.error('FHIR anchor failed (non-fatal)', { patientId, error: err.message });
+    }
+
     logger.info('RegisterPatient complete', { patientId, ehrCID });
-    return res.status(201).json({ success: true, data: { ...patient, ehrCID } });
+    return res.status(201).json({ success: true, data: { ...patient, ehrCID, fhirAnchor } });
   })
 );
 

@@ -663,10 +663,10 @@ You should see:
 
 | Interface | URL | Purpose | Demo Credentials |
 | :--- | :--- | :--- | :--- |
-| **Main Portal (Gateway)** | `http://localhost/` | Reception, Patient Check-in, Admin | `receptionist` / `password123`<br>`hospitaladmin` / `password123` |
-| **Doctor / Clinical Station** | `http://localhost:5173` | Consultations, Vitals, Diagnoses | `doctor` / `password123` |
-| **Patient Web Portal** | `http://localhost/patient/` | View personal health record & CIDs | `patient` / `password123` |
-| **Pharmacy Management** | `http://localhost/pharmacy/` | Medication inventory & dispensation | `pharmacist` / `password123` |
+| **Main Portal (Gateway)** | `http://localhost/` | Reception, Patient Check-in, Admin | `receptionist` / `recpw`<br>`hospitaladmin` / `hadminpw` |
+| **Doctor / Clinical Station** | `http://localhost:5173` | Consultations, Vitals, Diagnoses | `doctor` / `docpw` |
+| **Patient Web Portal** | `http://localhost/patient/` | View personal health record & CIDs | *self-register with the patient ID* |
+| **Pharmacy Management** | `http://localhost/pharmacy/` | Medication inventory & dispensation | `pharmacist` / `pharmpw` |
 | **IPFS Gateway** | `http://localhost:8090/ipfs/<CID>` | View raw off-chain medical JSON | *Paste any CID from UI* |
 | **IPFS Health API** | `http://localhost:4006/health` | Verifies IPFS microservice status | *Public HTTP GET* |
 

@@ -1,0 +1,18 @@
+{
+  "_comment": "Bundled LOINC subset for common lab tests (CBC + basic chemistry). Keeps the validator in-process and within the <40ms p95 latency budget. Full LOINC is deferred to a live terminology server (Architecture C).",
+  "system": "http://loinc.org",
+  "codes": {
+    "718-7": "Hemoglobin [Mass/volume] in Blood",
+    "789-8": "Erythrocytes [#/volume] in Blood by Automated count",
+    "777-3": "Platelets [#/volume] in Blood by Automated count",
+    "6690-2": "Leukocytes [#/volume] in Blood by Automated count",
+    "20570-8": "Hematocrit [Volume Fraction] of Blood",
+    "2339-0": "Glucose [Mass/volume] in Blood",
+    "2345-7": "Glucose [Mass/volume] in Serum or Plasma",
+    "29463-7": "Body Weight",
+    "8302-2": "Body Height",
+    "8867-4": "Heart rate",
+    "8480-6": "Systolic blood pressure",
+    "8462-4": "Diastolic blood pressure"
+  }
+}

@@ -71,3 +71,83 @@ This repository contains an Electronic Health Record (EHR) Consortium workspace 
 1. **First-time clone setup:** Run `./setup.sh` to install dependencies and initialize `.env` configuration files.
 2. **Start all services:** Run `./start.sh` from the repository root. All 20 services will launch cleanly and be reachable at [http://localhost/](http://localhost/).
 3. **Stop all services:** Run `./stop.sh` to gracefully stop containers and free ports without deleting persistent Docker volume data.
+
+---
+
+In Hyperledger Fabric, the network is divided into **Organizations**. Each Organization has multiple computers/servers called **Peers**. Each Peer represents a specific department or role, running its own API and UI.
+
+### 🏥 Hospital Organization
+* **Peer 0 (Reception / Admin):** Handles patient registration and general hospital administration.
+* **Peer 1 (Doctor):** Handles reading patient histories, updating diagnoses, and requesting lab tests.
+* **Peer 2 (Nurse / Pharmacist / Medical Records):** Handles fulfilling prescriptions internally and maintaining ward records.
+
+### 💊 Pharmacy Organization
+* **Peer 0 (Pharmacy Node):** Contains multiple sub-modules (Manager, Billing, Employee, Inventory, Patient). It handles fulfilling prescriptions sent by the Hospital and managing drug inventory levels securely on-chain.
+
+### 🔬 Lab Organization
+* **Peer 0 (Lab Node):** Handles receiving test requests from the Hospital, conducting tests, running the results through the Gemini AI agent for analysis, and securely uploading the final encrypted PDFs to IPFS.
+
+**How they interact:** If a Patient goes to the Hospital (Peer 0) and sees a Doctor (Peer 1), the Doctor requests a blood test. That request is logged on the blockchain. The Lab (Lab Peer 0) sees the authorized request, does the test, and uploads the result. The Doctor (Peer 1) gets an alert, views the result, and writes a prescription on the blockchain. The Pharmacy (Pharmacy Peer 0) sees the prescription and fills it. **All of this happens without a central server—they communicate purely by reading and writing to the shared blockchain ledger.**
+
+---
+
+## 3. Current Implementation Status
+
+**✅ What is ALREADY Implemented:**
+* The core Hyperledger Fabric v2.5 multi-org blockchain network.
+* The Docker orchestration scripts (`start-all.sh` and `docker-compose.yaml`) to run all 14 Node.js apps on a single machine.
+* Basic Smart Contracts (Chaincode) for creating records.
+* Basic Frontend UIs (React) and Backend APIs (Express.js) for Hospital, Pharmacy, and Lab.
+* IPFS Kubo node integration for off-chain file pinning.
+* **HL7 FHIR R4 interoperability layer** (`/fhir`): legacy records are converted to FHIR R4 and a **zero-PHI anchor** (hash + CID + resource type) is written on-chain via `FhirContract` under `RECORD~<patientIdHash>~<recordId>`. See [`fhir-integration.md`](fhir-integration.md).
+
+**🚧 What is NOT Implemented (Your Tasks!):**
+* **Digilocker:** Files are currently uploaded to IPFS in plaintext. Encryption needs to be built.
+* **FHIR on-chain enrichment (Phase D):** the anchor stores the *hash* of each record, but legacy plaintext JSON is still the source of truth in IPFS — retiring it (storing only the FHIR resource) is a follow-up.
+* **Advanced ABAC:** The consent mechanism is rudimentary. A full Patient Consent Portal needs to be finalized so patients can revoke access.
+* **Agentic AI Expansion:** The Gemini LLM integration needs to be expanded to analyze historical patient trends, not just single lab reports.
+
+---
+
+## 4. Comprehensive Folder Structure
+
+Here is a breakdown of where everything lives and what each file does:
+
+```text
+EHR_blockchain/
+├── start-all.sh                 # The master orchestration script to boot the entire project
+├── docker-compose.yaml          # Orchestrates all 14 Node.js Apps into Docker containers
+├── .gitignore                   # Ensures secrets (.env, crypto material) are never committed to GitHub
+├── README.md                    # The main landing page for the repository
+│
+├── docs/                        # Documentation Folder
+│   ├── architecture.md          # Contains Mermaid.js visual flowcharts of the system
+│   ├── fhir-integration.md      # How the FHIR R4 layer is wired into the chaincode
+│   ├── roadmap.md               # The task list and gap analysis of what needs to be built
+│   ├── setup-guide.md           # Instructions for running organizations individually
+│   └── system-overview.md       # (You are reading this file!)
+│
+├── fhir/                        # HL7 FHIR R4 interoperability layer (Team D module)
+│   ├── src/                     # adapter, validator, canonicalizer, hasher, anchor builder
+│   ├── schemas/                 # FHIR R4 JSON schemas (Patient, Observation, …)
+│   ├── terminology/             # LOINC / SNOMED / ICD-10 / UCUM subsets
+│   └── test/                    # 18 offline unit tests (node --test)
+│
+└── orgs/                        # The Codebase (Divided by Organization)
+    │
+    ├── hospital/EHR_hospitalOrg-main/
+    │   ├── ehr-network/         # The Fabric scripts to boot the Hospital blockchain nodes
+    │   ├── ehr-backend-v3/      # The Node.js Express APIs for Peer0, Peer1, Peer2
+    │   └── ehr-frontend-v2/     # The React UIs (hospital-portal, patient-portal)
+    │
+    ├── pharmacy/fabric-network-swarm/
+    │   ├── deploy.sh            # Script to deploy the pharmacy blockchain network
+    │   └── app/                 # Contains both the React UIs and Express Backends for Pharmacy
+    │
+    ├── lab/EHR-LABORG-main/
+    │   ├── scripts/             # Scripts to boot the Lab blockchain nodes
+    │   └── client/node-gateway/ # The Node.js Gateway + AI Integration + Lab UI
+    │
+    └── digilocker/
+        └── README.md            # The scaffold/design document for the Digilocker module
+```

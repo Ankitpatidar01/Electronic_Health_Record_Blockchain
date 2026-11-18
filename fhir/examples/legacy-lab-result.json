@@ -1,0 +1,13 @@
+{
+  "patientId": "PAT-001",
+  "visitId": "PAT-001-V1",
+  "labRequestId": "LAB-001",
+  "panel": "CBC",
+  "results": {
+    "Hemoglobin": { "value": 8.5, "unit": "g/dL", "loinc": "718-7" },
+    "WBC": { "value": 6.2, "unit": "10*3/uL", "loinc": "6690-2" },
+    "Platelets": { "value": 210, "unit": "10*3/uL", "loinc": "777-3" }
+  },
+  "submittedBy": "labtechnician",
+  "submittedAt": "2026-09-16T10:30:00Z"
+}

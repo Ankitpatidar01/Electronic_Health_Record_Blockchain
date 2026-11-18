@@ -111,10 +111,7 @@ done
 BASE_DIR=$(cd "$(dirname "$0")/.." && pwd)
 ORGANIZATIONS="$BASE_DIR/organizations"
 export FABRIC_CFG_PATH="$BASE_DIR/configtx"
-REPO_ROOT="$(cd "$BASE_DIR/../../../.." && pwd)"
-if [ -d "$REPO_ROOT/bin" ]; then
-  export PATH="$REPO_ROOT/bin:$PATH"
-fi
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fabric-bin.sh"
 
 CC_PATH=$(cd "$CC_PATH" && pwd)  # convert to absolute path
 CC_LABEL="${CC_NAME}_${CC_VERSION}"

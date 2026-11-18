@@ -8,10 +8,7 @@ set -e
 
 BASE_DIR=$(cd "$(dirname "$0")/.." && pwd)
 ORGANIZATIONS="$BASE_DIR/organizations"
-REPO_ROOT="$(cd "$BASE_DIR/../../../.." && pwd)"
-if [ -d "$REPO_ROOT/bin" ]; then
-  export PATH="$REPO_ROOT/bin:$PATH"
-fi
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fabric-bin.sh"
 
 CA_ORDERER_TLS="$ORGANIZATIONS/ordererOrganizations/example.com/ca/ca-cert.pem"
 CA_HOSPITAL_TLS="$ORGANIZATIONS/peerOrganizations/hospital.example.com/ca/ca-cert.pem"

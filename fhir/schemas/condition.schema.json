@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "condition.schema.json",
+  "title": "FHIR R4 Condition (profile)",
+  "type": "object",
+  "required": ["resourceType", "id", "subject"],
+  "properties": {
+    "resourceType": { "const": "Condition" },
+    "id": { "type": "string" },
+    "clinicalStatus": {
+      "type": "object",
+      "properties": {
+        "coding": { "type": "array" }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "required": ["reference"],
+      "properties": { "reference": { "type": "string" } }
+    },
+    "code": {
+      "type": "object",
+      "properties": {
+        "coding": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "system": { "type": "string" },
+              "code": { "type": "string" },
+              "display": { "type": "string" }
+            }
+          }
+        },
+        "text": { "type": "string" }
+      }
+    },
+    "onsetDateTime": { "type": "string" },
+    "recordedDate": { "type": "string" }
+  },
+  "additionalProperties": true
+}

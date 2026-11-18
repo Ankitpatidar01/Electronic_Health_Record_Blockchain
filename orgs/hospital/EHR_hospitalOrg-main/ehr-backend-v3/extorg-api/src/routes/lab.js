@@ -7,6 +7,7 @@ const { peerContext }  = require('../middleware/peerContext');
 const { wrap, parseResult } = require('../middleware/errorHandler');
 const { fetchByCID, pinJSON } = require('../fabric/ipfsClient');
 const { getContract } = require('../fabric/gatewayManager');
+const { anchorFHIRRecord } = require('../../../shared/fhir-anchor');
 const logger = require('../config/logger');
 
 const LAB_ROLES = ['labreceptionist', 'labtechnician', 'radiologist', 'labsupervisor', 'labadmin', 'admin'];
@@ -130,7 +131,32 @@ router.put('/visits/:id/request/:reqId/submit',
     const result = await req.contract.submitTransaction(
       'LabContract:SubmitLabResult', visitId, labRequestId, newCID
     );
-    return res.json({ success: true, data: parseResult(result) });
+
+    // Anchor the FHIR DiagnosticReport/Observation (best-effort, zero-PHI on-chain).
+    // This is the cross-org seam: the lab org can mirror this exact call.
+    let fhirAnchor = null;
+    try {
+      const labReq = clinical.labRequests[idx];
+      fhirAnchor = await anchorFHIRRecord(req.contract, { pinJSON }, {
+        sourceType: 'lab-result',
+        legacyJson: {
+          patientId: onChain.patientId,
+          visitId,
+          labRequestId,
+          panel: Array.isArray(labReq.tests) ? labReq.tests.join(', ') : (labReq.panel || ''),
+          results,
+          submittedBy: req.user.userId,
+          submittedAt: new Date().toISOString(),
+        },
+        recordId: labRequestId,
+        filename: `fhir-lab-${labRequestId}.json`,
+      });
+      logger.info('FHIR anchor created', { labRequestId, resourceType: fhirAnchor.anchor.resourceType });
+    } catch (err) {
+      logger.error('FHIR anchor failed (non-fatal)', { labRequestId, error: err.message });
+    }
+
+    return res.json({ success: true, data: { ...parseResult(result), fhirAnchor } });
   })
 );
 

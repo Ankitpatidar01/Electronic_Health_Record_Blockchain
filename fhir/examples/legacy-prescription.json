@@ -1,0 +1,9 @@
+{
+  "patientId": "PAT-001",
+  "visitId": "PAT-001-V1",
+  "medications": [
+    { "name": "Ferrous Sulfate", "dose": "325 mg", "frequency": "once daily" }
+  ],
+  "prescribedBy": "doctor",
+  "prescribedAt": "2026-09-16T11:00:00Z"
+}
