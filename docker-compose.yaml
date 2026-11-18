@@ -350,71 +350,6 @@ services:
     command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
     restart: unless-stopped
 
-  p-manager:
-    image: ghcr.io/devbyhimans/ehr-p-manager:latest
-    build:
-      context: ./orgs/pharmacy/fabric-network-swarm/app/manager
-    working_dir: /app
-    volumes:
-      - ./orgs/pharmacy/fabric-network-swarm/app/manager:/app
-      - p-manager-modules:/app/node_modules
-    ports:
-      - "3001:3001"
-    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 3001"
-    restart: unless-stopped
-
-  p-employee:
-    image: ghcr.io/devbyhimans/ehr-p-employee:latest
-    build:
-      context: ./orgs/pharmacy/fabric-network-swarm/app/employee
-    working_dir: /app
-    volumes:
-      - ./orgs/pharmacy/fabric-network-swarm/app/employee:/app
-      - p-employee-modules:/app/node_modules
-    ports:
-      - "3002:3002"
-    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 3002"
-    restart: unless-stopped
-
-  p-inventory:
-    image: ghcr.io/devbyhimans/ehr-p-inventory:latest
-    build:
-      context: ./orgs/pharmacy/fabric-network-swarm/app/inventory
-    working_dir: /app
-    volumes:
-      - ./orgs/pharmacy/fabric-network-swarm/app/inventory:/app
-      - p-inventory-modules:/app/node_modules
-    ports:
-      - "3003:3003"
-    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 3003"
-    restart: unless-stopped
-
-  p-patient:
-    image: ghcr.io/devbyhimans/ehr-p-patient:latest
-    build:
-      context: ./orgs/pharmacy/fabric-network-swarm/app/patient
-    working_dir: /app
-    volumes:
-      - ./orgs/pharmacy/fabric-network-swarm/app/patient:/app
-      - p-patient-modules:/app/node_modules
-    ports:
-      - "3004:3004"
-    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 3004"
-    restart: unless-stopped
-
-  p-billing:
-    image: ghcr.io/devbyhimans/ehr-p-billing:latest
-    build:
-      context: ./orgs/pharmacy/fabric-network-swarm/app/billing
-    working_dir: /app
-    volumes:
-      - ./orgs/pharmacy/fabric-network-swarm/app/billing:/app
-      - p-billing-modules:/app/node_modules
-    ports:
-      - "3005:3005"
-    command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm run dev -- --host 0.0.0.0 --port 3005"
-    restart: unless-stopped
-
   p-frontend:
     image: ghcr.io/devbyhimans/ehr-p-frontend:latest
     build:
@@ -485,11 +420,6 @@ volumes:
   h-hospital-portal-modules:
   h-patient-portal-modules:
   p-backend-modules:
-  p-manager-modules:
-  p-employee-modules:
-  p-inventory-modules:
-  p-patient-modules:
-  p-billing-modules:
   p-frontend-modules:
   l-node-gateway-modules:
 
