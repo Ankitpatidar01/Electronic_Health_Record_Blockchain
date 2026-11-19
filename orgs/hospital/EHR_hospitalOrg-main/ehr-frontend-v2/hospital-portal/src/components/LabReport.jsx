@@ -2,7 +2,7 @@
 // Presentational only: the caller supplies the order and a way to open attachments.
 // The same file is used by the hospital portal and the patient portal.
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Printer, Paperclip, ShieldCheck, Clock, AlertTriangle, Bot, Loader2 } from 'lucide-react'
 
 export const LAB_STATUS = {
@@ -73,6 +73,17 @@ function parametersOf(order) {
 export default function LabReport({ order, patient, openAttachment, facility = 'Diagnostic Laboratory' }) {
   const [opening, setOpening] = useState('')
   const [attachError, setAttachError] = useState('')
+  const rootRef = useRef(null)
+
+  // A page can show several reports; print only the one whose button was used.
+  const printThis = () => {
+    const el = rootRef.current
+    if (!el) return
+    el.classList.add('is-printing')
+    const done = () => { el.classList.remove('is-printing'); window.removeEventListener('afterprint', done) }
+    window.addEventListener('afterprint', done)
+    window.print()
+  }
   const report = order.report
   const parameters = parametersOf(order)
   const hasResult = parameters.length > 0
@@ -92,28 +103,28 @@ export default function LabReport({ order, patient, openAttachment, facility = '
   }
 
   return (
-    <div className="lab-report-print">
+    <div className="lab-report-print" ref={rootRef}>
       <style>{`
         @media print {
           body * { visibility: hidden !important; }
-          .lab-report-print, .lab-report-print * { visibility: visible !important; }
-          .lab-report-print { position: absolute; left: 0; top: 0; width: 100%; padding: 24px; background: #fff; color: #000; }
+          .lab-report-print.is-printing, .lab-report-print.is-printing * { visibility: visible !important; }
+          .lab-report-print.is-printing { position: absolute; left: 0; top: 0; width: 100%; padding: 24px; background: #fff; color: #000; }
           .lab-report-print .no-print { display: none !important; }
           .lab-report-print table { width: 100%; border-collapse: collapse; }
           .lab-report-print th, .lab-report-print td { border-bottom: 1px solid #ddd; padding: 6px 8px; color: #000 !important; }
         }
       `}</style>
 
-      <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-slate-200">
         <div>
           <p className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold">{facility}</p>
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 font-display">Laboratory Report</h3>
           <p className="text-xs text-slate-500 font-mono">{order.labRequestId}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <LabStatusPill status={order.status} />
           {hasResult && (
-            <button type="button" onClick={() => window.print()}
+            <button type="button" onClick={printThis}
               className="no-print obs-btn-ghost !px-3 !py-1.5 !text-xs inline-flex items-center gap-1.5">
               <Printer size={13} /> Print / Save PDF
             </button>

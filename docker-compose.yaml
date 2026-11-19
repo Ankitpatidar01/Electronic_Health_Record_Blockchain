@@ -34,6 +34,20 @@ services:
     restart: unless-stopped
 
   # ──────────────────────────────────────────────────────────
+  # FHIR module dependencies (one-shot)
+  # The hospital APIs load /fhir/src, which needs ajv and canonicalize. They
+  # are installed once into a named volume that the APIs mount read-only.
+  # ──────────────────────────────────────────────────────────
+  fhir-deps:
+    image: node:20-slim
+    working_dir: /fhir
+    volumes:
+      - ./fhir:/fhir
+      - fhir-modules:/fhir/node_modules
+    command: /bin/sh -c "npm install --omit=dev --no-audit --no-fund --no-package-lock"
+    restart: "no"
+
+  # ──────────────────────────────────────────────────────────
   # HOSPITAL BACKENDS
   # ──────────────────────────────────────────────────────────
   h-ipfs-service:
@@ -69,6 +83,10 @@ services:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
       - ./fhir:/fhir:ro
+      - fhir-modules:/fhir/node_modules:ro
+    depends_on:
+      fhir-deps:
+        condition: service_completed_successfully
     environment:
       <<: *hospital-api-env
       PORT: 4001
@@ -92,6 +110,10 @@ services:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
       - ./fhir:/fhir:ro
+      - fhir-modules:/fhir/node_modules:ro
+    depends_on:
+      fhir-deps:
+        condition: service_completed_successfully
     environment:
       <<: *hospital-api-env
       PORT: 4002
@@ -115,6 +137,10 @@ services:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
       - ./fhir:/fhir:ro
+      - fhir-modules:/fhir/node_modules:ro
+    depends_on:
+      fhir-deps:
+        condition: service_completed_successfully
     environment:
       <<: *hospital-api-env
       PORT: 4003
@@ -138,6 +164,10 @@ services:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
       - ./fhir:/fhir:ro
+      - fhir-modules:/fhir/node_modules:ro
+    depends_on:
+      fhir-deps:
+        condition: service_completed_successfully
     environment:
       <<: *hospital-api-env
       PORT: 4004
@@ -162,6 +192,10 @@ services:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-network:/ehr-network:ro
       - ./fhir:/fhir:ro
+      - fhir-modules:/fhir/node_modules:ro
+    depends_on:
+      fhir-deps:
+        condition: service_completed_successfully
     environment:
       <<: *hospital-api-env
       PORT: 4005
@@ -413,6 +447,7 @@ services:
 # Windows/Linux cross-platform npm binary crash
 # ──────────────────────────────────────────────────────────
 volumes:
+  fhir-modules:
   h-dashboard-api-data:
   h-digilocker-service-modules:
   h-digilocker-service-data:

@@ -143,7 +143,7 @@ function normalizeReport(input) {
     const refText = String(row?.refText ?? '').trim();
     const refLow  = toNumberOrNull(row?.refLow);
     const refHigh = toNumberOrNull(row?.refHigh);
-    const label = name || `row ${i + 1}`;
+    const label = name || `Row ${i + 1}`;
     if (!name)  errors.push(`Row ${i + 1}: parameter name is required`);
     if (!value) errors.push(`${label}: value is required`);
     if (name.length > 80 || value.length > 120 || unit.length > 30 || refText.length > 120) {

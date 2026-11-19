@@ -10,6 +10,7 @@ const path = require('path');
 const fs = require('fs');
 
 let fhirModule = null;
+let loadError = null;
 
 const candidatePaths = [
   '/fhir/src',
@@ -24,7 +25,7 @@ for (const candidate of candidatePaths) {
       break;
     }
   } catch (err) {
-    // try next candidate
+    loadError = err; // usually a missing dependency of the module; try the next path
   }
 }
 
@@ -32,13 +33,17 @@ if (!fhirModule) {
   try {
     fhirModule = require(path.resolve(__dirname, '../../../../../fhir/src'));
   } catch (err) {
+    loadError = loadError || err;
+    const reason = `FHIR module could not be loaded: ${loadError.message.split('\n')[0]}`;
+    // Loud on purpose: every FHIR anchor will fail until this is fixed.
+    console.error(`[fhir] ${reason}`);
     fhirModule = {
       toFHIR: () => null,
-      validateResource: () => ({ valid: false, errors: ['FHIR module not loaded'] }),
+      validateResource: () => ({ valid: false, errors: [reason] }),
       canonicalizeResource: (x) => JSON.stringify(x),
       patientRecordHash: () => '',
       patientIdHash: () => '',
-      convert: async () => { throw new Error('FHIR module not mounted in container'); },
+      convert: async () => { throw new Error(reason); },
       buildRecord: () => null,
       getFHIRResource: async () => null,
       createFHIRResource: async () => null

@@ -177,3 +177,29 @@ All of these answered 200 for a logged-in patient: `/auth/me`, `/profile`, `/pro
 - `FILE_SEARCH_ROOT.md` (out-of-date file index), `BlockChain_24MCF1R06` (a 34-byte stray pointer file), `ehr-network/chaincode_test_output.txt` (old test dump)
 
 Kept on purpose: `services/clinical-decision-support` (unwired, but it is the only agent code that calls a real model — to be wired in for E1/4c), the lab team's standalone three-machine network files under `orgs/lab/EHR-LABORG-main` and the pharmacy swarm files (teammates' deliverables, not used by the integrated stack), `ai-agent` legacy modules and `dashboard-api/scripts/mock-events.js` (imported by tests).
+
+## Live verification after restart (chaincode sequence 2, 2026-11-19)
+
+`start.sh` kept the existing network and upgraded `ehr` 1 → 2 on its own; all services healthy.
+
+| ID | Check on the running system | Result |
+| --- | --- | --- |
+| B2 | Patient `createdAt` equals the transaction time | Pass |
+| B6 | Submit before acknowledge | 400 "needs ACKNOWLEDGED or REJECTED" |
+| C5 | Acknowledge as technician; submit as reception | 403 at the API, same rule as chaincode |
+| C4 | Approve as technician | 403. Approve as supervisor → ledger shows `submittedBy labtechnician`, `approvedBy labsupervisor`, visit back WITH_DOCTOR |
+| C4 | Approve twice; approve with a different hash; reject without a reason | 400 / 409 / 400 with readable messages |
+| C6 | Structured result with flags (LOW / NORMAL / qualitative) | Pass; invalid rows rejected with per-row messages |
+| C6 | Attachment upload, wrong file type, download as lab / doctor / patient, foreign CID | 201 / 400 / 200 ×3 / 404 |
+| C6 | Patient sees no values before verification, full report after | Pass |
+| C8, C9 | Lab worklist in the browser: counts, role worklist, result entry with catalog rows and blank values, inline validation, live flags, submit; supervisor review and sign | Pass, no console errors |
+| C6 | Doctor's Lab Results tab shows both reports with flags, comments, attachment, signer and fingerprint | Pass, no console errors |
+| G9 | Patient registration with wrong phone / unknown ID / correct phone | 403 / 403 / 201 |
+
+Found in this pass:
+
+| ID | Sev | Problem | Status |
+| --- | --- | --- | --- |
+| I1 | S2 | FHIR anchoring has never worked in Docker: `/fhir` is mounted without its dependencies (`ajv`, `canonicalize`), the loader swallowed the error and returned a stub, and callers treated the failure as "non-fatal". Seen live as `fhirError` on lab submit | Fixed: one-shot `fhir-deps` service installs the dependencies into a volume the APIs mount; the loader now logs the real error. Live check pending (needs a restart) |
+| C11 | S3 | Printing from a page with several reports open would have overlaid them | Fixed: only the report whose Print button was used is printed. Print dialog itself not exercised |
+| C12 | S3 | The doctor's copy of the report shows the patient ID where the name and age should be (the doctor API does not return demographics) | Open, to be handled with B1 |
