@@ -14,7 +14,7 @@
  * says so (status UNAVAILABLE) and carries no clinical content.
  */
 
-const MODEL    = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const MODEL    = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const BASE_URL = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
 const TIMEOUT_MS = Number(process.env.SYMPTOM_AGENT_TIMEOUT_MS || 25000);
 const URGENCY = ['LOW', 'MEDIUM', 'HIGH', 'EMERGENCY'];

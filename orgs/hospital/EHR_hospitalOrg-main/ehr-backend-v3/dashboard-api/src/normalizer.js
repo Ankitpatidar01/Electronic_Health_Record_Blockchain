@@ -4,7 +4,10 @@ const crypto = require('node:crypto');
 const { common, msp, peer } = require('@hyperledger/fabric-protos');
 const { validateEventEnvelope } = require('./contracts/envelope');
 
-const SAFE_NAME = /^[A-Za-z][A-Za-z0-9_.-]{0,127}$/;
+// Chaincode and function names; a function may be namespaced as Contract:Function.
+const SAFE_NAME = /^[A-Za-z][A-Za-z0-9_.:-]{0,127}$/;
+// Fabric transaction IDs are hex digests and often start with a digit.
+const SAFE_TX_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 
 function stableEventId(channel, txId, eventType) {
   const digest = crypto.createHash('sha256').update(`${channel}\u0000${txId}\u0000${eventType}`).digest('hex');
@@ -91,7 +94,7 @@ function normalizeFabricBlock(block, options = {}) {
       const channel = channelHeader.getChannelId();
       const txId = channelHeader.getTxId();
       if (options.channel && channel !== options.channel) continue;
-      if (!txId || !SAFE_NAME.test(txId)) continue;
+      if (!txId || !SAFE_TX_ID.test(txId)) continue;
 
       const signatureHeader = common.SignatureHeader.deserializeBinary(payloadHeader.getSignatureHeader_asU8());
       const creator = msp.SerializedIdentity.deserializeBinary(signatureHeader.getCreator_asU8());

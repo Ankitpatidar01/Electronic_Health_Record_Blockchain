@@ -51,7 +51,7 @@ async function buildEntry(role, config) {
   const { identity, signer } = newIdentityAndSigner(config.mspPath, config.mspId);
   const gateway = connect({
     client: grpcClient, identity, signer,
-    evaluateOptions:     () => ({ deadline: Date.now() + 10_000 }),
+    evaluateOptions:     () => ({ deadline: Date.now() + 30_000 }),
     endorseOptions:      () => ({ deadline: Date.now() + 30_000 }),
     submitOptions:       () => ({ deadline: Date.now() + 30_000 }),
     commitStatusOptions: () => ({ deadline: Date.now() + 60_000 }),

@@ -17,7 +17,7 @@ x-hospital-api-env: &hospital-api-env
   IPFS_SERVICE_KEY: "${IPFS_SERVICE_KEY:?IPFS_SERVICE_KEY is not set. Run: node scripts/init-env.js}"
   # Symptom analysis agent (runs in peer0-api at registration / visit opening).
   GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-  GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+  GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
 
 
 services:

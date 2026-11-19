@@ -225,7 +225,13 @@ class FabricBlockCollector {
     return {
       status: this.status,
       lastProcessedBlock: this.lastProcessedBlock,
-      currentHeight: this.currentHeight || (this.lastProcessedBlock !== null ? String(Number(this.lastProcessedBlock) + 1) : null),
+      // The height read at connect time goes stale; never report less than what has been processed.
+      currentHeight: (() => {
+        const seen = this.lastProcessedBlock !== null ? Number(this.lastProcessedBlock) + 1 : 0;
+        const read = this.currentHeight ? Number(this.currentHeight) : 0;
+        const height = Math.max(seen, read);
+        return height > 0 ? String(height) : null;
+      })(),
     };
   }
 
