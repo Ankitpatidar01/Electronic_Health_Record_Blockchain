@@ -41,13 +41,19 @@ export async function loginUser(username, password) {
   throw new Error('Invalid credentials')
 }
 
+// The clinical AI agent accepts the same staff token as the hospital APIs.
+function aiAuthHeaders() {
+  const token = localStorage.getItem('ehr_hospital_token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 export async function analyzeReportWithAI(reportText, patientId, reportType = 'Diagnostic Lab Panel') {
   try {
     const res = await axios.post('/api/ai-agent/api/v1/agent/analyze-report', {
       report_text: reportText,
       patient_id: patientId,
       report_type: reportType,
-    }, { timeout: 30000 })
+    }, { timeout: 30000, headers: aiAuthHeaders() })
     return res.data
   } catch (err) {
     console.error('AI Report Analysis error:', err)
@@ -60,7 +66,7 @@ export async function queryClinicalAgent(question, patientId) {
     const res = await axios.post('/api/ai-agent/api/v1/agent/query', {
       question,
       patient_id: patientId,
-    }, { timeout: 30000 })
+    }, { timeout: 30000, headers: aiAuthHeaders() })
     return res.data
   } catch (err) {
     console.error('Clinical Agent query error:', err)

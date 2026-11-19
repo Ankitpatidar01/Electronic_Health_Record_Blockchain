@@ -4,7 +4,7 @@ Provides secure, documented endpoints for external services (e.g. Node.js Lab Ga
 """
 
 from typing import List, Dict, Any
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 
 from schemas.clinical import (
     PatientCreate,
@@ -21,9 +21,11 @@ from services.trend_analyzer import ClinicalTrendAnalyzer
 from services.rag_engine import ClinicalRAGEngine
 from core.logger import get_logger
 from core import telemetry
+from core.auth import require_staff
 
 logger = get_logger("api_routes")
-router = APIRouter(prefix="/api/v1", tags=["Clinical AI Agent"])
+# Every route needs a signed-in staff token (patient data is read and written here).
+router = APIRouter(prefix="/api/v1", tags=["Clinical AI Agent"], dependencies=[Depends(require_staff)])
 
 # Service singletons
 patient_service = PatientService()

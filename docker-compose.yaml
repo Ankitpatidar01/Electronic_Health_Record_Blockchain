@@ -265,6 +265,7 @@ services:
       HOST: 0.0.0.0
       PORT: 8000
       EHR_OFFLINE_MODE: "true"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}"
     ports:
       - "8000:8000"
     networks:
