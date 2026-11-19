@@ -69,8 +69,8 @@ router.get('/me', authenticate, (req, res) => {
   }});
 });
 
-// ── Public: List Clinical Staff (for Patients) ──────────────
-router.get('/staff', (req, res) => {
+// ── List clinical staff (signed-in staff only) ──────────────
+router.get('/staff', authenticate, (req, res) => {
   const USERS = getUsers();
   const staff = Object.keys(USERS)
     .filter(username => ['doctor', 'nurse', 'pharmacist', 'medrecordofficer'].includes(USERS[username].role) && USERS[username].status !== 'revoked')

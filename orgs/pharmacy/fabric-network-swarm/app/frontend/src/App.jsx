@@ -41,13 +41,12 @@ const PHARMACY_ROLES = [
     title: 'Hospital Dispensing Pharmacist',
     shortTitle: 'Dispensing Pharmacist',
     user: 'pharmacist',
-    pwd: 'pharmpw',
     badge: 'peer2-api (Port 4003)',
     badgeTone: 'pill-info',
     icon: Pill,
     allowedTabs: ['prescriptions', 'inventory', 'patient'],
     defaultTab: 'prescriptions',
-    desc: 'In-patient doctor prescription fulfillment, clinical dosage verification & ledger dispense signing.',
+    desc: 'In-patient doctor prescription fulfillment, dosage check, and dispensing recorded on the ledger through hospital peer2.',
     gradient: 'linear-gradient(135deg, rgba(14,165,233,0.12), rgba(2,132,199,0.06))',
     borderSelected: '#0284c7'
   },
@@ -56,13 +55,12 @@ const PHARMACY_ROLES = [
     title: 'Pharmacy Stock & Inventory Officer',
     shortTitle: 'Stock & Inventory',
     user: 'inventory_mgr_01',
-    pwd: 'invpw',
     badge: 'p-backend (Port 3000)',
     badgeTone: 'pill-warn',
     icon: Package,
     allowedTabs: ['inventory'],
     defaultTab: 'inventory',
-    desc: 'Pharmaceutical stock registry, batch intake, fast deductions, reorder alerts & ledger sync.',
+    desc: 'Pharmaceutical stock registry, batch intake, deductions and reorder alerts (pharmacy store, not on the ledger).',
     gradient: 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(217,119,6,0.06))',
     borderSelected: '#f59e0b'
   },
@@ -71,13 +69,12 @@ const PHARMACY_ROLES = [
     title: 'Pharmacy POS & Invoicing Clerk',
     shortTitle: 'POS & Billing',
     user: 'billing_clerk_01',
-    pwd: 'billpw',
     badge: 'p-backend (Port 3000)',
     badgeTone: 'pill-ok',
     icon: FileText,
     allowedTabs: ['billing', 'patient', 'inventory'],
     defaultTab: 'billing',
-    desc: 'Point-of-sale customer billing, clinical template packs, 5% GST tax & IPFS receipt minting.',
+    desc: 'Point-of-sale customer billing, template packs, 5% GST and a bill document saved to IPFS.',
     gradient: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06))',
     borderSelected: '#10b981'
   },
@@ -86,13 +83,12 @@ const PHARMACY_ROLES = [
     title: 'Pharmacy Director & Operations Manager',
     shortTitle: 'Director & Operations',
     user: 'pharmacy_mgr',
-    pwd: 'adminpw',
     badge: 'p-backend (Port 3000)',
     badgeTone: 'pill-danger',
     icon: ShieldCheck,
-    allowedTabs: ['prescriptions', 'inventory', 'billing', 'patient', 'operations'],
+    allowedTabs: ['inventory', 'billing', 'patient', 'operations'],
     defaultTab: 'operations',
-    desc: 'Executive leadership: staff credentialing, Fabric peer consensus, blockchain audit trails & full departmental authority.',
+    desc: 'Staff list, bill audit and full access to every pharmacy module.',
     gradient: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(79,70,229,0.06))',
     borderSelected: '#6366f1'
   }
@@ -129,13 +125,38 @@ const PRESCRIPTION_TEMPLATES = {
   }
 }
 
-const PRESET_PATIENTS = [
-  { id: 'PAT-001', label: 'Alice Smith (PAT-001)' },
-  { id: 'PAT-004', label: 'Ananya Sharma (PAT-004)' },
-  { id: 'PAT-014', label: 'Bob Jones (PAT-014)' },
-  { id: 'PAT-021', label: 'Carol Davis (PAT-021)' },
-  { id: 'testuser', label: 'John Doe (testuser)' }
-]
+const SESSION_KEY = 'caregrid_pharmacy_session'
+
+function sessionToken() {
+  try {
+    return JSON.parse(localStorage.getItem(SESSION_KEY))?.token || ''
+  } catch {
+    return ''
+  }
+}
+
+// Every pharmacy and hospital API call carries the signed-in staff token.
+function apiFetch(url, opts = {}) {
+  return fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: `Bearer ${sessionToken()}` } })
+}
+
+async function readError(res, fallback) {
+  try {
+    const d = await res.json()
+    return d.message || d.error || fallback
+  } catch {
+    return fallback
+  }
+}
+
+// A prescription is the object written by the doctor portal:
+// { version, medications: [..], instructions, prescribedBy, prescribedAt }
+function prescriptionText(rx) {
+  if (!rx) return ''
+  if (typeof rx === 'string') return rx
+  const meds = Array.isArray(rx.medications) ? rx.medications.join(', ') : String(rx.medications || '')
+  return rx.instructions ? `${meds} (${rx.instructions})` : meds
+}
 
 const TABS = [
   { id: 'prescriptions', label: 'Doctor Orders & Dispense', icon: Pill },
@@ -149,14 +170,14 @@ export default function App() {
   // Session & Role Auth State (Zero-Trust: Null session requires role authentication)
   const [session, setSession] = useState(() => {
     try {
-      const saved = localStorage.getItem('caregrid_pharmacy_session')
+      const saved = localStorage.getItem(SESSION_KEY)
       if (saved) {
         const parsed = JSON.parse(saved)
         // Invalidate legacy mock auto-granted tokens
         if (parsed.token && parsed.token !== 'init_token_pharm') {
           return parsed
         }
-        localStorage.removeItem('caregrid_pharmacy_session')
+        localStorage.removeItem(SESSION_KEY)
       }
     } catch {}
     return null
@@ -164,7 +185,7 @@ export default function App() {
 
   const [selectedRole, setSelectedRole] = useState(() => {
     try {
-      const saved = localStorage.getItem('caregrid_pharmacy_session')
+      const saved = localStorage.getItem(SESSION_KEY)
       if (saved) {
         const parsed = JSON.parse(saved)
         const match = PHARMACY_ROLES.find(r => r.id === parsed.role)
@@ -177,7 +198,7 @@ export default function App() {
   const [roleModalOpen, setRoleModalOpen] = useState(false)
   const [pendingRole, setPendingRole] = useState(PHARMACY_ROLES[0])
   const [authUsername, setAuthUsername] = useState(PHARMACY_ROLES[0].user)
-  const [authPassword, setAuthPassword] = useState(PHARMACY_ROLES[0].pwd)
+  const [authPassword, setAuthPassword] = useState('')
   const [showAuthPass, setShowAuthPass] = useState(false)
   const [authError, setAuthError] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
@@ -194,7 +215,7 @@ export default function App() {
   const handleSelectPendingRole = (role) => {
     setPendingRole(role)
     setAuthUsername(role.user)
-    setAuthPassword(role.pwd)
+    setAuthPassword('')
     setAuthError('')
   }
 
@@ -219,25 +240,31 @@ export default function App() {
         throw new Error(data.error || data.message || 'Invalid username or password for this role')
       }
 
-      const token = data.data?.token || data.token || 'jwt_session_' + Date.now()
+      const token = data.data?.token
+      const serverRole = data.data?.user?.role
+      if (!token) throw new Error('Login did not return a session token')
+      // The workspace follows the role on the account, not the card that was clicked.
+      const grantedRole = PHARMACY_ROLES.find(r => r.id === serverRole)
+      if (!grantedRole) throw new Error(`Account '${authUsername.trim()}' has role '${serverRole}', which has no pharmacy workspace`)
       const newSession = {
         username: authUsername.trim(),
-        role: pendingRole.id,
-        title: pendingRole.title,
-        shortTitle: pendingRole.shortTitle,
+        role: grantedRole.id,
+        title: grantedRole.title,
+        shortTitle: grantedRole.shortTitle,
         token
       }
 
       setSession(newSession)
-      localStorage.setItem('caregrid_pharmacy_session', JSON.stringify(newSession))
-      setSelectedRole(pendingRole)
+      localStorage.setItem(SESSION_KEY, JSON.stringify(newSession))
+      setSelectedRole(grantedRole)
       setRoleModalOpen(false)
+      setAuthPassword('')
 
-      if (!pendingRole.allowedTabs?.includes(activeTab)) {
-        setActiveTab(pendingRole.defaultTab || 'inventory')
+      if (!grantedRole.allowedTabs?.includes(activeTab)) {
+        setActiveTab(grantedRole.defaultTab || 'inventory')
       }
 
-      showToast(`Authenticated as ${pendingRole.title} (${authUsername.trim()})`, 'success')
+      showToast(`Signed in as ${grantedRole.title} (${authUsername.trim()})`, 'success')
     } catch (err) {
       setAuthError(err.message || 'Authentication failed. Please verify credentials.')
     } finally {
@@ -246,18 +273,19 @@ export default function App() {
   }
 
   const handleSignOut = () => {
-    localStorage.removeItem('caregrid_pharmacy_session')
+    localStorage.removeItem(SESSION_KEY)
     setSession(null)
     setRoleModalOpen(false)
     showToast('Signed out of Pharmacy Operations Suite. Workspace locked.', 'info')
   }
 
   // Common Network Telemetry
-  const [networkStatus, setNetworkStatus] = useState({ nodes: { peer0: 18, peer1: 18, peer2: 18 }, ipfs: 'UP', network: 'ONLINE' })
+  const [networkStatus, setNetworkStatus] = useState({ service: 'UNKNOWN', ipfs: 'UNKNOWN', ledger: false })
 
   // 1. Prescriptions State (Hospital Peer2 Visits)
   const [hospitalVisits, setHospitalVisits] = useState([])
   const [visitsLoading, setVisitsLoading] = useState(false)
+  const [visitsError, setVisitsError] = useState('')
   const [dispenseModalVisit, setDispenseModalVisit] = useState(null)
   const [dispenseNotes, setDispenseNotes] = useState('')
   const [dispenseSubmitting, setDispenseSubmitting] = useState(false)
@@ -270,17 +298,14 @@ export default function App() {
   const [newBatch, setNewBatch] = useState({ itemId: '', name: '', quantity: 100, price: 10, unit: 'tablets' })
 
   // 3. Billing POS State
-  const [billPatientId, setBillPatientId] = useState('PAT-004')
-  const [cartItems, setCartItems] = useState([
-    { name: 'Paracetamol 500mg', quantity: 20, price: 4.5 },
-    { name: 'Cetirizine 10mg', quantity: 10, price: 6.0 }
-  ])
+  const [billPatientId, setBillPatientId] = useState('')
+  const [cartItems, setCartItems] = useState([])
   const [customAmount, setCustomAmount] = useState('')
   const [billingSubmitting, setBillingSubmitting] = useState(false)
   const [lastBillReceipt, setLastBillReceipt] = useState(null)
 
   // 4. Patient Medical Records State
-  const [selectedPatientId, setSelectedPatientId] = useState('PAT-001')
+  const [selectedPatientId, setSelectedPatientId] = useState('')
   const [customPatientInput, setCustomPatientInput] = useState('')
   const [patientProfile, setPatientProfile] = useState(null)
   const [patientBills, setPatientBills] = useState([])
@@ -311,7 +336,7 @@ export default function App() {
   const fetchInventory = async () => {
     setInventoryLoading(true)
     try {
-      const res = await fetch('/api/pharmacy/api/inventory').catch(() => null)
+      const res = await apiFetch('/api/pharmacy/api/inventory').catch(() => null)
       if (res && res.ok) {
         const d = await res.json()
         if (Array.isArray(d)) setInventory(d)
@@ -325,37 +350,31 @@ export default function App() {
 
   // Fetch Hospital Prescriptions from Peer2
   const fetchHospitalVisits = async () => {
+    // Only the dispensing pharmacist identity can read prescriptions on peer2.
+    if (session?.role !== 'pharmacist') {
+      setHospitalVisits([])
+      return
+    }
     setVisitsLoading(true)
+    setVisitsError('')
     try {
-      const authRes = await fetch('/api/hospital/peer2/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: 'pharmacist', password: 'pharmpw' })
-      })
-      const auth = await authRes.json()
-      const token = auth.token
-
-      const visitsRes = await fetch('/api/hospital/peer2/pharmacist/visits', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const visitsRes = await apiFetch('/api/hospital/peer2/pharmacist/visits')
+      if (!visitsRes.ok) throw new Error(await readError(visitsRes, `Hospital peer2 returned ${visitsRes.status}`))
       const list = await visitsRes.json()
-      const activeVisits = Array.isArray(list) ? list : (list.visits || [])
+      const rows = Array.isArray(list) ? list : (list.data || list.visits || [])
 
       const fullVisits = await Promise.all(
-        activeVisits.slice(0, 10).map(async v => {
-          try {
-            const det = await fetch(`/api/hospital/peer2/pharmacist/visits/${v.visitId}`, {
-              headers: { Authorization: `Bearer ${token}` }
-            })
-            return await det.json()
-          } catch {
-            return v
-          }
+        rows.map(async v => {
+          const det = await apiFetch(`/api/hospital/peer2/pharmacist/visits/${v.visitId}`)
+          if (!det.ok) return v
+          const body = await det.json()
+          return body.data || body
         })
       )
-      setHospitalVisits(fullVisits.filter(v => v?.clinical?.prescriptions?.length > 0 || v?.clinical?.diagnosis))
+      setHospitalVisits(fullVisits.filter(v => v?.clinical?.prescriptions?.length > 0))
     } catch (err) {
-      console.warn('Hospital visits fetch error:', err)
+      setHospitalVisits([])
+      setVisitsError(err.message)
     } finally {
       setVisitsLoading(false)
     }
@@ -366,8 +385,8 @@ export default function App() {
     setOpsLoading(true)
     try {
       const [audRes, empRes] = await Promise.all([
-        fetch('/api/pharmacy/api/bills/audit').catch(() => null),
-        fetch('/api/pharmacy/api/employees').catch(() => null)
+        apiFetch('/api/pharmacy/api/bills/audit').catch(() => null),
+        apiFetch('/api/pharmacy/api/employees').catch(() => null)
       ])
       if (audRes && audRes.ok) {
         const a = await audRes.json()
@@ -390,9 +409,9 @@ export default function App() {
     setPatientLoading(true)
     try {
       const [profRes, billsRes, accRes] = await Promise.all([
-        fetch(`/api/pharmacy/api/patient/${patId}`).then(r => r.ok ? r.json() : null).catch(() => null),
-        fetch(`/api/pharmacy/api/bills/patient/${patId}`).then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch(`/api/pharmacy/api/patient/${patId}/access-list`).then(r => r.ok ? r.json() : []).catch(() => [])
+        apiFetch(`/api/pharmacy/api/patient/${patId}`).then(r => r.ok ? r.json() : null).catch(() => null),
+        apiFetch(`/api/pharmacy/api/bills/patient/${patId}`).then(r => r.ok ? r.json() : []).catch(() => []),
+        apiFetch(`/api/pharmacy/api/patient/${patId}/access-list`).then(r => r.ok ? r.json() : []).catch(() => [])
       ])
       setPatientProfile(profRes)
       setPatientBills(Array.isArray(billsRes) ? billsRes : [])
@@ -430,43 +449,26 @@ export default function App() {
   // Dispense Handler
   const handleConfirmDispense = async () => {
     if (!dispenseModalVisit) return
+    const prescriptions = dispenseModalVisit.clinical?.prescriptions || []
+    const latest = prescriptions[prescriptions.length - 1]
+    if (!latest) {
+      showToast('This visit has no prescription to dispense', 'error')
+      return
+    }
     setDispenseSubmitting(true)
     try {
-      const authRes = await fetch('/api/hospital/peer2/auth/login', {
-        method: 'POST',
+      const medicationDetails = typeof latest === 'string' ? latest : JSON.stringify(latest)
+      const res = await apiFetch(`/api/hospital/peer2/pharmacist/visits/${dispenseModalVisit.visitId}/dispense`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: 'pharmacist', password: 'pharmpw' })
+        body: JSON.stringify({ medicationDetails, notes: dispenseNotes })
       })
-      const auth = await authRes.json()
-      const token = auth.token
+      if (!res.ok) throw new Error(await readError(res, 'Dispense transaction was rejected by hospital peer2'))
 
-      const res = await fetch(`/api/hospital/peer2/pharmacist/visits/${dispenseModalVisit.visitId}/dispense`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          medicationDetails: dispenseModalVisit.clinical?.prescriptions?.[0] || 'Standard Dispense Package',
-          notes: dispenseNotes || 'Dispensed and verified by Hospital Dispensing Pharmacist'
-        })
-      })
-
-      if (!res.ok) throw new Error('Dispense transaction failed on Fabric Peer2')
-
-      try {
-        await fetch('/api/pharmacy/api/inventory/deduct', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ itemId: 'MED-001', quantity: 1 })
-        })
-      } catch {}
-
-      showToast(`Medication successfully dispensed for ${dispenseModalVisit.patientId}! Block committed.`, 'success')
+      showToast(`Dispense for ${dispenseModalVisit.patientId} recorded on the ledger. Deduct the stock in Inventory.`, 'success')
       setDispenseModalVisit(null)
       setDispenseNotes('')
       fetchHospitalVisits()
-      fetchInventory()
     } catch (e) {
       showToast(e.message, 'error')
     } finally {
@@ -477,13 +479,13 @@ export default function App() {
   // Quick Deduct (-1)
   const handleQuickDeduct = async (itemId) => {
     try {
-      const res = await fetch('/api/pharmacy/api/inventory/deduct', {
+      const res = await apiFetch('/api/pharmacy/api/inventory/deduct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId, quantity: 1 })
       })
-      if (!res.ok) throw new Error('Deduction failed')
-      showToast(`1 unit deducted for ${itemId} on Fabric ledger`, 'info')
+      if (!res.ok) throw new Error(await readError(res, 'Deduction failed'))
+      showToast(`1 unit deducted for ${itemId}`, 'info')
       fetchInventory()
     } catch (e) {
       showToast(e.message, 'error')
@@ -493,7 +495,7 @@ export default function App() {
   // Quick Restock (+10)
   const handleQuickRestock = async (item) => {
     try {
-      const res = await fetch('/api/pharmacy/api/inventory', {
+      const res = await apiFetch('/api/pharmacy/api/inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -501,11 +503,10 @@ export default function App() {
           name: item.name,
           quantity: 10,
           price: item.price,
-          unit: item.unit || 'tablets',
-          user: session?.username || 'inventory_mgr_01'
+          unit: item.unit || 'tablets'
         })
       })
-      if (!res.ok) throw new Error('Restock failed')
+      if (!res.ok) throw new Error(await readError(res, 'Restock failed'))
       showToast(`10 units restocked for ${item.name}!`, 'success')
       fetchInventory()
     } catch (e) {
@@ -517,18 +518,17 @@ export default function App() {
   const handleCreateBatch = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch('/api/pharmacy/api/inventory', {
+      const res = await apiFetch('/api/pharmacy/api/inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newBatch,
           quantity: Number(newBatch.quantity),
-          price: Number(newBatch.price),
-          user: session?.username || 'inventory_mgr_01'
+          price: Number(newBatch.price)
         })
       })
-      if (!res.ok) throw new Error('Failed to register batch on ledger')
-      showToast(`New batch for ${newBatch.name} anchored to blockchain!`, 'success')
+      if (!res.ok) throw new Error(await readError(res, 'Failed to save the batch'))
+      showToast(`New batch for ${newBatch.name} saved to pharmacy stock`, 'success')
       setAddBatchModalOpen(false)
       setNewBatch({ itemId: '', name: '', quantity: 100, price: 10, unit: 'tablets' })
       fetchInventory()
@@ -579,23 +579,22 @@ export default function App() {
     }
     setBillingSubmitting(true)
     try {
-      const res = await fetch('/api/pharmacy/api/billing', {
+      const res = await apiFetch('/api/pharmacy/api/billing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patientId: billPatientId.trim(),
           amount: Number(totalAmount.toFixed(2)),
-          user: session?.username || 'billing_clerk_01',
-          medicineList: cartItems.map(m => ({
-            name: m.name,
-            quantity: String(m.quantity)
-          }))
+          medicineList: cartItems.map(m => {
+            const stock = inventory.find(i => i.name && i.name.trim().toLowerCase() === String(m.name).trim().toLowerCase())
+            return { itemId: stock?.itemId, name: m.name, quantity: String(m.quantity), price: Number(m.price) || 0 }
+          })
         })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || 'Billing submission failed')
       setLastBillReceipt(data)
-      showToast(`Bill successfully generated and anchored to IPFS & Fabric!`, 'success')
+      showToast('Bill saved. The bill document is pinned to IPFS; stock was deducted for items that match inventory.', 'success')
       fetchOpsData()
       fetchInventory()
     } catch (e) {
@@ -611,7 +610,7 @@ export default function App() {
     if (!newEmp.userId.trim() || !newEmp.name.trim()) return
     setOnboardLoading(true)
     try {
-      const res = await fetch('/api/pharmacy/api/register-employee', {
+      const res = await apiFetch('/api/pharmacy/api/register-employee', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -623,7 +622,7 @@ export default function App() {
       })
       const data = await res.json()
       if (!res.ok || !data.success) throw new Error(data.message || 'Staff registration failed')
-      showToast(`Authorized ${newEmp.name} (${newEmp.userId}) and mapped Fabric certificate!`, 'success')
+      showToast(`${newEmp.name} (${newEmp.userId}) added to the pharmacy staff list`, 'success')
       setNewEmp({ userId: '', name: '', role: 'billing', dept: 'Clinical Dispense' })
       fetchOpsData()
     } catch (err) {
@@ -639,16 +638,15 @@ export default function App() {
     if (!newRequesterId.trim()) return
     setAccessActionLoading(true)
     try {
-      const res = await fetch('/api/pharmacy/api/grant-access', {
+      const res = await apiFetch('/api/pharmacy/api/grant-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user: selectedPatientId,
           patientId: selectedPatientId,
           requesterId: newRequesterId.trim()
         })
       })
-      if (!res.ok) throw new Error('Failed to grant consent on ledger')
+      if (!res.ok) throw new Error(await readError(res, 'Failed to update the access list'))
       showToast(`Access granted to ${newRequesterId.trim()}`, 'success')
       setNewRequesterId('')
       fetchPatientData(selectedPatientId)
@@ -663,16 +661,15 @@ export default function App() {
   const handleRevokeAccess = async (requesterId) => {
     setAccessActionLoading(true)
     try {
-      const res = await fetch('/api/pharmacy/api/revoke-access', {
+      const res = await apiFetch('/api/pharmacy/api/revoke-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user: selectedPatientId,
           patientId: selectedPatientId,
           requesterId
         })
       })
-      if (!res.ok) throw new Error('Failed to revoke consent on ledger')
+      if (!res.ok) throw new Error(await readError(res, 'Failed to update the access list'))
       showToast(`Revoked access for ${requesterId}`, 'info')
       fetchPatientData(selectedPatientId)
     } catch (err) {
@@ -788,7 +785,7 @@ export default function App() {
                 <span className="brand-title">CareGrid <span style={{ color: 'var(--obs-accent)' }}>Pharmacy</span></span>
                 <span className="brand-badge">Suite</span>
               </div>
-              <p className="brand-sub">NIT Warangal Campus Health Center · Hyperledger Fabric</p>
+              <p className="brand-sub">NIT Warangal Campus Health Center · Pharmacy</p>
             </div>
           </div>
 
@@ -830,7 +827,7 @@ export default function App() {
             }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: networkStatus.ipfs === 'UP' ? '#10b981' : '#f59e0b' }} />
               <span style={{ color: 'var(--text-muted)' }}>IPFS:</span>
-              <strong>{networkStatus.ipfs || 'UP'}</strong>
+              <strong>{networkStatus.ipfs || 'UNKNOWN'}</strong>
             </div>
 
             <ThemeToggle />
@@ -870,7 +867,7 @@ export default function App() {
                   CareGrid Pharmacy Role Authentication &amp; Access Gate
                 </h2>
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0' }}>
-                  Zero-Trust Cryptographic Enforcement · Access to medication orders, patient records, inventory, and billing is restricted to verified MSP identities.
+                  Sign in with a pharmacy staff account issued by Hospital Administration.
                 </p>
               </div>
             </div>
@@ -887,7 +884,7 @@ export default function App() {
               fontWeight: 600
             }}>
               <CheckCircle2 size={13} />
-              <span>Zero-PHI Protected</span>
+              <span>Staff sign-in required</span>
             </div>
           </div>
 
@@ -949,7 +946,7 @@ export default function App() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-card)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>MSP Identity:</span>
+                        <span style={{ color: 'var(--text-muted)' }}>Account:</span>
                         <code style={{ color: 'var(--obs-accent)', fontWeight: 600 }}>{r.user}</code>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.72rem' }}>
@@ -984,7 +981,7 @@ export default function App() {
                     2. Authenticate &amp; Unlock Workspace for {pendingRole.title}
                   </h3>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.2rem 0 0' }}>
-                    Enter the authorized cryptographic passphrase to sign in to the ledger workspace.
+                    Sign in with your hospital staff account. The workspace opens for the role on that account.
                   </p>
                 </div>
               </div>
@@ -1014,7 +1011,7 @@ export default function App() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.4rem' }}>
-                  Username / MSP Identity
+                  Username
                 </label>
                 <input
                   type="text"
@@ -1034,7 +1031,7 @@ export default function App() {
                   }}
                 />
                 <div style={{ marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                  <span>Demo identity:</span>
+                  <span>Account for this role:</span>
                   <button
                     type="button"
                     onClick={() => setAuthUsername(pendingRole.user)}
@@ -1084,16 +1081,6 @@ export default function App() {
                     {showAuthPass ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-                <div style={{ marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                  <span>Demo password:</span>
-                  <button
-                    type="button"
-                    onClick={() => setAuthPassword(pendingRole.pwd)}
-                    style={{ background: 'none', border: 'none', color: 'var(--obs-accent)', cursor: 'pointer', padding: 0, textDecoration: 'underline', fontFamily: 'var(--font-mono)' }}
-                  >
-                    {pendingRole.pwd}
-                  </button>
-                </div>
               </div>
             </div>
 
@@ -1116,7 +1103,7 @@ export default function App() {
                 {authLoading ? (
                   <>
                     <RefreshCw size={15} className="animate-spin" />
-                    <span>Verifying on Hyperledger Fabric...</span>
+                    <span>Signing in...</span>
                   </>
                 ) : (
                   <>
@@ -1169,7 +1156,7 @@ export default function App() {
               <span className="brand-title">CareGrid <span style={{ color: 'var(--obs-accent)' }}>Pharmacy</span></span>
               <span className="brand-badge">Suite</span>
             </div>
-            <p className="brand-sub">NIT Warangal Campus Health Center · Hyperledger Fabric</p>
+            <p className="brand-sub">NIT Warangal Campus Health Center · Pharmacy</p>
           </div>
         </div>
 
@@ -1200,7 +1187,7 @@ export default function App() {
             onClick={() => {
               setPendingRole(selectedRole)
               setAuthUsername(selectedRole.user)
-              setAuthPassword(selectedRole.pwd)
+              setAuthPassword('')
               setAuthError('')
               setRoleModalOpen(true)
             }}
@@ -1233,7 +1220,7 @@ export default function App() {
           }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: networkStatus.ipfs === 'UP' ? '#10b981' : '#f59e0b' }} />
             <span style={{ color: 'var(--text-muted)' }}>IPFS:</span>
-            <strong>{networkStatus.ipfs || 'UP'}</strong>
+            <strong>{networkStatus.ipfs || 'UNKNOWN'}</strong>
           </div>
 
           <ThemeToggle />
@@ -1292,14 +1279,10 @@ export default function App() {
                 <div>
                   <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>In-Patient Prescriptions from Hospital Doctors</h2>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    Encounter orders finalized by Dr. Smith and clinical staff on Hyperledger Fabric Peer2.
+                    Prescriptions on finalized visits, read from the ledger and IPFS through hospital peer2.
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => { setActiveTab('patient'); setSelectedPatientId('PAT-004'); }} className="btn-ink btn-ink-ghost" style={{ fontSize: '0.75rem', gap: '0.4rem' }}>
-                    <Search size={13} />
-                    <span>Search Outpatient History</span>
-                  </button>
                   <button onClick={fetchHospitalVisits} className="btn-ink btn-ink-ghost" style={{ fontSize: '0.75rem', gap: '0.4rem' }}>
                     <RefreshCw size={13} className={visitsLoading ? 'animate-spin' : ''} />
                     <span>Refresh Queue</span>
@@ -1309,7 +1292,11 @@ export default function App() {
 
               {visitsLoading ? (
                 <div className="pharmacy-glass" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  Syncing with Hospital Ledger Peer2...
+                  Loading prescriptions from hospital peer2...
+                </div>
+              ) : visitsError ? (
+                <div className="pharmacy-glass" style={{ padding: '2rem', textAlign: 'center', color: '#ef4444', fontSize: '0.85rem' }}>
+                  Could not load prescriptions: {visitsError}
                 </div>
               ) : hospitalVisits.length === 0 ? (
                 <div className="pharmacy-glass" style={{ padding: '3rem', textAlign: 'center' }}>
@@ -1322,7 +1309,7 @@ export default function App() {
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1rem' }}>
                   {hospitalVisits.map(v => {
-                    const presc = v.clinical?.prescriptions?.[v.clinical.prescriptions.length - 1]
+                    const presc = prescriptionText(v.clinical?.prescriptions?.[v.clinical.prescriptions.length - 1])
                     const isDispensed = Boolean(v.clinical?.medicationDispensedBy || v.clinical?.medicationDetails)
 
                     return (
@@ -1341,7 +1328,7 @@ export default function App() {
                           <div style={{ padding: '0.75rem', borderRadius: '0.75rem', background: 'var(--bg-page)', marginBottom: '0.75rem', fontSize: '0.8rem' }}>
                             <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase' }}>Clinical Order:</div>
                             <div style={{ fontWeight: 600, color: 'var(--obs-accent)', marginTop: '0.2rem' }}>
-                              {presc || 'Standard In-Patient Dispense Order'}
+                              {presc}
                             </div>
                             {v.clinical?.diagnosis && (
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
@@ -1351,8 +1338,8 @@ export default function App() {
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                            <span>Doctor: <strong>{v.doctor || 'Dr. Smith'}</strong></span>
-                            <span>{new Date(v.timestamp || Date.now()).toLocaleDateString()}</span>
+                            <span>Doctor: <strong>{v.assignedDoctor || '-'}</strong></span>
+                            <span>{v.updatedAt ? new Date(v.updatedAt).toLocaleDateString() : ''}</span>
                           </div>
                         </div>
 
@@ -1360,13 +1347,13 @@ export default function App() {
                           {isDispensed ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#10b981', fontSize: '0.75rem', fontWeight: 600 }}>
                               <CheckCircle2 size={15} />
-                              <span>Dispense Verified by {v.clinical?.medicationDispensedBy || 'Pharmacist'}</span>
+                              <span>Dispensed by {v.clinical?.medicationDispensedBy}</span>
                             </div>
                           ) : (
                             <button
                               onClick={() => {
                                 setDispenseModalVisit(v)
-                                setDispenseNotes(`Verified dosage and dispensed to ${v.patientId}`)
+                                setDispenseNotes('')
                               }}
                               className="btn-ink btn-ink-primary"
                               style={{ width: '100%', fontSize: '0.8rem', padding: '0.55rem' }}
@@ -1393,7 +1380,7 @@ export default function App() {
                 <div>
                   <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Pharmaceutical Stock &amp; Inventory</h2>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    Blockchain-anchored stock levels, batch tracking, and fast dispensing deduction.
+                    Stock levels and batches kept in the pharmacy store. These records are not on the ledger.
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -1465,7 +1452,7 @@ export default function App() {
                             <strong>{qty}</strong> <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{item.unit || 'tablets'}</span>
                           </td>
                           <td style={{ color: '#10b981', fontWeight: 700 }}>${Number(item.price || 0).toFixed(2)}</td>
-                          <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(item.lastRestocked || item.createdAt || Date.now()).toLocaleDateString()}</td>
+                          <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.lastUpdated ? new Date(item.lastUpdated).toLocaleDateString() : '-'}</td>
                           <td>
                             <span className={`status-pill ${isLow ? 'pill-warn' : 'pill-ok'}`}>
                               {isLow ? 'Low Stock' : 'Optimal'}
@@ -1475,7 +1462,7 @@ export default function App() {
                             <div style={{ display: 'flex', gap: '0.35rem' }}>
                               <button
                                 onClick={() => handleQuickDeduct(item.itemId)}
-                                title="Dispense 1 unit on ledger"
+                                title="Deduct 1 unit"
                                 className="btn-ink btn-ink-ghost"
                                 style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
                               >
@@ -1483,7 +1470,7 @@ export default function App() {
                               </button>
                               <button
                                 onClick={() => handleQuickRestock(item)}
-                                title="Add 10 units on ledger"
+                                title="Add 10 units"
                                 className="btn-ink btn-ink-ghost"
                                 style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
                               >
@@ -1509,7 +1496,7 @@ export default function App() {
                 <div>
                   <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Point of Sale (POS) Prescription Billing</h2>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    Issue verified patient pharmacy bills, calculate taxes, and anchor immutable receipts on IPFS.
+                    Create a pharmacy bill. The bill document is pinned to IPFS; the bill record is kept in the pharmacy store.
                   </p>
                 </div>
 
@@ -1540,26 +1527,6 @@ export default function App() {
                     <label style={{ fontSize: '0.75rem', fontWeight: 700, display: 'block', marginBottom: '0.35rem' }}>
                       Target Patient ID / Customer
                     </label>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      {['PAT-004', 'PAT-001', 'PAT-014', 'PAT-021'].map(pId => (
-                        <button
-                          key={pId}
-                          type="button"
-                          onClick={() => setBillPatientId(pId)}
-                          style={{
-                            padding: '0.25rem 0.6rem',
-                            borderRadius: '0.5rem',
-                            border: '1px solid var(--border-card)',
-                            background: billPatientId === pId ? 'rgba(56,189,248,0.2)' : 'var(--bg-page)',
-                            color: billPatientId === pId ? 'var(--obs-accent)' : 'var(--text-muted)',
-                            fontSize: '0.72rem',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {pId}
-                        </button>
-                      ))}
-                    </div>
                     <input
                       type="text"
                       value={billPatientId}
@@ -1644,12 +1611,12 @@ export default function App() {
                     {billingSubmitting ? (
                       <>
                         <RefreshCw size={14} className="animate-spin" />
-                        <span>Anchoring to IPFS...</span>
+                        <span>Saving bill...</span>
                       </>
                     ) : (
                       <>
                         <Receipt size={15} />
-                        <span>Sign & Anchor Bill on Ledger</span>
+                        <span>Create Bill</span>
                       </>
                     )}
                   </button>
@@ -1659,15 +1626,15 @@ export default function App() {
                   <div className="pharmacy-glass" style={{ padding: '1.25rem', borderLeft: '4px solid #10b981' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#10b981', fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.5rem' }}>
                       <CheckCircle2 size={16} />
-                      <span>Ledger Receipt Minted</span>
+                      <span>Bill Saved</span>
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Bill ID:</div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--obs-accent)', marginBottom: '0.5rem' }}>
-                      {lastBillReceipt.billId || 'BILL-FABRIC-7821'}
+                      {lastBillReceipt.billId}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>IPFS Hash:</div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: '#10b981', wordBreak: 'break-all', marginBottom: '0.75rem' }}>
-                      {lastBillReceipt.ipfsHash || 'QmSnuWmxpt943pNxD2f2nv563MGgPwnqcm1DY8GUP756Z4'}
+                      {lastBillReceipt.ipfsHash}
                     </div>
                     <a
                       href={`http://localhost:8090/ipfs/${lastBillReceipt.ipfsHash}`}
@@ -1692,15 +1659,15 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Patient Medical Ledger &amp; Prescription Records</h2>
+                  <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Patient Pharmacy Records</h2>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    Query immutable patient medication histories, verify past dispensations, and audit consent permissions.
+                    Pharmacy bills and the pharmacy access list for one patient ID. Hospital records are not shown here.
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button onClick={() => fetchPatientData(selectedPatientId)} className="btn-ink btn-ink-ghost" style={{ fontSize: '0.75rem' }}>
                     <RefreshCw size={14} className={patientLoading ? 'animate-spin' : ''} />
-                    <span>Sync Ledger</span>
+                    <span>Refresh</span>
                   </button>
                 </div>
               </div>
@@ -1711,20 +1678,10 @@ export default function App() {
                   Select or Search Patient UID:
                 </span>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
-                  {PRESET_PATIENTS.map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => { setSelectedPatientId(p.id); setCustomPatientInput(''); }}
-                      className={`btn-ink ${selectedPatientId === p.id ? 'btn-ink-primary' : 'btn-ink-ghost'}`}
-                      style={{ fontSize: '0.75rem', padding: '0.4rem 0.85rem' }}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
                   <div style={{ display: 'flex', gap: '0.4rem', marginLeft: 'auto' }}>
                     <input
                       type="text"
-                      placeholder="Custom UID (e.g. PAT-004)"
+                      placeholder="Patient ID"
                       value={customPatientInput}
                       onChange={e => setCustomPatientInput(e.target.value)}
                       style={{
@@ -1779,18 +1736,14 @@ export default function App() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.8rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-card)' }}>
                       <span style={{ color: 'var(--text-muted)' }}>Patient Age</span>
-                      <strong>{patientProfile?.age ? `${patientProfile.age} yrs` : '32 yrs'}</strong>
+                      <strong>{patientProfile?.age ? `${patientProfile.age} yrs` : 'Not recorded'}</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-card)' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Blockchain Identity Alias</span>
-                      <code style={{ color: 'var(--obs-accent)' }}>{patientProfile?.certAlias || 'user1'}</code>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-card)' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Ledger Verification</span>
-                      <span className="status-pill pill-ok">Verified on Fabric</span>
+                      <span style={{ color: 'var(--text-muted)' }}>Pharmacy record</span>
+                      <span className={`status-pill ${patientProfile ? 'pill-ok' : 'pill-warn'}`}>{patientProfile ? 'On file' : 'None yet'}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Total Recorded Prescriptions</span>
+                      <span style={{ color: 'var(--text-muted)' }}>Pharmacy bills</span>
                       <strong>{patientBills.length} records</strong>
                     </div>
                   </div>
@@ -1803,7 +1756,7 @@ export default function App() {
                       <FolderLock size={18} color="#f59e0b" />
                       <h3 style={{ fontSize: '0.9rem', fontWeight: 700 }}>Consent &amp; Access Control List</h3>
                     </div>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Fabric Zero-PHI Consent</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Pharmacy store</span>
                   </div>
 
                   <form onSubmit={handleGrantAccess} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -1835,7 +1788,7 @@ export default function App() {
                   </form>
 
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {(patientAccessList.length > 0 ? patientAccessList : ['ph_alice', 'billing_office_1', 'mgr_evelyn']).map((reqId, i) => (
+                    {patientAccessList.map((reqId, i) => (
                       <div
                         key={i}
                         style={{
@@ -1865,15 +1818,15 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Patient's Prescription & Billing History on Ledger */}
+              {/* Patient's pharmacy bills */}
               <div className="pharmacy-glass" style={{ padding: '1.25rem' }}>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-                  Prescription &amp; Medication Ledger for {patientProfile?.name || selectedPatientId}
+                  Pharmacy bills for {patientProfile?.name || selectedPatientId || 'the selected patient'}
                 </h3>
 
                 {patientBills.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    No recorded prescriptions found on the blockchain for {selectedPatientId}.
+                    {selectedPatientId ? `No pharmacy bills for ${selectedPatientId}.` : 'Enter a patient ID to see pharmacy bills.'}
                   </div>
                 ) : (
                   <div style={{ overflowX: 'auto' }}>
@@ -1894,7 +1847,7 @@ export default function App() {
                         {patientBills.map((b, i) => (
                           <tr key={i}>
                             <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--obs-accent)', fontWeight: 600 }}>{b.billId}</td>
-                            <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(b.issuedAt || b.timestamp || Date.now()).toLocaleDateString()}</td>
+                            <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(b.issuedAt).toLocaleDateString()}</td>
                             <td style={{ fontWeight: 600 }}>{b.templateName || 'Prescription Fulfillment'}</td>
                             <td>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.75rem' }}>
@@ -1904,10 +1857,10 @@ export default function App() {
                               </div>
                             </td>
                             <td style={{ color: '#10b981', fontWeight: 700 }}>${Number(b.amount || 0).toFixed(2)}</td>
-                            <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{b.issuedBy || 'pharmacist'}</td>
+                            <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{b.issuedBy}</td>
                             <td>
                               <span className="status-pill pill-ok">
-                                {b.status || 'DISPENSED'}
+                                {b.status}
                               </span>
                             </td>
                             <td>
@@ -1923,7 +1876,7 @@ export default function App() {
                                   <span>IPFS</span>
                                 </a>
                               ) : (
-                                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Anchored</span>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>-</span>
                               )}
                             </td>
                           </tr>
@@ -1942,36 +1895,33 @@ export default function App() {
           selectedRole.allowedTabs?.includes('operations') ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Pharmacy Operations, Telemetry &amp; Workforce</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Pharmacy Operations &amp; Staff</h2>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  Hyperledger Fabric swarm status, staff onboarding &amp; certificate mapping, and global audit trails.
+                  Service status, the pharmacy staff list and the audit of all pharmacy bills.
                 </p>
               </div>
 
-              {/* Peer Node Consensus Cards */}
+              {/* Service status (real values from the pharmacy backend) */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
                 <div className="pharmacy-glass" style={{ padding: '1rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hospital Peer0 Block Height</span>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, marginTop: '0.25rem', fontFamily: 'var(--font-mono)', color: 'var(--obs-accent)' }}>
-                    Block #{networkStatus.nodes?.peer0 || 18}
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Pharmacy backend</span>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, marginTop: '0.25rem', color: networkStatus.service === 'UP' ? '#10b981' : '#f59e0b' }}>
+                    {networkStatus.service || 'UNKNOWN'}
                   </div>
                 </div>
                 <div className="pharmacy-glass" style={{ padding: '1rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hospital Peer1 Block Height</span>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, marginTop: '0.25rem', fontFamily: 'var(--font-mono)', color: 'var(--obs-accent)' }}>
-                    Block #{networkStatus.nodes?.peer1 || 18}
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>IPFS node</span>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, marginTop: '0.25rem', color: networkStatus.ipfs === 'UP' ? '#10b981' : '#f59e0b' }}>
+                    {networkStatus.ipfs || 'UNKNOWN'}
                   </div>
                 </div>
                 <div className="pharmacy-glass" style={{ padding: '1rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hospital Peer2 (Pharmacy MSP)</span>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, marginTop: '0.25rem', fontFamily: 'var(--font-mono)', color: 'var(--obs-accent)' }}>
-                    Block #{networkStatus.nodes?.peer2 || 18}
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Where pharmacy records are kept</span>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: '0.4rem' }}>
+                    Pharmacy store (not on the ledger)
                   </div>
-                </div>
-                <div className="pharmacy-glass" style={{ padding: '1rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>IPFS Cluster Health</span>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, marginTop: '0.25rem', color: '#10b981' }}>
-                    {networkStatus.ipfs || 'UP'}
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                    Dispensing a hospital prescription is the only pharmacy action written to the ledger.
                   </div>
                 </div>
               </div>
@@ -2038,12 +1988,12 @@ export default function App() {
                       {onboardLoading ? (
                         <>
                           <RefreshCw size={14} className="animate-spin" />
-                          <span>Issuing Fabric Certificate...</span>
+                          <span>Saving...</span>
                         </>
                       ) : (
                         <>
                           <ShieldCheck size={14} />
-                          <span>Authorize Identity &amp; Map Certificate</span>
+                          <span>Add to Staff List</span>
                         </>
                       )}
                     </button>
@@ -2065,29 +2015,20 @@ export default function App() {
                         <th>Name</th>
                         <th>Role</th>
                         <th>Department</th>
-                        <th>Fabric Certificate</th>
                         <th>Status</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {(employees.length > 0 ? employees : [
-                        { userId: 'mgr_evelyn', name: 'Dr. Evelyn Vance', role: 'manager', dept: 'Administration', certMapped: 'admin' },
-                        { userId: 'ph_alice', name: 'Alice Walker, PharmD', role: 'billing', dept: 'Dispensing & Billing', certMapped: 'user10' },
-                        { userId: 'inv_charlie', name: 'Charlie Brown', role: 'inventory', dept: 'Supply Chain', certMapped: 'user20' },
-                        { userId: 'billing_office_1', name: 'Central Billing Desk', role: 'billing', dept: 'Outpatient Billing', certMapped: 'user5' }
-                      ]).map((emp, i) => (
+                      {employees.map((emp, i) => (
                         <tr key={i}>
                           <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--obs-accent)', fontWeight: 600 }}>{emp.userId || emp.empId}</td>
                           <td style={{ fontWeight: 600 }}>{emp.name}</td>
                           <td>
                             <span className="status-pill pill-info">{emp.role}</span>
                           </td>
-                          <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{emp.dept || emp.metadata?.dept || 'Pharmacy Org'}</td>
+                          <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{emp.dept || emp.metadata?.dept || '-'}</td>
                           <td>
-                            <code style={{ fontSize: '0.72rem', color: '#10b981' }}>{emp.certMapped || 'X509-Val'}</code>
-                          </td>
-                          <td>
-                            <span className="status-pill pill-ok">Active</span>
+                            <span className="status-pill pill-ok">Listed</span>
                           </td>
                         </tr>
                       ))}
@@ -2100,9 +2041,9 @@ export default function App() {
               <div className="pharmacy-glass" style={{ padding: '1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <div>
-                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Global Blockchain Audit Trail</h3>
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Pharmacy Bill Audit</h3>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      Immutable ledger log of all prescriptions, POS sales, and IPFS receipt commitments.
+                      Every pharmacy bill with the staff member who issued it and its IPFS document.
                     </p>
                   </div>
                   <button onClick={fetchOpsData} className="btn-ink btn-ink-ghost" style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}>
@@ -2127,13 +2068,13 @@ export default function App() {
                       {auditBills.map((b, i) => (
                         <tr key={i}>
                           <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                            {new Date(b.issuedAt || b.timestamp || Date.now()).toLocaleString()}
+                            {new Date(b.issuedAt).toLocaleString()}
                           </td>
                           <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--obs-accent)', fontWeight: 600 }}>{b.billId}</td>
                           <td style={{ fontWeight: 600 }}>{b.patientId}</td>
                           <td>{b.templateName || 'Prescription Fulfillment'}</td>
                           <td style={{ color: '#10b981', fontWeight: 700 }}>${Number(b.amount || 0).toFixed(2)}</td>
-                          <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{b.issuedBy || 'ph_alice'}</td>
+                          <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{b.issuedBy}</td>
                           <td>
                             {b.ipfsHash ? (
                               <a
@@ -2147,7 +2088,7 @@ export default function App() {
                                 <span>{b.ipfsHash.slice(0, 8)}...</span>
                               </a>
                             ) : (
-                              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Anchored</span>
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>-</span>
                             )}
                           </td>
                         </tr>
@@ -2157,7 +2098,7 @@ export default function App() {
                 </div>
               </div>
             </div>
-          ) : renderRbacGate(PHARMACY_ROLES[3], 'Audit Trail & Fabric Consensus')
+          ) : renderRbacGate(PHARMACY_ROLES[3], 'Operations & Staff')
         )}
       </main>
 
@@ -2269,7 +2210,7 @@ export default function App() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-card)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>MSP Identity:</span>
+                        <span style={{ color: 'var(--text-muted)' }}>Account:</span>
                         <code style={{ color: 'var(--obs-accent)', fontWeight: 600 }}>{r.user}</code>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.72rem' }}>
@@ -2302,7 +2243,7 @@ export default function App() {
                   </h3>
                 </div>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  Hyperledger Fabric Cryptographic Gate
+                  Hospital staff sign-in
                 </span>
               </div>
 
@@ -2327,7 +2268,7 @@ export default function App() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.35rem' }}>
-                    Username / MSP Identity
+                    Username
                   </label>
                   <input
                     type="text"
@@ -2389,9 +2330,6 @@ export default function App() {
                       {showAuthPass ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
-                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-                    Demo pass: <code style={{ color: 'var(--obs-accent)' }}>{pendingRole.pwd}</code>
-                  </span>
                 </div>
               </div>
 
@@ -2415,7 +2353,7 @@ export default function App() {
                   {authLoading ? (
                     <>
                       <RefreshCw size={14} className="animate-spin" />
-                      <span>Verifying on Blockchain...</span>
+                      <span>Signing in...</span>
                     </>
                   ) : (
                     <>
@@ -2445,7 +2383,7 @@ export default function App() {
                 <label style={{ fontSize: '0.75rem', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Item SKU / ID</label>
                 <input
                   type="text"
-                  placeholder="e.g. MED-008"
+                  placeholder="Item ID"
                   value={newBatch.itemId}
                   onChange={e => setNewBatch({ ...newBatch, itemId: e.target.value })}
                   style={{ width: '100%', padding: '0.55rem', borderRadius: '0.5rem', border: '1px solid var(--border-card)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}
@@ -2503,7 +2441,7 @@ export default function App() {
                 </select>
               </div>
               <button type="submit" className="btn-ink btn-ink-primary" style={{ marginTop: '0.5rem', padding: '0.65rem' }}>
-                <ShieldCheck size={14} /> Commit Batch to Blockchain
+                <ShieldCheck size={14} /> Save Batch
               </button>
             </form>
           </div>
@@ -2535,14 +2473,14 @@ export default function App() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Ordering Physician:</span>
-                <span>{dispenseModalVisit.doctor || 'Dr. Smith'}</span>
+                <span>{dispenseModalVisit.assignedDoctor || '-'}</span>
               </div>
             </div>
 
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 700, display: 'block', marginBottom: '0.35rem' }}>Clinical Prescription Ordered</label>
               <div style={{ padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-card)', background: 'var(--bg-card)', fontSize: '0.82rem', color: 'var(--obs-accent)', fontWeight: 600 }}>
-                {dispenseModalVisit.clinical?.prescriptions?.[0] || 'Paracetamol 500mg, Amoxicillin 500mg'}
+                {prescriptionText(dispenseModalVisit.clinical?.prescriptions?.[dispenseModalVisit.clinical.prescriptions.length - 1])}
               </div>
             </div>
 

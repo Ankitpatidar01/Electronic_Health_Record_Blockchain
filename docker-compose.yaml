@@ -398,8 +398,7 @@ services:
       - "3000:3000"
     environment:
       - IPFS_API=http://ipfs.ehr.local:5001/api/v0
-      - FABRIC_CHANNEL_NAME=ehrchannel
-      - FABRIC_CHAINCODE_NAME=ehr
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}
     networks:
       - default
       - ehr_network

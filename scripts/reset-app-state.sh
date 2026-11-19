@@ -15,7 +15,7 @@ docker compose -f "${APP_COMPOSE}" --profile dashboard down --volumes --remove-o
 
 # State kept in bind-mounted folders.
 rm -f "${ROOT_DIR}/orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/patient-api/data/"patients.db*
-rm -f "${ROOT_DIR}/orgs/pharmacy/fabric-network-swarm/app/backend/data/pharmacy_store.json"
+rm -f "${ROOT_DIR}/orgs/pharmacy/fabric-network-swarm/app/backend/data/pharmacy_store.json"*
 
 rm -f "${ROOT_DIR}/orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/credentials/"*.pem
 
