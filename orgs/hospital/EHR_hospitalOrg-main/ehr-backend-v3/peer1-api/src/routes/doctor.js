@@ -9,6 +9,7 @@ const { fetchByCID, pinJSON } = require('../fabric/ipfsClient');
 const lab = require('../../../shared/labReport');
 const codes = require('../../../shared/diseaseCodes');
 const timeline = require('../../../shared/timeline');
+const directory = require('../../../shared/patientDirectory');
 const logger = require('../config/logger');
 
 const asDoctor = [authenticate, requireRole('doctor'), peerContext];
@@ -33,7 +34,15 @@ router.get('/visits/:id',
   ...asDoctor,
   wrap(async (req, res) => {
     const { onChain, clinical } = await getVisitWithContent(req.contract, req.params.id);
-    return res.json({ success: true, data: { ...onChain, clinical } });
+    // Who the patient is (name, age, sex) for the treating doctor.
+    let patient = { patientId: onChain.patientId };
+    try {
+      const p = await directory.readPatient(req.contract, fetchByCID, onChain.patientId);
+      if (p) patient = { patientId: p.patientId, name: p.name, age: p.age, gender: p.gender, bloodGroup: p.bloodGroup, did: p.did };
+    } catch (err) {
+      logger.warn('Patient profile could not be loaded for visit', { visitId: req.params.id, error: err.message });
+    }
+    return res.json({ success: true, data: { ...onChain, clinical, patient } });
   })
 );
 

@@ -52,7 +52,7 @@ function makeLedger() {
   return { state, ctxFor };
 }
 
-const CID = (n) => `bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s5${String(n).padStart(3, 'a')}`;
+const CID = (n) => `bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s5${String(n).padStart(3, '0').replace(/\d/g, d => 'abcdefghij'[d])}`;
 const HASH = 'a'.repeat(64);
 
 async function orderedVisit() {
@@ -61,7 +61,7 @@ async function orderedVisit() {
   const patients = new PatientContract();
   const visits = new VisitContract();
   const forward = new ForwardContract();
-  await patients.RegisterPatient(ctxFor('receptionist'), 'PAT-1', 'N', '40', 'M', 'O+', '9', 'addr', CID(1));
+  await patients.RegisterPatient(ctxFor('receptionist'), 'PAT-1', CID(99), 'f'.repeat(64), CID(1));
   const visit = JSON.parse(await visits.OpenVisit(ctxFor('receptionist'), 'PAT-1', '', CID(2)));
   await visits.AssignDoctor(ctxFor('receptionist'), visit.visitId, 'doctor', CID(3));
   await forward.ForwardToLab(ctxFor('doctor'), visit.visitId, `${visit.visitId}-L1`, CID(4));
@@ -139,7 +139,7 @@ test('supervisor can reject; technician resubmits; queue lists by status', async
 test('admin role is scoped to its organisation', async () => {
   const { ctxFor } = makeLedger();
   const patients = new PatientContract();
-  const args = ['PAT-2', 'N', '30', 'F', 'A+', '9', 'addr', CID(1)];
+  const args = ['PAT-2', CID(99), 'f'.repeat(64), CID(1)];
   await assert.rejects(patients.RegisterPatient(ctxFor('admin', 'provideradmin', 'ProviderMSP'), ...args), /Access denied/);
   await assert.rejects(patients.RegisterPatient(ctxFor('admin', 'labadmin', 'DiagnosticsMSP'), ...args), /Access denied/);
   const p = JSON.parse(await patients.RegisterPatient(ctxFor('admin', 'hospitaladmin', 'HospitalMSP'), ...args));
@@ -149,7 +149,7 @@ test('admin role is scoped to its organisation', async () => {
 test('timestamps come from the transaction, not the wall clock', async () => {
   const { ctxFor } = makeLedger();
   const patients = new PatientContract();
-  const p = JSON.parse(await patients.RegisterPatient(ctxFor('receptionist'), 'PAT-3', 'N', '30', 'F', 'A+', '9', 'addr', CID(1)));
+  const p = JSON.parse(await patients.RegisterPatient(ctxFor('receptionist'), 'PAT-3', CID(99), 'f'.repeat(64), CID(1)));
   assert.equal(p.createdAt, new Date((1790000000 + 1) * 1000).toISOString());
   assert.equal(p.updatedAt, p.createdAt);
 });

@@ -17,6 +17,7 @@ const { wrap, parseResult } = require('../middleware/errorHandler');
 const { fetchByCID, pinJSON } = require('../fabric/ipfsClient');
 const { anchorFHIRRecord } = require('../../../shared/fhir-anchor');
 const lab = require('../../../shared/labReport');
+const directory = require('../../../shared/patientDirectory');
 const logger = require('../config/logger');
 
 const LAB_ROLES   = ['labreceptionist', 'labtechnician', 'radiologist', 'labsupervisor', 'labadmin'];
@@ -61,7 +62,7 @@ async function patientSummary(contract, patientId, cache) {
   if (cache.has(patientId)) return cache.get(patientId);
   let summary = { patientId, name: '', age: null, gender: '' };
   try {
-    const p = parseResult(await contract.evaluateTransaction('PatientContract:GetPatient', patientId));
+    const p = await directory.readPatient(contract, fetchByCID, patientId);
     if (p) summary = { patientId, name: p.name || '', age: p.age ?? null, gender: p.gender || '' };
   } catch (err) {
     logger.warn('Patient lookup failed for lab queue', { patientId, error: err.message });

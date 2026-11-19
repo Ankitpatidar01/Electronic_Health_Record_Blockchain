@@ -8,6 +8,7 @@ const { wrap, parseResult } = require('../middleware/errorHandler');
 const ipfsClient = require('../fabric/ipfsClient');
 const { anchorFHIRRecord } = require('../../../shared/fhir-anchor');
 const { runIntake } = require('../../../shared/intake');
+const directory = require('../../../shared/patientDirectory');
 const timeline = require('../../../shared/timeline');
 const logger = require('../config/logger');
 
@@ -16,8 +17,7 @@ const canRead   = [authenticate, requireAnyKnownRole, peerContext];
 
 // ── GET /patients — ListAllPatients ──────────────────────────
 router.get('/', ...canManage, wrap(async (req, res) => {
-  const result = await req.contract.evaluateTransaction('PatientContract:ListAllPatients');
-  return res.json({ success: true, data: parseResult(result) });
+  return res.json({ success: true, data: await directory.listPatients(req.contract, ipfsClient.fetchByCID) });
 }));
 
 // ── POST /patients — RegisterPatient + InitEHR ────────────────
@@ -50,12 +50,13 @@ router.post('/',
     const { cid: ehrCID } = await ipfsClient.initEHR(patientId, demographics);
     logger.info('EHR initialised in IPFS', { patientId, ehrCID });
 
-    // Step 2 — register patient on blockchain (pass ehrCID as 9th arg)
+    // Step 2 — pin the profile document, then register on the ledger. The
+    // ledger receives the profile CID and hash, never the demographics.
+    const pinned = await directory.pinProfile(ipfsClient, patientId, demographics);
     const result = await req.contract.submitTransaction(
-      'PatientContract:RegisterPatient',
-      patientId, name, String(age), gender, bloodGroup, contact, address, ehrCID
+      'PatientContract:RegisterPatient', patientId, pinned.cid, pinned.hash, ehrCID
     );
-    const patient = parseResult(result);
+    const patient = { ...parseResult(result), ...demographics, age: Number(age) };
 
     // Step 3 — store CID in EhrContract (creates the on-chain EHR index)
     await req.contract.submitTransaction(
@@ -123,10 +124,9 @@ router.get('/:id/disease-code', ...canRead, [param('id').trim().notEmpty()], wra
 router.get('/:id',
   ...canRead,
   wrap(async (req, res) => {
-    const result = await req.contract.evaluateTransaction(
-      'PatientContract:GetPatient', req.params.id
-    );
-    return res.json({ success: true, data: parseResult(result) });
+    const patient = await directory.readPatient(req.contract, ipfsClient.fetchByCID, req.params.id);
+    if (!patient) return res.status(404).json({ success: false, error: `Patient not found: ${req.params.id}` });
+    return res.json({ success: true, data: patient });
   })
 );
 
@@ -183,12 +183,19 @@ router.put('/:id',
     body('address').optional().isString(),
   ],
   wrap(async (req, res) => {
-    const { contact = '', address = '' } = req.body;
+    const contact = String(req.body.contact || '').trim();
+    const address = String(req.body.address || '').trim();
+    if (!contact && !address) return res.status(400).json({ success: false, error: 'Give a new contact number or address' });
     logger.info('UpdatePatientInfo', { patientId: req.params.id, userId: req.user.userId });
+
+    const current = await directory.readPatient(req.contract, ipfsClient.fetchByCID, req.params.id);
+    if (!current) return res.status(404).json({ success: false, error: `Patient not found: ${req.params.id}` });
+    const next = { ...current, contact: contact || current.contact, address: address || current.address };
+    const pinned = await directory.pinProfile(ipfsClient, req.params.id, next);
     const result = await req.contract.submitTransaction(
-      'PatientContract:UpdatePatientInfo', req.params.id, contact, address
+      'PatientContract:UpdatePatientInfo', req.params.id, pinned.cid, pinned.hash
     );
-    return res.json({ success: true, data: parseResult(result) });
+    return res.json({ success: true, data: { ...parseResult(result), ...pinned.profile } });
   })
 );
 

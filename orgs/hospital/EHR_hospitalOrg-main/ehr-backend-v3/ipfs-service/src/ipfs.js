@@ -20,6 +20,36 @@ const logger = require('./logger');
 
 const IPFS_API = process.env.IPFS_API_URL || 'http://localhost:5001';
 
+// ── Encryption at rest ───────────────────────────────────────────────────────
+// Every JSON document is encrypted with AES-256-GCM before it is pinned, so the
+// IPFS node, its public gateway and anyone holding a CID see ciphertext only.
+// The CID recorded on the ledger is the CID of the ciphertext.
+const crypto = require('crypto');
+
+if (!process.env.IPFS_ENCRYPTION_KEY) {
+  logger.error('IPFS_ENCRYPTION_KEY is required. Run: node scripts/init-env.js');
+  process.exit(1);
+}
+const ENC_KEY = crypto.createHash('sha256').update(process.env.IPFS_ENCRYPTION_KEY, 'utf8').digest();
+const ENC_ALG = 'A256GCM';
+
+function seal(plainText) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', ENC_KEY, iv);
+  const ct = Buffer.concat([cipher.update(plainText, 'utf8'), cipher.final()]);
+  return { _enc: ENC_ALG, v: 1, iv: iv.toString('base64'), tag: cipher.getAuthTag().toString('base64'), ct: ct.toString('base64') };
+}
+
+function open(envelope, cid) {
+  try {
+    const decipher = crypto.createDecipheriv('aes-256-gcm', ENC_KEY, Buffer.from(envelope.iv, 'base64'));
+    decipher.setAuthTag(Buffer.from(envelope.tag, 'base64'));
+    return Buffer.concat([decipher.update(Buffer.from(envelope.ct, 'base64')), decipher.final()]).toString('utf8');
+  } catch (err) {
+    throw new Error(`Content at CID ${cid} could not be decrypted (wrong key or tampered data)`);
+  }
+}
+
 // ── Health check ─────────────────────────────────────────────────────────────
 
 async function checkHealth() {
@@ -42,7 +72,7 @@ async function checkHealth() {
  * @returns {string} CID
  */
 async function pinJSON(jsonObj, filename) {
-  const content = JSON.stringify(jsonObj, null, 2);
+  const content = JSON.stringify(seal(JSON.stringify(jsonObj)));
   const fname   = filename || `ehr-${Date.now()}.json`;
 
   const form = new FormData();
@@ -94,6 +124,10 @@ async function fetchJSON(cid) {
     parsed = JSON.parse(res.data);
   } catch (e) {
     throw new Error(`Content at CID ${cid} is not valid JSON: ${e.message}`);
+  }
+  // Documents pinned before encryption was introduced are returned as stored.
+  if (parsed && parsed._enc === ENC_ALG) {
+    parsed = JSON.parse(open(parsed, cid));
   }
 
   logger.info('Fetched JSON from IPFS', { cid });

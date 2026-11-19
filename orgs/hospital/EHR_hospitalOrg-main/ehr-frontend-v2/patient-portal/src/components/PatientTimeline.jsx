@@ -11,6 +11,8 @@ import {
 
 const TYPES = {
   REGISTRATION:        { label: 'Registration',            icon: UserPlus,      tone: 'is-info' },
+  PROFILE_UPDATE:      { label: 'Contact details updated', icon: UserPlus,      tone: 'is-neutral' },
+  EHR_CREATED:         { label: 'Health record created',   icon: FileText,      tone: 'is-info' },
   SYMPTOM_ANALYSIS:    { label: 'Symptoms & AI cross-reference', icon: Bot,      tone: 'is-violet' },
   VISIT_OPENED:        { label: 'Visit opened',            icon: ClipboardList, tone: 'is-neutral' },
   ASSIGNMENT:          { label: 'Staff assigned',          icon: ClipboardList, tone: 'is-neutral' },

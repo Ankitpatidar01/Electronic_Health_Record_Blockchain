@@ -19,6 +19,8 @@ const db            = require('../db/database');
 const { authenticate } = require('../middleware/auth');
 const { wrap, parseResult } = require('../middleware/errorHandler');
 const { fabricContext } = require('../middleware/fabricContext');
+const { fetchByCID }    = require('../fabric/ipfsClient');
+const directory         = require('../../../shared/patientDirectory');
 const logger        = require('../config/logger');
 
 const SALT_ROUNDS = 10;
@@ -64,12 +66,7 @@ router.post('/register',
     }
 
     // The patient must exist on the ledger and the phone number must match.
-    let onChain = null;
-    try {
-      onChain = parseResult(await req.contract.evaluateTransaction('PatientContract:GetPatient', patientId));
-    } catch (err) {
-      if (!/not found/i.test(err.message || '') && !(err.details || []).some(d => /not found/i.test(d.message || ''))) throw err;
-    }
+    const onChain = await directory.readPatient(req.contract, fetchByCID, patientId);
     const given = digits(phone);
     const known = digits(onChain?.contact);
     if (!onChain || !known || known.slice(-10) !== given.slice(-10)) {

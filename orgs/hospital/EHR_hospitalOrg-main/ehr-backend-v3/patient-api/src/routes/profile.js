@@ -23,10 +23,8 @@ const secured = [authenticate, fabricContext];
 router.get('/', ...secured, wrap(async (req, res) => {
   const { patientId } = req.patient;
 
-  const result = await req.contract.evaluateTransaction(
-    'PatientContract:GetPatient', patientId
-  );
-  const patient = parseResult(result);
+  const patient = await require('../../../shared/patientDirectory')
+    .readPatient(req.contract, require('../fabric/ipfsClient').fetchByCID, patientId);
   if (!patient) return res.status(404).json({ success: false, error: 'Patient not found on blockchain' });
 
   logger.info('Patient viewed profile', { patientId });

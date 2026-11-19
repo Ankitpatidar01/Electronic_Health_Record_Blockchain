@@ -12,6 +12,8 @@ const {
 } = require('./accessControl');
 
 const PATIENT_PREFIX = 'PATIENT';
+const CID_RE    = /^(?:b[a-z2-7]{20,120}|Qm[1-9A-HJ-NP-Za-km-z]{44})$/;
+const SHA256_RE = /^[a-f0-9]{64}$/;
 const patientKey = id => `${PATIENT_PREFIX}:${id}`;
 
 class PatientContract extends Contract {
@@ -21,30 +23,31 @@ class PatientContract extends Contract {
 
   // ── RegisterPatient ───────────────────────────────────────────────────────
   // Receptionist/admin creates the patient master record.
-  // initialEhrCID is optional — passed by backend after pinning empty EHR to IPFS.
-  // If omitted (e.g. legacy call) it can be set later via EhrContract:InitEHR.
-  async RegisterPatient(ctx, patientId, name, age, gender, bloodGroup, contact, address, initialEhrCID) {
+  //
+  // No name, contact or address is stored on the ledger. Demographics live in
+  // an encrypted profile document on IPFS; the ledger keeps that document's
+  // CID and a SHA-256 of its content, the patient's DID, and the EHR CID.
+  async RegisterPatient(ctx, patientId, profileCID, profileHash, initialEhrCID) {
     const { userId } = requireRole(ctx, 'receptionist', 'admin');
 
-    if (!patientId || !name || !age || !gender || !bloodGroup || !contact || !address) {
-      throw new Error('All fields are required: patientId, name, age, gender, bloodGroup, contact, address');
-    }
+    if (!patientId) throw new Error('patientId is required');
+    if (!CID_RE.test(profileCID || '')) throw new Error('profileCID must be a valid IPFS CID');
+    if (!SHA256_RE.test(profileHash || '')) throw new Error('profileHash must be a 64-character lowercase SHA-256 hex digest');
 
     const existing = await getState(ctx, patientKey(patientId));
     if (existing) throw new Error(`Patient already exists: ${patientId}`);
 
-    // Exactly one DID per patient, created with the patient record.
-    const didRecord = await require('./did').ensureDid(ctx, patientId);
+    // Exactly one DID per patient, created with the patient record. The
+    // registration document is its first entry.
+    const did = require('./did');
+    const didRecord = await did.ensureDid(ctx, patientId);
+    await did.appendEntry(ctx, patientId, { cid: profileCID, type: 'REGISTRATION', ref: 'profile' });
 
     const patient = {
       patientId,
       did:          didRecord.did,
-      name,
-      age:          parseInt(age, 10),
-      gender,
-      bloodGroup,
-      contact,
-      address,
+      profileCID,
+      profileHash,
       visitIds:     [],
       visitCount:   0,
       // IPFS EHR reference — set by backend after pinning, or via InitEHR
@@ -93,13 +96,17 @@ class PatientContract extends Contract {
   }
 
   // ── UpdatePatientInfo ─────────────────────────────────────────────────────
-  // Admin/receptionist can update contact/address (non-clinical).
-  async UpdatePatientInfo(ctx, patientId, contact, address) {
+  // Admin/receptionist records a new version of the profile document
+  // (contact or address changed). The new CID is appended to the DID.
+  async UpdatePatientInfo(ctx, patientId, profileCID, profileHash) {
     requireRole(ctx, 'admin', 'receptionist');
+    if (!CID_RE.test(profileCID || '')) throw new Error('profileCID must be a valid IPFS CID');
+    if (!SHA256_RE.test(profileHash || '')) throw new Error('profileHash must be a 64-character lowercase SHA-256 hex digest');
     const patient = await getState(ctx, patientKey(patientId));
     if (!patient) throw new Error(`Patient not found: ${patientId}`);
-    if (contact) patient.contact = contact;
-    if (address) patient.address = address;
+    await require('./did').appendEntry(ctx, patientId, { cid: profileCID, type: 'PROFILE_UPDATE', ref: 'profile' });
+    patient.profileCID = profileCID;
+    patient.profileHash = profileHash;
     await putState(ctx, patientKey(patientId), patient);
     return JSON.stringify(patient);
   }

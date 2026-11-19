@@ -8,6 +8,7 @@ const { wrap, parseResult } = require('../middleware/errorHandler');
 const { initVisit, fetchByCID, pinJSON } = require('../fabric/ipfsClient');
 const { anchorFHIRRecord } = require('../../../shared/fhir-anchor');
 const { runIntake } = require('../../../shared/intake');
+const directory = require('../../../shared/patientDirectory');
 const logger = require('../config/logger');
 
 const canManage    = [authenticate, requireRole('receptionist', 'admin'), peerContext];
@@ -38,10 +39,7 @@ router.post('/',
     logger.info('OpenVisit', { patientId, userId: req.user.userId });
 
     // Step 1 — get patient's current visitCount to derive the new visitId
-    const patientResult = await req.contract.evaluateTransaction(
-      'PatientContract:GetPatient', patientId
-    );
-    const patient = parseResult(patientResult);
+    const patient = await directory.readPatient(req.contract, fetchByCID, patientId);
     if (!patient) return res.status(404).json({ success: false, error: `Patient not found: ${patientId}` });
 
     const visitNumber = (patient.visitCount || 0) + 1;

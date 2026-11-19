@@ -70,6 +70,7 @@ services:
       IPFS_API_URL: http://ipfs.ehr.local:5001
       IPFS_GATEWAY_URL: http://ipfs.ehr.local:8080
       IPFS_SERVICE_KEY: "${IPFS_SERVICE_KEY:?IPFS_SERVICE_KEY is not set. Run: node scripts/init-env.js}"
+      IPFS_ENCRYPTION_KEY: "${IPFS_ENCRYPTION_KEY:?IPFS_ENCRYPTION_KEY is not set. Run: node scripts/init-env.js}"
     ports:
       - "4006:4006"
     networks:

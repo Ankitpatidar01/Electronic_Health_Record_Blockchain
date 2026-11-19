@@ -57,12 +57,12 @@ const HASH = 'a'.repeat(64);
 async function registered() {
   const ledger = makeLedger();
   const { ctxFor } = ledger;
-  const p = JSON.parse(await new PatientContract().RegisterPatient(ctxFor('receptionist'), 'PAT-1', 'N', '40', 'M', 'O+', '9', 'addr', CID(1)));
+  const p = JSON.parse(await new PatientContract().RegisterPatient(ctxFor('receptionist'), 'PAT-1', CID(99), 'f'.repeat(64), CID(1)));
   await new EhrContract().InitEHR(ctxFor('receptionist'), 'PAT-1', CID(1));
   return { ...ledger, patient: p, did: new DidContract(), codes: new CodeContract() };
 }
 
-test('registration creates exactly one DID and the registration CID is entry 1', async () => {
+test('registration creates exactly one DID; the profile CID is entry 1; no demographics on the ledger', async () => {
   const { ctxFor, patient, did } = await registered();
   assert.match(patient.did, /^did:ehr:[a-f0-9]{32}$/);
 
@@ -71,12 +71,16 @@ test('registration creates exactly one DID and the registration CID is entry 1',
   assert.equal(record.patientId, 'PAT-1');
 
   const list = JSON.parse(await did.ListCIDs(ctxFor('receptionist'), patient.did));
-  assert.equal(list.entries.length, 1);
+  assert.equal(list.entries.length, 2);
   assert.deepEqual(
     { seq: list.entries[0].seq, type: list.entries[0].type, cid: list.entries[0].cid, userId: list.entries[0].userId, mspId: list.entries[0].mspId },
-    { seq: 1, type: 'REGISTRATION', cid: CID(1), userId: 'receptionist', mspId: 'HospitalMSP' }
+    { seq: 1, type: 'REGISTRATION', cid: CID(99), userId: 'receptionist', mspId: 'HospitalMSP' }
   );
-  await assert.rejects(new PatientContract().RegisterPatient(ctxFor('receptionist'), 'PAT-1', 'N', '40', 'M', 'O+', '9', 'addr', CID(1)), /already exists/);
+  assert.equal(list.entries[1].type, 'EHR_CREATED');
+  assert.deepEqual(Object.keys(patient).sort(),
+    ['createdAt', 'did', 'ehrCID', 'patientId', 'profileCID', 'profileHash', 'registeredBy', 'updatedAt', 'visitCount', 'visitIds']);
+  await assert.rejects(new PatientContract().RegisterPatient(ctxFor('receptionist'), 'PAT-9', 'Jane Doe', 'f'.repeat(64), CID(1)), /valid IPFS CID/);
+  await assert.rejects(new PatientContract().RegisterPatient(ctxFor('receptionist'), 'PAT-1', CID(99), 'f'.repeat(64), CID(1)), /already exists/);
 });
 
 test('every visit, consultation, prescription, lab and EHR change appends a CID in order', async () => {
@@ -94,20 +98,20 @@ test('every visit, consultation, prescription, lab and EHR change appends a CID 
   await did.AppendDocument(ctxFor('receptionist'), 'PAT-1', CID(10), 'SYMPTOM_ANALYSIS', v.visitId, '');
 
   const { entries, entryCount } = JSON.parse(await did.ListCIDs(ctxFor('doctor'), patient.did));
-  assert.equal(entryCount, 10);
-  assert.deepEqual(entries.map(e => e.seq), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-  assert.deepEqual(entries.map(e => e.cid), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(CID));
+  assert.equal(entryCount, 11);
+  assert.deepEqual(entries.map(e => e.seq), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  assert.deepEqual(entries.map(e => e.cid), [99, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(CID));
   assert.deepEqual(entries.map(e => e.type), [
-    'REGISTRATION', 'VISIT_OPENED', 'ASSIGNMENT', 'CONSULTATION', 'PRESCRIPTION',
+    'REGISTRATION', 'EHR_CREATED', 'VISIT_OPENED', 'ASSIGNMENT', 'CONSULTATION', 'PRESCRIPTION',
     'LAB_ORDER', 'LAB_ACCEPTED', 'LAB_RESULT', 'LAB_RESULT_VERIFIED', 'SYMPTOM_ANALYSIS',
   ]);
-  const labResult = entries[7];
+  const labResult = entries[8];
   assert.equal(labResult.userId, 'labtechnician');
   assert.equal(labResult.mspId, 'DiagnosticsMSP');
   assert.equal(labResult.ref, `${v.visitId}-L1`);
   assert.match(labResult.timestamp, /^\d{4}-\d{2}-\d{2}T/);
 
-  const one = JSON.parse(await did.GetCIDEntry(ctxFor('doctor'), patient.did, '5'));
+  const one = JSON.parse(await did.GetCIDEntry(ctxFor('doctor'), patient.did, '6'));
   assert.equal(one.cid, CID(5));
 });
 
@@ -192,7 +196,7 @@ test('StatsContract returns counts only, to admin and observer', async () => {
     patients: 1,
     visits: { total: 1, byStatus: { WITH_LAB: 1 } },
     dids: 1,
-    documents: 4,
+    documents: 5,
     labRequests: { total: 1, byStatus: { REQUESTED: 1 } },
     diseaseCodes: {
       patientsWithCode: 1, provisional: 0, confirmed: 1,

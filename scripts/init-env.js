@@ -16,6 +16,7 @@ const ROOT = path.resolve(__dirname, '..');
 const GENERATED = {
   JWT_SECRET:            () => crypto.randomBytes(48).toString('base64url'),
   IPFS_SERVICE_KEY:      () => crypto.randomBytes(24).toString('base64url'),
+  IPFS_ENCRYPTION_KEY:   () => crypto.randomBytes(32).toString('hex'),
   DASHBOARD_SERVICE_KEY: () => crypto.randomBytes(24).toString('base64url'),
   DIGILOCKER_VAULT_KEY:  () => crypto.randomBytes(32).toString('hex'),
 };
@@ -88,7 +89,7 @@ function initServices(env) {
   writeServiceEnv(`${backend}/patient-api`, ['PORT=4005', 'PEER_ADDRESS=localhost:7051', 'SQLITE_PATH=./data/patients.db', ...shared]);
   writeServiceEnv(`${backend}/ipfs-service`, [
     'PORT=4006', 'IPFS_API_URL=http://localhost:5001', 'IPFS_GATEWAY_URL=http://localhost:8090',
-    'MAX_BODY_SIZE=5mb', `IPFS_SERVICE_KEY=${env.IPFS_SERVICE_KEY}`,
+    'MAX_BODY_SIZE=5mb', `IPFS_SERVICE_KEY=${env.IPFS_SERVICE_KEY}`, `IPFS_ENCRYPTION_KEY=${env.IPFS_ENCRYPTION_KEY}`,
   ]);
   writeServiceEnv('orgs/digilocker/backend', [
     'PORT=4007', `NODE_ENV=${env.NODE_ENV || 'development'}`,

@@ -131,7 +131,8 @@ export default function DoctorVisitsPage() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="font-mono text-xs text-slate-400">{visit.visitId}</p>
-                <h2 className="text-lg font-semibold text-slate-900">Patient: {visit.patientId}</h2>
+                <h2 className="text-lg font-semibold text-slate-900">{visit.patient?.name || `Patient ${visit.patientId}`}</h2>
+                <p className="text-xs text-slate-500">{[visit.patientId, visit.patient?.age != null ? `${visit.patient.age} y` : '', visit.patient?.gender].filter(Boolean).join(' · ')}</p>
                 <div className="flex items-center gap-3 mt-1">
                   <StatusBadge status={visit.status} />
                   {visit.assignedNurse && <Badge variant="violet">Nurse: {visit.assignedNurse}</Badge>}
@@ -364,7 +365,7 @@ function LabRequestCard({ lr, visit, api }) {
       </button>
       {open && (
         <div className="px-4 pb-4 border-t border-slate-100 pt-4">
-          <LabReport order={lr} patient={{ patientId: visit?.patientId }} openAttachment={openAttachment} />
+          <LabReport order={lr} patient={visit?.patient || { patientId: visit?.patientId }} openAttachment={openAttachment} />
         </div>
       )}
     </div>
