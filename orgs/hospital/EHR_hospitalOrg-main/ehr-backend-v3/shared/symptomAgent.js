@@ -16,7 +16,12 @@
 
 const MODEL    = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const BASE_URL = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
-const TIMEOUT_MS = Number(process.env.SYMPTOM_AGENT_TIMEOUT_MS || 40000);
+// Tried in order when the preferred model answers 429/500/503 or does not
+// answer in time. The result records which model actually answered.
+const FALLBACK_MODELS = (process.env.GEMINI_FALLBACK_MODELS || 'gemini-3.5-flash-lite,gemini-flash-lite-latest')
+  .split(',').map(m => m.trim()).filter(m => m && m !== MODEL);
+const ATTEMPT_TIMEOUT_MS = Number(process.env.SYMPTOM_AGENT_ATTEMPT_TIMEOUT_MS || 20000);
+const TIMEOUT_MS = Number(process.env.SYMPTOM_AGENT_TIMEOUT_MS || 55000);
 const URGENCY = ['LOW', 'MEDIUM', 'HIGH', 'EMERGENCY'];
 
 const clamp01 = (n) => Math.min(1, Math.max(0, Number(n) || 0));
@@ -89,50 +94,54 @@ async function analyseSymptoms(input, templateDoc) {
   if (!apiKey) return unavailable('GEMINI_API_KEY is not configured', startedAt);
   if (!input.symptoms || !String(input.symptoms).trim()) return unavailable('No symptoms were entered', startedAt);
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    // The model API sometimes answers 429/500/503 under load. Those are worth a
-    // short retry; every attempt shares the one overall timeout above.
-    const RETRYABLE = new Set([429, 500, 503]);
-    let response;
-    let bodyText = '';
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
-      response = await fetch(`${BASE_URL}/models/${encodeURIComponent(MODEL)}:generateContent`, {
+  const requestBody = JSON.stringify({
+    contents: [{ role: 'user', parts: [{ text: buildPrompt(input, templateDoc) }] }],
+    generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+  });
+  const RETRYABLE = new Set([429, 500, 503]);
+  const failures = [];
+
+  for (const model of [MODEL, ...FALLBACK_MODELS]) {
+    const remaining = TIMEOUT_MS - (Date.now() - startedAt);
+    if (remaining < 3000) break;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.min(ATTEMPT_TIMEOUT_MS, remaining));
+    try {
+      const response = await fetch(`${BASE_URL}/models/${encodeURIComponent(model)}:generateContent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: buildPrompt(input, templateDoc) }] }],
-          generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
-        }),
+        body: requestBody,
         signal: controller.signal,
       });
-      bodyText = await response.text();
-      if (response.ok || !RETRYABLE.has(response.status) || attempt === 3) break;
-      await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+      const bodyText = await response.text();
+      if (!response.ok) {
+        let message = `${model} answered ${response.status}`;
+        try { message += `: ${text(JSON.parse(bodyText).error?.message, 160)}`; } catch (_) { /* keep status only */ }
+        failures.push(message);
+        if (RETRYABLE.has(response.status)) continue;
+        break; // a bad key or a bad request will not improve on another model
+      }
+      const payload = JSON.parse(bodyText);
+      const raw = payload?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+      if (!raw) {
+        failures.push(`${model} returned no content (${payload?.candidates?.[0]?.finishReason || 'no candidate'})`);
+        continue;
+      }
+      const clean = sanitise(parseModelJson(raw), templateDoc);
+      return {
+        status: 'OK', model, ...clean,
+        disclaimer: 'AI cross-reference, not a diagnosis',
+        durationMs: Date.now() - startedAt, generatedAt: new Date().toISOString(),
+      };
+    } catch (err) {
+      failures.push(err.name === 'AbortError'
+        ? `${model} did not answer in time`
+        : `${model}: ${text([err.message, err.cause && (err.cause.code || err.cause.message)].filter(Boolean).join(' — '), 160)}`);
+    } finally {
+      clearTimeout(timer);
     }
-    if (!response.ok) {
-      let message = `model API answered ${response.status}`;
-      try { message += `: ${text(JSON.parse(bodyText).error?.message, 200)}`; } catch (_) { /* keep status only */ }
-      return unavailable(message, startedAt);
-    }
-    const payload = JSON.parse(bodyText);
-    const raw = payload?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
-    if (!raw) return unavailable(`model returned no content (${payload?.candidates?.[0]?.finishReason || 'no candidate'})`, startedAt);
-    const clean = sanitise(parseModelJson(raw), templateDoc);
-    return {
-      status: 'OK', model: MODEL, ...clean,
-      disclaimer: 'AI cross-reference, not a diagnosis',
-      durationMs: Date.now() - startedAt, generatedAt: new Date().toISOString(),
-    };
-  } catch (err) {
-    const reason = err.name === 'AbortError'
-      ? `model did not answer within ${TIMEOUT_MS / 1000}s`
-      : text([err.message, err.cause && (err.cause.code || err.cause.message)].filter(Boolean).join(' — '), 200);
-    return unavailable(reason, startedAt);
-  } finally {
-    clearTimeout(timer);
   }
+  return unavailable(text(`model API: ${failures.join('; ') || 'no attempt could be made in time'}`, 400), startedAt);
 }
 
 module.exports = { analyseSymptoms, sanitise, parseModelJson };
