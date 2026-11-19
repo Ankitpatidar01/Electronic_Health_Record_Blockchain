@@ -2,24 +2,33 @@ import { useEffect, useState } from 'react'
 
 // Polls a service's /health endpoint so the header shows the real connection
 // state instead of a fixed label. status: 'checking' | 'online' | 'degraded' | 'offline'
-export function useServiceHealth(url, intervalMs = 20000) {
+export function useServiceHealth(url, intervalMs = 15000) {
   const [status, setStatus] = useState('checking')
 
   useEffect(() => {
     if (!url) return undefined
     let cancelled = false
+    let failCount = 0
 
     const check = async () => {
       const controller = new AbortController()
-      const timer = setTimeout(() => controller.abort(), 4000)
+      const timer = setTimeout(() => controller.abort(), 10000)
       try {
         const res = await fetch(url, { cache: 'no-store', signal: controller.signal })
         const body = await res.json().catch(() => ({}))
         if (cancelled) return
-        if (!res.ok) setStatus('offline')
-        else setStatus(body.status === 'degraded' ? 'degraded' : 'online')
+        if (!res.ok) {
+          failCount++
+          if (failCount >= 2) setStatus('offline')
+        } else {
+          failCount = 0
+          setStatus(body.status === 'degraded' ? 'degraded' : 'online')
+        }
       } catch {
-        if (!cancelled) setStatus('offline')
+        if (!cancelled) {
+          failCount++
+          if (failCount >= 2) setStatus('offline')
+        }
       } finally {
         clearTimeout(timer)
       }

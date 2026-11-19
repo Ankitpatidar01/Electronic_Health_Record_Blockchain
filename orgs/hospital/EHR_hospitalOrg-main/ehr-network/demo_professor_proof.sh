@@ -34,6 +34,14 @@ export FABRIC_CFG_PATH="$NETWORK_DIR/configtx"
 export CORE_PEER_TLS_ENABLED=true
 
 get_height() {
+  # Fast path: query dashboard-api health (0ms, non-blocking HTTP)
+  local H=$(curl -s --max-time 1 http://localhost:4010/health 2>/dev/null | grep -o '"currentHeight":"[0-9]*"' | grep -o '[0-9]*')
+  if [ -n "$H" ] && [ "$H" -gt 0 ] 2>/dev/null; then
+    echo "$H"
+    return 0
+  fi
+
+  # Fallback: direct peer CLI query
   CORE_PEER_LOCALMSPID=HospitalMSP \
   CORE_PEER_ADDRESS=localhost:7051 \
   CORE_PEER_TLS_ROOTCERT_FILE="$P0_HOSP_TLS" \
@@ -63,7 +71,7 @@ watch_mode() {
   echo ""
 
   while true; do
-    sleep 1
+    sleep 2
     CURRENT_HEIGHT=$(get_height 2>/dev/null || echo "$LAST_HEIGHT")
     if [ -n "$CURRENT_HEIGHT" ] && [ "$CURRENT_HEIGHT" -gt "$LAST_HEIGHT" ]; then
       NEW_BLOCKS=$(( CURRENT_HEIGHT - LAST_HEIGHT ))
