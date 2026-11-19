@@ -23,6 +23,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+if [ -f "$SCRIPT_DIR/scripts/fabric-bin.sh" ]; then
+  # Preserve SCRIPT_DIR because fabric-bin.sh might re-set it
+  _SAVED_DIR="$SCRIPT_DIR"
+  source "$SCRIPT_DIR/scripts/fabric-bin.sh"
+  SCRIPT_DIR="$_SAVED_DIR"
+  cd "$SCRIPT_DIR"
+fi
+
 # ── Flags ────────────────────────────────────────────────────
 DO_FORCE=false
 DO_DUMP=false
