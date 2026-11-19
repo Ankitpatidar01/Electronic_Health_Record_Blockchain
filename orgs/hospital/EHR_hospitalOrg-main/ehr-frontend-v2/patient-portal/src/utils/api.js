@@ -3,7 +3,7 @@ import axios from 'axios'
 // Browser-facing API URLs. Override at build/dev time with VITE_PATIENT_API_URL
 // and VITE_DIGILOCKER_API_URL (docker-compose passes both).
 const trim = (url) => String(url || '').replace(/\/+$/, '')
-export const BASE = trim(import.meta.env.VITE_PATIENT_API_URL) || 'http://localhost:4005'
+export const BASE = trim(import.meta.env.VITE_PATIENT_API_URL) || '/api/patient'
 export const DIGILOCKER_BASE = trim(import.meta.env.VITE_DIGILOCKER_API_URL) || 'http://localhost:4007'
 
 export const patientApi = axios.create({ baseURL: BASE, timeout: 30000 })

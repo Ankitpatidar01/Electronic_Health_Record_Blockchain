@@ -16,7 +16,7 @@
 
 const MODEL    = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const BASE_URL = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
-const TIMEOUT_MS = Number(process.env.SYMPTOM_AGENT_TIMEOUT_MS || 25000);
+const TIMEOUT_MS = Number(process.env.SYMPTOM_AGENT_TIMEOUT_MS || 40000);
 const URGENCY = ['LOW', 'MEDIUM', 'HIGH', 'EMERGENCY'];
 
 const clamp01 = (n) => Math.min(1, Math.max(0, Number(n) || 0));
@@ -92,16 +92,25 @@ async function analyseSymptoms(input, templateDoc) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const response = await fetch(`${BASE_URL}/models/${encodeURIComponent(MODEL)}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: buildPrompt(input, templateDoc) }] }],
-        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
-      }),
-      signal: controller.signal,
-    });
-    const bodyText = await response.text();
+    // The model API sometimes answers 429/500/503 under load. Those are worth a
+    // short retry; every attempt shares the one overall timeout above.
+    const RETRYABLE = new Set([429, 500, 503]);
+    let response;
+    let bodyText = '';
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      response = await fetch(`${BASE_URL}/models/${encodeURIComponent(MODEL)}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: buildPrompt(input, templateDoc) }] }],
+          generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+        }),
+        signal: controller.signal,
+      });
+      bodyText = await response.text();
+      if (response.ok || !RETRYABLE.has(response.status) || attempt === 3) break;
+      await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+    }
     if (!response.ok) {
       let message = `model API answered ${response.status}`;
       try { message += `: ${text(JSON.parse(bodyText).error?.message, 200)}`; } catch (_) { /* keep status only */ }

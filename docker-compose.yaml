@@ -377,7 +377,8 @@ services:
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-frontend-v2/patient-portal:/app
       - h-patient-portal-modules:/app/node_modules
     environment:
-      VITE_PATIENT_API_URL: ${VITE_PATIENT_API_URL:-http://localhost:4005}
+      VITE_PATIENT_API_URL: ${VITE_PATIENT_API_URL:-/api/patient}
+      VITE_PATIENT_API_TARGET: http://h-patient-api:4005
       VITE_DIGILOCKER_API_URL: ${VITE_DIGILOCKER_API_URL:-http://localhost:4007}
     ports:
       - "5174:5174"

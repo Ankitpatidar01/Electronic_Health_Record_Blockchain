@@ -36,7 +36,8 @@ async function connectFabricGateway(config, options = {}) {
     signer: signers.newPrivateKeySigner(privateKey),
     hash: hash.sha256,
     evaluateOptions: () => ({ deadline: Date.now() + timeoutMs }),
-    blockEventsOptions: () => ({ deadline: Date.now() + timeoutMs }),
+    // No deadline on block events: it is a long-lived stream, and a deadline
+    // would end it (and flip the dashboard to NOT_CONNECTED) every few seconds.
   });
 
   try {

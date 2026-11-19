@@ -55,7 +55,7 @@ export default function PatientsPage() {
             <span className="count">{filtered.length}</span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Demographic records &amp; consent vaults anchored on Hyperledger Fabric
+            Each patient has one ledger identity (DID); personal details are kept encrypted off the ledger
           </p>
         </div>
 
