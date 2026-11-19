@@ -207,3 +207,20 @@ There is no symptom-analysis agent, and nothing runs at patient registration.
 | ICD-10 template on IPFS, provisional and confirmed codes, code history (4b) | **Missing** | |
 | Symptom analysis agent at registration (4c) | **Missing** | Registration form has no symptoms field |
 | Submit/commit timestamps per transaction (4d) | **Missing** | |
+
+## 9. Changes since this document was first written (2026-11-19)
+
+Sections 1–8 describe the system as first read. These are the differences now:
+
+- **Chaincode `ehr`** has 14 contracts. New: `DidContract` (one DID per patient, numbered CID entries), `CodeContract` (code template pointer, provisional and doctor codes with history), `StatsContract` (counts for the dashboard). `LabContract` was rewritten around a `LABREQ:<id>` record with a state machine. `PatientContract` stores a profile CID and hash instead of demographics. All timestamps come from the transaction.
+- **Shared backend code** (`ehr-backend-v3/shared`): `labReport.js`, `diseaseCodes.js` + `icd10-template.json`, `symptomAgent.js`, `intake.js`, `timeline.js`, `patientDirectory.js`, `dashboardEmitter.js`.
+- **IPFS service** encrypts JSON documents (AES-256-GCM, key in `.env`).
+- **Dashboard** has a read-only Fabric identity (`dashboardobserver`), an analytics API (`/analytics/summary`, `/explorer/...`) and two new pages.
+- **Pharmacy**: one backend with token and role checks; no Fabric client; local store for inventory and bills.
+- **Lab deck and clinical AI agent** require a staff token.
+- **Patient portal** reaches its API through `/api/patient` on its own origin.
+- **Scripts**: `start.sh` (build or reuse network, `ensure-chaincode.sh`, dashboard identity), `stop.sh --reset`, `scripts/reset-app-state.sh`, `scripts/setup-dashboard-identity.sh`.
+- Removed: five old pharmacy frontends, `hospital-agent`, lab demo scripts, pharmacy wallet scripts.
+
+Data flow of one record now: reception registers → profile and EHR documents encrypted to IPFS → `RegisterPatient` stores CIDs, creates the DID → symptom intake pins an analysis document, appends it to the DID, sets the provisional code → each later step (visit, consultation, prescription, lab, dispense) pins a new document and the chaincode appends its CID to the DID.
+

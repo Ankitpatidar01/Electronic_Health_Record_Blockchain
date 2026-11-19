@@ -4,7 +4,78 @@ This repository contains a production-grade academic/demo Electronic Health Reco
 
 FHIR R4, ABDM/ABHA, India DPDP Act 2023, HIPAA-style controls, and GDPR are design targets and reference implementations. All public dashboard events and ledger writes follow a strict Zero-PHI architecture (keyed HMAC hashes, CIDs, and cryptographic digests only).
 
-## First-time setup (From a fresh git clone)
+## Quick start (verified on WSL2 Ubuntu, 2026-11-19)
+
+This section is the current, tested way to run the project. Where an older section further down disagrees with it, this section is right.
+
+**You need:** Docker Engine with the Compose plugin, Node.js 20+, `curl`, and about 8 GB of free RAM. Ubuntu 22.04/24.04 is the target. WSL2 works but is slow when the project sits on the Windows drive (`/mnt/c/...`).
+
+```bash
+git clone <repo-url> && cd Electronic_Health_Record_Blockchain
+git checkout finish/integration-phases
+
+./setup.sh          # first time only: pulls images, installs host-side dependencies
+./start.sh          # builds the Fabric network if there is none, deploys/upgrades the chaincode, starts everything
+```
+
+`./start.sh` finishes when all health checks pass. A first start from nothing takes several minutes. It creates `.env` with generated secrets on first run.
+
+**AI symptom analysis (optional):** put a Gemini API key in `.env` as `GEMINI_API_KEY=...` before `./start.sh`. Without a key, registration still works and the panel says the AI is not configured. The agent tries `GEMINI_MODEL` (default `gemini-3.8-flash`) and falls back to `GEMINI_FALLBACK_MODELS` when Google answers "overloaded".
+
+| Command | What it does |
+| --- | --- |
+| `./start.sh` | Start everything; reuses the existing ledger; redeploys the chaincode only if its source changed |
+| `./stop.sh` | Stop everything, keep all data |
+| `./stop.sh --reset --yes` | Delete the ledger, identities and all application data. Asks for your `sudo` password (Fabric writes certificates as root). The next `./start.sh` builds a new network |
+| `docker compose --profile dashboard up -d --force-recreate <service>` | Restart one service after changing its code or environment |
+
+### Where to open
+
+| What | URL |
+| --- | --- |
+| Hub (links to everything) | http://localhost/ |
+| Hospital staff portal (reception, doctor, nurse, lab worklist, admin) | http://localhost:5173/ |
+| Patient portal | http://localhost:5174/ |
+| Pharmacy | http://localhost:5175/ |
+| Dashboard (analytics, block explorer) | http://localhost/dashboard/ |
+| Lab deck (standalone lab console) | http://localhost/lab/ |
+
+The portals are development servers. **The first time you open each one after a start, the page can stay blank; refresh it** (two or three times on a slow machine).
+
+### Demo accounts
+
+| Portal | Username | Password | Role |
+| --- | --- | --- | --- |
+| Hospital | `receptionist` | `recpw` | Register patients, open visits, assign doctor |
+| Hospital | `doctor` | `docpw` | Diagnosis, prescription, lab orders, disease code, timeline |
+| Hospital | `nurse` | `nursepw` | Vitals, care notes |
+| Hospital | `medrecordofficer` | `medpw` | Finalize records |
+| Hospital | `hospitaladmin` | `hadminpw` | Admin; also signs in to the dashboard |
+| Hospital (lab worklist) | `labreceptionist` / `labtechnician` / `labsupervisor` | `recpw` | Accept sample / enter result / verify and sign |
+| Pharmacy | `pharmacist` | `pharmpw` | Dispense hospital prescriptions |
+| Pharmacy | `inventory_mgr_01` | `invpw` | Stock |
+| Pharmacy | `billing_clerk_01` | `billpw` | Bills |
+| Pharmacy | `pharmacy_mgr` | `adminpw` | Staff list, bill audit |
+| Patient | the patient ID given at reception | chosen at sign-up | Sign-up needs the phone number given at registration |
+
+These are demo credentials. Change them before any real use.
+
+### A five-minute walk-through
+
+1. Hospital portal as `receptionist`: **Register Patient**, fill in the form including **Symptoms**. The result card shows the patient's DID, the provisional ICD-10 code matched from the symptoms, and the AI cross-reference.
+2. Open a visit and assign `doctor`.
+3. As `doctor`: open the visit; add a diagnosis and a prescription; **Disease Code** tab to confirm or change the code (a reason is required for a change); **Order Lab**.
+4. Lab worklist as `labreceptionist` (accept), `labtechnician` (enter results), `labsupervisor` (verify). The technician cannot verify their own result.
+5. As `doctor`: **Lab Results** tab shows the report with flags; finalize the visit. **Timeline** tab shows every document under the patient's one DID.
+6. Pharmacy as `pharmacist`: the prescription appears; dispense it.
+7. Patient portal: create an account with the patient ID and phone number; see **My Timeline**.
+8. Dashboard as `hospitaladmin`: **Analytics** and **Explorer**.
+
+### What is and is not real
+
+See [`FEATURES.md`](FEATURES.md) for what was added and [`STATUS.md`](STATUS.md) for what is not working, not on the ledger, or not verified. [`BUGS.md`](BUGS.md) has the full audit and fix log; [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) describes the architecture.
+
+## First-time setup (From a fresh git clone) — older notes
 
 When cloning this repository for the first time on a new laptop or VM:
 
@@ -406,14 +477,8 @@ Run the setup script once to prepare the environment and install dependencies:
 ./setup.sh
 ```
 
-### 3. Bootstrap Hyperledger Fabric Network (First run only)
-Because cryptographic MSP keys and CA databases are excluded from Git for security, generate the initial certificates and channel ledger:
-```bash
-cd orgs/hospital/EHR_hospitalOrg-main/ehr-network
-bash scripts/network-up.sh
-bash scripts/deployChaincode.sh
-cd ../../../..
-```
+### 3. Fabric network
+`./start.sh` builds the network and deploys the chaincode by itself when none exists. No manual step is needed.
 
 ### 4. Launch the Complete Workspace
 ```bash
@@ -590,9 +655,9 @@ See [dashboard API README](file:///home/himanshu/Desktop/EHR_blockchain/orgs/hos
    - Includes automated 4-hour background ledger-integrity rechecking that reads raw bytes from IPFS, computes SHA-256 hashes, and cross-checks them against on-chain Fabric digests.
 
 3. **Pharmacy Organization:**
-   - Integrated into the master Compose stack with 6 separate frontends (`:5175`, `:3001`–`:3005`).
-   - `p-backend:3000` connects to a persistent file store (`store.js`), automatically deducts stock upon dispensing, and pins prescription bills to Kubo IPFS (`http://localhost:8090/ipfs/<CID>`).
-   - CarePoint Patient Portal (`:3004`) allows live patient switching (`PAT-001`, `PAT-014`, `PAT-021`, `testuser`), prescription tracking, dispensing timelines, and patient consent self-governance (grant/revoke access).
+   - One portal (`:5175`) and one backend (`p-backend:3000`). Staff sign in with their hospital accounts; the backend checks the token and the role on every request.
+   - Dispensing a hospital prescription is a ledger transaction, submitted through the hospital peer2 API.
+   - Inventory, pharmacy bills, the pharmacy staff list and the pharmacy access list are kept in the pharmacy service's own store. **They are not on the ledger.** Bill documents are pinned to IPFS.
 
 ## 👨‍💻 Project Contributions
 

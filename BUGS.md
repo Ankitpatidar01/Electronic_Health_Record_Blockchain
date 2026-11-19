@@ -255,3 +255,32 @@ Everything in this table is in the repository and passes the checks that can run
 | A9 | `ehr-network/scripts/test-chaincode-v2.sh` does not match the current chaincode | Not used by `start.sh` |
 | — | `orgs/pharmacy/fabric-network-swarm/deploy.sh` still refers to the removed wallet scripts | Standalone swarm deployment, not used by the unified stack |
 
+## Live verification on a network built from scratch (2026-11-19, second pass)
+
+`./stop.sh --reset --yes` then `./start.sh`: network created, chaincode deployed, all health checks passed.
+
+| Area | Result |
+| --- | --- |
+| I1 FHIR anchor at registration | Pass (anchor returned and committed) |
+| B1 no demographics in world state | Pass (patient key history holds IDs, CIDs and hashes only) |
+| DID and timeline | Pass: 14 entries from registration to dispense; doctor and patient views |
+| Disease code | Pass: provisional, change without reason 400, change with reason, code outside template 400, receptionist 403 |
+| Lab workflow regression | Pass, including technician blocked from approving |
+| F2, F3, F5, F6 pharmacy | Pass: 401 without token, 403 wrong role, prescriptions listed, dispense on ledger, stock and billing rules, no passwords in the page |
+| C3 lab deck, E2 AI agent, G4 `/auth/staff` | Pass: 401 without a staff token |
+| H1–H6 dashboard | Pass after two fixes below; collector stable (30/30 CONNECTED) |
+| Symptom agent with Gemini | Pass through the fallback model; AI match rate appears on the dashboard |
+| Patient portal pages | Pass |
+
+Found and fixed in this pass:
+
+| ID | Sev | Problem | Fix |
+| --- | --- | --- | --- |
+| J1 | S1 | `stop.sh --reset` rejected a correctly typed `RESET` (stray carriage return) | Input trimmed, case ignored, `--yes` added |
+| J2 | S2 | Reset could not delete root-owned state files and hid the compose error | Error shown; files removed from inside a container |
+| J3 | S1 | Dashboard collector dropped every transaction whose ID starts with a digit; namespaced function names showed as unknown; block height stuck at the connect-time value | Regex and height fixed |
+| J4 | S2 | Block stream had a deadline, so the dashboard showed NOT_CONNECTED every few seconds | Deadline removed |
+| J5 | S2 | `gemini-2.5-flash` retired by Google; main models overloaded | Default model updated; fallback chain |
+| J6 | S2 | First evaluate on a cold peer exceeded the 10 s deadline | 30 s |
+| J7 | S2 | Patient portal called `localhost:4005` from the browser | Same-origin dev-server proxy |
+
