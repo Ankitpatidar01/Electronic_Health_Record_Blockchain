@@ -9,6 +9,8 @@ import IPFS from './pages/IPFS'
 import Logs from './pages/Logs'
 import Agents from './pages/Agents'
 import Alerts from './pages/Alerts'
+import Analytics from './pages/Analytics'
+import Explorer from './pages/Explorer'
 import DoctorAgent from './pages/DoctorAgent'
 import NurseAgent from './pages/NurseAgent'
 import PharmacyAgent from './pages/PharmacyAgent'
@@ -100,6 +102,8 @@ function App() {
       <Route path="agents/lab" element={views.includes('agents') || views.includes('agent-lab') ? <LabAgent /> : <Navigate to={home} replace />} />
       <Route path="agents/:agentId" element={views.includes('agents') ? <AgentDashboard /> : <Navigate to={home} replace />} />
       <Route path="transactions" element={views.includes('transactions') ? <Transactions /> : <Navigate to={home} replace />} />
+      <Route path="analytics" element={views.includes('transactions') ? <Analytics /> : <Navigate to={home} replace />} />
+      <Route path="explorer" element={views.includes('transactions') ? <Explorer /> : <Navigate to={home} replace />} />
       <Route path="security" element={views.includes('security') ? <Security /> : <Navigate to={home} replace />} />
       <Route path="ipfs" element={views.includes('ipfs') ? <IPFS /> : <Navigate to={home} replace />} />
       <Route path="logs" element={views.includes('logs') ? <Logs /> : <Navigate to={home} replace />} />

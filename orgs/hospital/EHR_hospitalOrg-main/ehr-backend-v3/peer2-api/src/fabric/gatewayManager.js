@@ -9,6 +9,7 @@ const path   = require('path');
 const { PEER_MAP, _base }  = require('./peerRouter');
 const { loadIdentityFromMSP, validateMSPDirectory } = require('./wallet');
 const logger = require('../config/logger');
+const { instrumentContract } = require('../../../shared/dashboardEmitter');
 
 const ORDERER_TLS_CA = process.env.ORDERER_TLS_CA
   ? path.isAbsolute(process.env.ORDERER_TLS_CA)
@@ -73,10 +74,17 @@ async function init() {
   logger.info(`Pool ready. Roles: ${Object.keys(pool).join(', ')}`);
 }
 
+// Contracts are wrapped once so every submitted transaction reports its
+// submit and commit time to the dashboard.
 function getContract(role) {
   const entry = pool[role];
   if (!entry) throw new Error(`No active gateway for role '${role}'`);
-  return entry.contract;
+  if (!entry.instrumented) {
+    entry.instrumented = instrumentContract(entry.contract, {
+      source: 'peer2-api', org: (PEER_MAP[role] && PEER_MAP[role].mspId) || 'HospitalMSP',
+    });
+  }
+  return entry.instrumented;
 }
 
 function getNetwork(role) {

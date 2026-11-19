@@ -57,6 +57,8 @@ const EVENT_REGISTRY = Object.freeze({
   TRANSACTION_SUBMITTED: event('transaction', TX, 'Fabric block listener'),
   TRANSACTION_COMMITTED: event('transaction', TX, 'Fabric block listener'),
   TRANSACTION_FAILED: event('transaction', TX, 'Fabric block listener'),
+  // Submit and commit time of one transaction, measured by the gateway that sent it.
+  TRANSACTION_TIMED: event('transaction', [...TX, 'component', 'status', 'errorCode', 'submitMs', 'commitMs'], 'API gateways'),
   MVCC_CONFLICT: event('transaction', TX, 'Fabric block listener'),
   ENDORSEMENT_FAILED: event('transaction', TX, 'Fabric block listener'),
   AGENT_STARTED: event('agent', AGENT, 'TODO(dependency: AI team)'),
@@ -88,6 +90,7 @@ const EVENT_REGISTRY = Object.freeze({
   VCAP_VERIFICATION_FAILED: event('vcap', VCAP, 'TODO(dependency: Security team)'),
   IPFS_UPLOAD_COMPLETED: event('ipfs', IPFS, 'IPFS service'),
   IPFS_UPLOAD_FAILED: event('ipfs', IPFS, 'IPFS service'),
+  IPFS_RETRIEVAL_COMPLETED: event('ipfs', IPFS, 'IPFS service'),
   IPFS_RESOLUTION_FAILED: event('ipfs', IPFS, 'IPFS service'),
   IPFS_NODE_DOWN: event('ipfs', IPFS, 'IPFS health endpoint'),
   IPFS_STATUS_CHANGED: event('ipfs', IPFS, 'IPFS health endpoint'),

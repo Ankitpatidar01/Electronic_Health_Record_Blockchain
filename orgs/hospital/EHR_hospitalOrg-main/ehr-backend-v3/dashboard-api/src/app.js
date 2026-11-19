@@ -8,6 +8,7 @@ const { createIngestHandler, createRateLimiter } = require('./routes/ingest');
 const { makeDashboardRouter } = require('./realtime/RealtimeServer');
 const { StreamTicketStore } = require('./realtime/StreamTicketStore');
 const { createAggregationRouter } = require('./routes/aggregation');
+const { createAnalyticsRouter } = require('./routes/analytics');
 
 function createApp(config) {
   const app = express();
@@ -82,6 +83,7 @@ function createApp(config) {
     store: config.store,
     getRealtime: () => app.locals.realtime,
   }));
+  app.use('/api/dashboard', createAnalyticsPaths(config));
   app.use('/api/dashboard', createAggregationRouter(config));
   app.post('/internal/events', ...createIngestHandler({
     store: config.store,
@@ -96,6 +98,13 @@ function createApp(config) {
   app.use(notFound);
   app.use(errorHandler);
   return app;
+}
+
+// The analytics router authenticates every request it receives, so it is only
+// given its own paths; everything else continues to the aggregation router.
+function createAnalyticsPaths(config) {
+  const analytics = createAnalyticsRouter(config);
+  return (req, res, next) => (/^\/(analytics|explorer)(\/|$)/.test(req.path) ? analytics(req, res, next) : next());
 }
 
 module.exports = { createApp };

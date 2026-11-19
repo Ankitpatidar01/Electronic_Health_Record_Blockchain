@@ -42,10 +42,10 @@ export default function Transactions() {
 
   const cards = [
     { label: 'Transactions', value: fmt(m.txPerMin) ? `${fmt(m.txPerMin)}/min` : '10 total', icon: TrendingUp, tone: 'blue' },
-    { label: 'Successful', value: fmt(m.successCount) ?? '10', icon: CheckCircle2, tone: 'emerald' },
-    { label: 'Failed', value: fmt(m.failureCount) ?? '0', icon: XCircle, tone: 'rose', alert: true },
-    { label: 'MVCC Conflicts', value: fmt(m.mvccConflicts) ?? '0', icon: AlertTriangle, tone: 'amber', alert: true },
-    { label: 'Endorsement Failures', value: fmt(m.endorsementFailures) ?? '0', icon: Zap, tone: 'amber', alert: true },
+    { label: 'Successful', value: fmt(m.successCount) ?? '—', icon: CheckCircle2, tone: 'emerald' },
+    { label: 'Failed', value: fmt(m.failureCount) ?? '—', icon: XCircle, tone: 'rose', alert: true },
+    { label: 'MVCC Conflicts', value: fmt(m.mvccConflicts) ?? '—', icon: AlertTriangle, tone: 'amber', alert: true },
+    { label: 'Endorsement Failures', value: fmt(m.endorsementFailures) ?? '—', icon: Zap, tone: 'amber', alert: true },
     { label: 'Avg Latency', value: m.averageLatencyMs?.value != null ? (m.averageLatencyMs.value / 1000).toFixed(2) + 's' : '0.12s', icon: Clock, tone: 'violet' },
   ]
 

@@ -160,4 +160,43 @@ async function pinFile(buffer, filename, contentType) {
   return cid;
 }
 
-module.exports = { checkHealth, pinJSON, fetchJSON, unpin, listPins, pinFile };
+// ── Telemetry ────────────────────────────────────────────────────────────────
+// Upload and retrieval time, size and CID are reported to the dashboard.
+// Nothing about the content itself is sent.
+const { emit } = require('../../shared/dashboardEmitter');
+const ORG = 'HospitalMSP';
+
+function timed(fn, okType, failType, describe) {
+  return async (...args) => {
+    const started = Date.now();
+    try {
+      const result = await fn(...args);
+      emit(okType, { source: 'ipfs-service', org: ORG, payload: {
+        component: 'ipfs-service', status: 'OK', durationMs: Date.now() - started, ...describe(args, result),
+      } });
+      return result;
+    } catch (err) {
+      emit(failType, { source: 'ipfs-service', org: ORG, severity: 'ERROR', payload: {
+        component: 'ipfs-service', status: 'FAILED', durationMs: Date.now() - started,
+        errorCode: err.code || (err.response ? `HTTP_${err.response.status}` : 'IPFS_ERROR'),
+      } });
+      throw err;
+    }
+  };
+}
+
+const pinJSONTimed = timed(pinJSON, 'IPFS_UPLOAD_COMPLETED', 'IPFS_UPLOAD_FAILED',
+  ([json], cid) => ({ cid, byteLength: Buffer.byteLength(JSON.stringify(json)) }));
+const pinFileTimed = timed(pinFile, 'IPFS_UPLOAD_COMPLETED', 'IPFS_UPLOAD_FAILED',
+  ([buffer], cid) => ({ cid, byteLength: buffer.length }));
+const fetchJSONTimed = timed(fetchJSON, 'IPFS_RETRIEVAL_COMPLETED', 'IPFS_RESOLUTION_FAILED',
+  ([cid], json) => ({ cid, byteLength: Buffer.byteLength(JSON.stringify(json)) }));
+
+module.exports = {
+  checkHealth,
+  pinJSON: pinJSONTimed,
+  fetchJSON: fetchJSONTimed,
+  unpin,
+  listPins,
+  pinFile: pinFileTimed,
+};

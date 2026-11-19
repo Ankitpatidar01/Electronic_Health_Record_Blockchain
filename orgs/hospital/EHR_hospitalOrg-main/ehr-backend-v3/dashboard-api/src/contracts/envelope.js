@@ -13,14 +13,15 @@ const ORGS = new Set(['HospitalMSP', 'DiagnosticsMSP', 'ProviderMSP']);
 const SEVERITIES = new Set(['INFO', 'WARNING', 'ERROR', 'CRITICAL']);
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const SOURCE = /^[a-z][a-z0-9-]{0,63}$/;
-const CID = /^(?:bafy[a-z2-7]{20,}|Qm[1-9A-HJ-NP-Za-km-z]{44})$/;
+// CIDv1 in base32 (bafy…, bafk… and others) or CIDv0 (Qm…).
+const CID = /^(?:b[a-z2-7]{20,120}|Qm[1-9A-HJ-NP-Za-km-z]{44})$/;
 const HASH = /^(?:hmac-sha256:)?[a-f0-9]{64}$/i;
 const PATIENT_HASH = /^hmac-sha256:[a-f0-9]{64}$/i;
 const HASH_FIELDS = new Set([
   'patientIdHash', 'recordHash', 'promptHash', 'summaryHash', 'modelFingerprint',
   'gatewaySignerHash', 'granteeIdHash',
 ]);
-const NUMBER_FIELDS = new Set(['durationMs', 'latencyMs', 'blockHeight', 'byteLength', 'artifactCount', 'validationCode']);
+const NUMBER_FIELDS = new Set(['durationMs', 'latencyMs', 'blockHeight', 'byteLength', 'artifactCount', 'validationCode', 'submitMs', 'commitMs']);
 const BOOLEAN_FIELDS = new Set(['fallbackUsed']);
 const STRING_FIELDS = new Set([
   'agentId', 'component', 'status', 'reasonCode', 'errorCode', 'chaincode', 'functionName',

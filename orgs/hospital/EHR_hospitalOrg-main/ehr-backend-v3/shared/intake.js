@@ -12,11 +12,20 @@
 
 const codes = require('./diseaseCodes');
 const { analyseSymptoms } = require('./symptomAgent');
+const { emit } = require('./dashboardEmitter');
 
 async function runIntake(contract, ipfs, { patientId, symptoms, age, gender, visitId = '', recordedBy }) {
   const template = await codes.loadTemplate(contract, ipfs);
   const match = codes.matchSymptoms(symptoms, template.document);
   const ai = await analyseSymptoms({ symptoms, age, gender }, template.document);
+  emit(ai.status === 'OK' ? 'AGENT_EXECUTION_COMPLETED' : 'AGENT_EXECUTION_FAILED', {
+    source: 'peer0-api', org: 'HospitalMSP', severity: ai.status === 'OK' ? 'INFO' : 'WARNING',
+    payload: {
+      agentId: 'symptom-agent', status: ai.status === 'OK' ? 'COMPLETED' : 'FAILED',
+      durationMs: ai.durationMs, model: ai.model,
+      ...(ai.status === 'OK' ? {} : { errorCode: 'MODEL_UNAVAILABLE' }),
+    },
+  });
 
   const intake = {
     _type: 'SYMPTOM_ANALYSIS', _version: 1,

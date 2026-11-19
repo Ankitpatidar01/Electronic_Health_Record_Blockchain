@@ -70,7 +70,7 @@ export default function Network() {
           <NetCard label="Peers" value={`${onlinePeers}/${peers.length}`} icon={Server} tone="emerald" sub="Online / Configured" />
           <NetCard label="Orderers" value={orderers.length || 1} icon={ArrowUpDown} tone="blue" sub="Raft consensus" />
           <NetCard label="Channel" value={channels[0]?.id || data?.channel || 'ehrchannel'} icon={Hash} tone="cyan" sub={channels[0]?.chaincode ? `Chaincode: ${channels[0].chaincode}` : 'Chaincode: ehr'} />
-          <NetCard label="Block Height" value={blockHeight ?? 10} icon={Layers} tone="emerald" sub="Latest committed block" />
+          <NetCard label="Block Height" value={blockHeight ?? '—'} icon={Layers} tone="emerald" sub="Latest committed block" />
           <NetCard label="Transactions" value={txMetrics.txPerMin?.value != null ? `${txMetrics.txPerMin.value}/min` : '10 total'} icon={TrendingUp} tone="amber" sub={txMetrics.txPerMin?.value != null ? '5-min window' : 'Committed on ledger'} />
         </div>
       )}

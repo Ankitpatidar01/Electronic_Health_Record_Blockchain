@@ -136,6 +136,8 @@ ok "Application containers started"
 # ── 4. Dashboard ─────────────────────────────────────────────────────────────
 if [[ "${WITH_DASHBOARD}" == true ]]; then
   step "4/5" "Starting the realtime dashboard"
+  bash "${ROOT_DIR}/scripts/setup-dashboard-identity.sh" \
+    || echo -e "  ${YELLOW}Dashboard observer identity could not be prepared; the dashboard will show no blockchain data.${RESET}"
   docker compose -f "${APP_COMPOSE}" --profile dashboard up -d ${BUILD_FLAG} h-dashboard-api h-dashboard-portal
   ok "Dashboard API and portal started"
 else

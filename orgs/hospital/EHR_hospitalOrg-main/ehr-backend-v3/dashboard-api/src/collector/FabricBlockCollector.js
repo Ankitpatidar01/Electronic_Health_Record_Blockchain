@@ -110,6 +110,7 @@ class FabricBlockCollector {
         previousHash,
         dataHash,
         txCount: envelopes.length,
+        sizeBytes: typeof block.serializeBinary === 'function' ? block.serializeBinary().length : null,
         txIds,
         timestamp: blockTime || new Date().toISOString(),
         channel: this.config.fabric?.channel || 'ehrchannel',
@@ -202,6 +203,18 @@ class FabricBlockCollector {
     }
     await this.checkpoints.save(blockNumber);
     this.lastProcessedBlock = blockNumber.toString();
+  }
+
+  // Ledger counts, cached briefly so a refreshing dashboard does not query the
+  // peer on every request. Returns null while the collector is not connected.
+  async getLedgerStats() {
+    const client = this.activeClient;
+    if (!client || typeof client.getLedgerStats !== 'function') return null;
+    const now = Date.now();
+    if (this.ledgerStats && now - this.ledgerStats.at < 5000) return this.ledgerStats.value;
+    const value = await client.getLedgerStats();
+    this.ledgerStats = { at: now, value };
+    return value;
   }
 
   getRecentBlocks() {

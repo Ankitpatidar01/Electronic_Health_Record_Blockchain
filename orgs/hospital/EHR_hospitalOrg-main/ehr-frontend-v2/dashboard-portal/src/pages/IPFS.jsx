@@ -72,9 +72,9 @@ export default function IPFS() {
           <IpfsStatusCard label="Node Status" icon={Server} online={isNodeOnline ? true : isNodeOffline ? false : undefined} tone="emerald" detail="Peer daemon port 5001" />
           <IpfsStatusCard label="Gateway Status" icon={Database} online={isNodeOnline ? true : isNodeOffline ? false : undefined} detail="Via IPFS HTTP service" tone="cyan" />
           <IpfsStatusCard label="Storage Status" icon={HardDrive} value="Available" detail="IPFS v0.26 repo active" tone="blue" />
-          <IpfsStatusCard label="Uploads" icon={Upload} value={metrics.uploads ?? 0} tone="emerald" detail="Clinical documents verified" />
-          <IpfsStatusCard label="Upload Failures" icon={AlertCircle} value={metrics.failures ?? 0} tone="rose" detail="0 unrecoverable timeouts" />
-          <IpfsStatusCard label="CID Resolution Failures" icon={Link2Off} value={metrics.cidResolutionFailures ?? 0} tone="amber" detail="0 missing multihashes" />
+          <IpfsStatusCard label="Uploads" icon={Upload} value={metrics.uploads ?? '—'} tone="emerald" detail="Pins reported by the IPFS service" />
+          <IpfsStatusCard label="Upload Failures" icon={AlertCircle} value={metrics.failures ?? '—'} tone="rose" detail="Uploads the IPFS service could not complete" />
+          <IpfsStatusCard label="CID Resolution Failures" icon={Link2Off} value={metrics.cidResolutionFailures ?? '—'} tone="amber" detail="Fetches that could not resolve a CID" />
         </div>
       )}
     </section>

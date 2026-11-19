@@ -7,24 +7,26 @@ const { common } = require('@hyperledger/fabric-protos');
 const { connect, hash, signers } = require('@hyperledger/fabric-gateway');
 
 async function connectFabricGateway(config, options = {}) {
+  // A TLS client certificate is needed only when the peer enforces mutual TLS.
   const required = [config.endpoint, config.hostAlias, config.mspId,
-    config.tlsRootCertPath, config.tlsClientCertPath, config.tlsClientKeyPath,
-    config.identityCertPath, config.identityKeyPath];
+    config.tlsRootCertPath, config.identityCertPath, config.identityKeyPath];
   if (required.some((value) => !value)) {
     throw new Error('Dashboard observer identity or Fabric TLS configuration is incomplete');
   }
 
   const [tlsRoot, tlsCertificate, tlsPrivateKeyPem, certificate, privateKeyPem] = await Promise.all([
     fs.readFile(config.tlsRootCertPath),
-    fs.readFile(config.tlsClientCertPath),
-    fs.readFile(config.tlsClientKeyPath),
+    config.tlsClientCertPath ? fs.readFile(config.tlsClientCertPath) : null,
+    config.tlsClientKeyPath ? fs.readFile(config.tlsClientKeyPath) : null,
     fs.readFile(config.identityCertPath),
     fs.readFile(config.identityKeyPath),
   ]);
   const privateKey = crypto.createPrivateKey(privateKeyPem);
   const client = new grpc.Client(
     config.endpoint,
-    grpc.credentials.createSsl(tlsRoot, tlsPrivateKeyPem, tlsCertificate),
+    tlsPrivateKeyPem && tlsCertificate
+      ? grpc.credentials.createSsl(tlsRoot, tlsPrivateKeyPem, tlsCertificate)
+      : grpc.credentials.createSsl(tlsRoot),
     { 'grpc.ssl_target_name_override': config.hostAlias },
   );
   const timeoutMs = options.timeoutMs || 5000;
@@ -53,6 +55,11 @@ async function connectFabricGateway(config, options = {}) {
       const bytes = await network.getContract('qscc').evaluateTransaction('GetChainInfo', config.channel);
       const info = common.BlockchainInfo.deserializeBinary(bytes);
       return BigInt(info.getHeight().toString());
+    },
+    // Ledger-wide counts (numbers only) from StatsContract.
+    async getLedgerStats() {
+      const bytes = await network.getContract(config.chaincode, 'StatsContract').evaluateTransaction('GetStats');
+      return JSON.parse(Buffer.from(bytes).toString('utf8'));
     },
     getBlockEvents(startBlock) {
       return network.getBlockEvents({ startBlock });

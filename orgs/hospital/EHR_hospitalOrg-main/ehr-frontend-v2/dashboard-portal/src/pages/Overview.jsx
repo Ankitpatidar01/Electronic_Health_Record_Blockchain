@@ -148,41 +148,38 @@ export default function Overview() {
 
   const health = data?.network?.serviceHealth
   const serviceMetric = health ? { value: health.value == null ? null : `${health.value} / ${health.checked}`, status: health.status } : null
-  const totalBlocks = blockData?.totalLedgerBlocks || 10
-  const totalTxs = blockData?.transactionsInWindow || (blockData?.blocks ? blockData.blocks.reduce((acc, b) => acc + (b.txCount || 1), 0) : 10)
+  const totalBlocks = blockData?.totalLedgerBlocks ?? '—'
+  // Every tile shows what the API returned. When a source has not reported,
+  // the tile says so; it never falls back to a made-up figure.
+  const noData = (reason) => ({ state: 'NO_DATA', reason })
+  const totalTxs = blockData?.transactionsInWindow
+    ?? (blockData?.blocks ? blockData.blocks.reduce((acc, b) => acc + (b.txCount || 0), 0) : null)
   const metrics = {
     peers: {
-      value: data?.network?.connectedPeers?.value ?? 5,
-      status: {
-        state: data?.network?.connectedPeers?.status?.state || 'OK',
-        reason: data?.network?.connectedPeers?.status?.reason || '5 of 5 peers online & synchronized',
-      },
+      value: data?.network?.connectedPeers?.value ?? '—',
+      status: data?.network?.connectedPeers?.status || noData('Peer health has not been reported yet.'),
     },
     services: {
-      value: serviceMetric?.value ?? '7 / 7',
-      status: {
-        state: serviceMetric?.status?.state || 'OK',
-        reason: serviceMetric?.status?.reason || '7 of 7 operational services healthy',
-      },
+      value: serviceMetric?.value ?? '—',
+      status: serviceMetric?.status || noData('Service health has not been reported yet.'),
     },
     agents: {
-      value: data?.agents?.items?.length || 7,
-      status: {
-        state: data?.agents?.status?.state || 'OK',
-        reason: data?.agents?.status?.reason || '7 autonomous agents active',
-      },
+      value: data?.agents?.items?.length ?? '—',
+      status: data?.agents?.status || noData('No agent has reported yet.'),
     },
     tx: data?.transactions?.metrics?.txPerMinute?.value != null
       ? data.transactions.metrics.txPerMinute
-      : { value: `${totalTxs} total`, status: { state: 'OK', reason: `${totalBlocks} blocks committed on ehrchannel` } },
+      : totalTxs != null
+        ? { value: `${totalTxs} total`, status: { state: 'OK', reason: `${totalBlocks} blocks committed on ehrchannel` } }
+        : { value: '—', status: noData('No committed transactions have been collected yet.') },
     security: data?.security?.summary?.eventCount != null
       ? { value: data.security.summary.eventCount, status: data.security.summary.status }
-      : { value: '0 threats', status: { state: 'OK', reason: 'Zero-PHI enforcement active' } },
+      : { value: '—', status: noData('No security events have been reported yet.') },
     ipfs: data?.ipfs?.metrics?.uploads != null
       ? { value: data.ipfs.metrics.uploads, status: data.ipfs.metrics.status }
-      : { value: `${data?.ipfs?.status?.state === 'OK' ? 'Cluster UP' : 'Online'}`, status: { state: 'OK', reason: 'IPFS cluster node 5001' } },
+      : { value: '—', status: data?.ipfs?.status || noData('The IPFS service has not reported yet.') },
   }
-  const alerts = { value: data?.alerts?.count || '0', status: { state: data?.alerts?.count ? 'Active' : 'Nominal' } }
+  const alerts = { value: data?.alerts?.count ?? (data ? 0 : '—'), status: { state: data ? (data.alerts?.count ? 'Active' : 'None active') : 'Status unavailable' } }
 
   return <section className="dashboard-overview space-y-6">
     <div className="overview-hero">

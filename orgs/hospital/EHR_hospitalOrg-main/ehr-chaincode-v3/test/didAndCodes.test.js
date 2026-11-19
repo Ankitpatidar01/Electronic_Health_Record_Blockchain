@@ -174,3 +174,29 @@ test('provisional code, doctor change and confirmation are each a new history en
   assert.equal(read.history.length, 4);
   await assert.rejects(codes.GetDiseaseCode(ctxFor('', 'outsider', 'OtherMSP'), 'PAT-1'), /Access denied/);
 });
+
+test('StatsContract returns counts only, to admin and observer', async () => {
+  const { ctxFor, codes } = await registered();
+  const { StatsContract } = require('../lib/statsContract');
+  const stats = new StatsContract();
+  await codes.SetTemplate(ctxFor('admin', 'hospitaladmin'), CID(20), '1', HASH, 'ICD-10');
+  await codes.AssignProvisionalCode(ctxFor('receptionist'), 'PAT-1', 'J06.9', 'URI', '', '["A90"]', '');
+  await codes.UpdateDiseaseCode(ctxFor('doctor'), 'PAT-1', 'A90', 'Dengue fever', 'NS1 positive', '');
+  const v = JSON.parse(await new VisitContract().OpenVisit(ctxFor('receptionist'), 'PAT-1', '', CID(2)));
+  await new VisitContract().AssignDoctor(ctxFor('receptionist'), v.visitId, 'doctor', CID(3));
+  await new ForwardContract().ForwardToLab(ctxFor('doctor'), v.visitId, `${v.visitId}-L1`, CID(4));
+
+  await assert.rejects(stats.GetStats(ctxFor('doctor')), /Access denied/);
+  const s = JSON.parse(await stats.GetStats(ctxFor('observer', 'dashboardobserver')));
+  assert.deepEqual(s, {
+    patients: 1,
+    visits: { total: 1, byStatus: { WITH_LAB: 1 } },
+    dids: 1,
+    documents: 4,
+    labRequests: { total: 1, byStatus: { REQUESTED: 1 } },
+    diseaseCodes: {
+      patientsWithCode: 1, provisional: 0, confirmed: 1,
+      doctorDecisions: 1, decisionsWithAiSuggestion: 1, matchedAiSuggestion: 1, matchedProvisional: 0,
+    },
+  });
+});

@@ -1,7 +1,12 @@
 
 # Shared settings. Values come from the root .env (create it with
 # `node scripts/init-env.js`; setup.sh and start.sh do this for you).
+x-dashboard-emitter-env: &dashboard-emitter-env
+  DASHBOARD_EVENT_API_URL: http://h-dashboard-api:4010
+  DASHBOARD_SERVICE_KEY: ${DASHBOARD_SERVICE_KEY:-}
+
 x-hospital-api-env: &hospital-api-env
+  <<: *dashboard-emitter-env
   NODE_ENV: ${NODE_ENV:-development}
   JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}"
   JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
@@ -14,9 +19,6 @@ x-hospital-api-env: &hospital-api-env
   GEMINI_API_KEY: ${GEMINI_API_KEY:-}
   GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
 
-x-dashboard-emitter-env: &dashboard-emitter-env
-  DASHBOARD_EVENT_API_URL: http://h-dashboard-api:4010
-  DASHBOARD_SERVICE_KEY: ${DASHBOARD_SERVICE_KEY:-}
 
 services:
 
@@ -63,6 +65,7 @@ services:
       - h-ipfs-service-modules:/app/node_modules
       - ./orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/shared:/shared
     environment:
+      <<: *dashboard-emitter-env
       PORT: 4006
       IPFS_API_URL: http://ipfs.ehr.local:5001
       IPFS_GATEWAY_URL: http://ipfs.ehr.local:8080
@@ -282,6 +285,15 @@ services:
       DASHBOARD_SERVICE_KEY: ${DASHBOARD_SERVICE_KEY:-}
       DASHBOARD_HEALTH_DIGILOCKER_URL: http://h-digilocker-service:4007/health
       DASHBOARD_FABRIC_GATEWAY_ENDPOINT: peer0.hospital.example.com:7051
+      # Read-only observer identity, created by scripts/setup-dashboard-identity.sh.
+      DASHBOARD_COLLECTOR_ENABLED: "true"
+      DASHBOARD_FABRIC_PEER_ID: peer0.hospital
+      DASHBOARD_FABRIC_PEER_HOST_ALIAS: peer0.hospital.example.com
+      DASHBOARD_FABRIC_MSP_ID: HospitalMSP
+      DASHBOARD_FABRIC_TLS_ROOT_CERT_PATH: orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/credentials/peer-tls-ca.pem
+      DASHBOARD_FABRIC_IDENTITY_CERT_PATH: orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/credentials/observer-cert.pem
+      DASHBOARD_FABRIC_IDENTITY_KEY_PATH: orgs/hospital/EHR_hospitalOrg-main/ehr-backend-v3/dashboard-api/credentials/observer-key.pem
+      COLLECTOR_BACKFILL_BLOCKS: "100000"
       DASHBOARD_PEER_HOSPITAL_RECEPTION: peer0.hospital.example.com:7051
       DASHBOARD_PEER_HOSPITAL_DOCTOR: peer1.hospital.example.com:9051
       DASHBOARD_PEER_HOSPITAL_NURSE: peer2.hospital.example.com:10051

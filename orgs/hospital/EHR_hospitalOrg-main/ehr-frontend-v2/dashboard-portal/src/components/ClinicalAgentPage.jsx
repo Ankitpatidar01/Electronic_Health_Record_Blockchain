@@ -120,7 +120,7 @@ export function ClinicalAgentPage({ agentId, config }) {
   const kpis = {
     activeVisits: metrics.requests?.value ?? (events.filter(e => e.eventType === 'AGENT_EXECUTION_STARTED').length || 0),
     aiRequests: metrics.executions?.value ?? 0,
-    successRate: metrics.successRate ?? 1,
+    successRate: metrics.successRate ?? null,
     averageLatency: metrics.averageLatencyMs,
     activePatients: metrics.requests?.value ?? 0,
     vitalsRecorded: events.filter(e => e.eventType === 'AGENT_EXECUTION_COMPLETED').length || 0,

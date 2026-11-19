@@ -1,6 +1,6 @@
 import React from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, Network, Bot, ArrowRightLeft, Shield, Database, ScrollText, LogOut, Activity, Bell } from 'lucide-react'
+import { LayoutDashboard, Network, Bot, ArrowRightLeft, Shield, Database, ScrollText, LogOut, Activity, Bell, BarChart3, Boxes } from 'lucide-react'
 import { useDashboardSocket } from '../../hooks/useDashboardSocket'
 import { allowedViews } from '../../config/roleViews'
 import ThemeToggle from '../ThemeToggle'
@@ -10,6 +10,8 @@ const navItems = [
   { path: '/network', key: 'network', label: 'Network', icon: Network },
   { path: '/agents', key: 'agents', label: 'Agents', icon: Bot },
   { path: '/transactions', key: 'transactions', label: 'Transactions', icon: ArrowRightLeft },
+  { path: '/analytics', key: 'transactions', label: 'Analytics', icon: BarChart3 },
+  { path: '/explorer', key: 'transactions', label: 'Explorer', icon: Boxes },
   { path: '/security', key: 'security', label: 'Security', icon: Shield },
   { path: '/ipfs', key: 'ipfs', label: 'IPFS', icon: Database },
   { path: '/logs', key: 'logs', label: 'Logs', icon: ScrollText },
@@ -40,7 +42,7 @@ export function Layout({ user, onLogout }) {
       </div>
       <div className="dashboard-statusline mx-auto mt-2 flex max-w-[1600px] flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
         <span>{isConnected ? 'Live event stream' : 'Stream not connected'}</span>
-        <span>Latest block <b className="font-semibold text-slate-700 dark:text-cyan-400">{lastBlock ?? '10'}</b></span>
+        <span>Latest block <b className="font-semibold text-slate-700 dark:text-cyan-400">{lastBlock ?? '—'}</b></span>
         <span>{events.length} recent stream events</span>
       </div>
     </header>
