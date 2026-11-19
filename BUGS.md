@@ -52,6 +52,9 @@ Core flow worked end to end by API: login → register patient → open visit �
 | A9 | S3 | `ehr-network/scripts/test-chaincode-v2.sh` | Calls lab functions with argument lists that match neither the old nor the new chaincode | Open |
 | A10 | S2 | `setup.sh` | Exited silently on the first failed host-side `npm install` (`--silent` hid the error) | Fixed: errors are shown and setup continues |
 | G8 | S3 | `hospital-portal/pages/Login.jsx` | Lab role cards show the hint `recpw`, which happens to be the lab accounts' password; the removed `start.sh` banner advertised `password123`, which matched nothing | Open (login hints to be reviewed with G6) |
+| G9 | S1 | `patient-api/routes/auth.js` `/auth/register` | Anyone who knew or guessed a patient ID could create the portal account for it and read that patient's record; the ID did not even have to exist (confirmed live: account created for `PAT-AUD-934030` with only an ID and a password) | Fixed: the patient must exist on the ledger and the phone number must match the one recorded at reception; password minimum raised to 8. Live test pending |
+| C1, C2 | S1 | lab gateway | Sample-record store and built-in history records | Fixed: removed; ledger errors are reported. The lab deck still targets the undeployed `labresults` chaincode (A4), so its record list now shows an error instead of sample data until it is re-pointed at the hospital lab orders |
+| A11 | S2 | `start.sh`, `stop.sh` | Rebuilding the network left patient logins, dashboard checkpoints, DigiLocker links and the pharmacy store from the old ledger in place | Fixed: `scripts/reset-app-state.sh` runs on every rebuild and on `stop.sh --reset` |
 
 ## A. Startup and scripts
 
@@ -161,3 +164,16 @@ Core flow worked end to end by API: login → register patient → open visit �
 - Network from scratch: orgs/peers join, chaincode install/approve/commit.
 - IPFS: pin, fetch, CID on chain equals CID in IPFS.
 - Patient portal (not reviewed in depth in this pass), DigiLocker flow, dashboard live stream.
+
+## Live API pass 2 (patient portal, through nginx)
+
+All of these answered 200 for a logged-in patient: `/auth/me`, `/profile`, `/profile/history`, `/ehr`, `/ehr/history`, `/visits`, `/visits/:id`, `/visits/:id/history`, `/visits/:id/cids`, `/access`, `/access/active`, `/access/log`, `/access/requests`, `/access/staff`, `/signatures`, `/signatures/verify/ehr`, `/signatures/verify/visit/:id`; grant and revoke worked; no token → 401; another patient's visit → 404. DigiLocker `/health`, `/status`, `/vault` → 200, `/documents` → 409 "not linked" (expected before linking). Dashboard API without a token → 401.
+
+## Removed as stale (commit c91b8fd)
+
+- `orgs/pharmacy/fabric-network-swarm/app/{manager,employee,inventory,patient,billing}` — replaced by the unified `app/frontend`; removed from CI and the two sync scripts
+- `orgs/hospital/EHR_hospitalOrg-main/hospital-agent/` — referenced by nothing
+- lab gateway `agents/demo-lab-agent.js`, `integrity-demo.js`, `tools/test-mock.js` — manual demo scripts, referenced by nothing
+- `FILE_SEARCH_ROOT.md` (out-of-date file index), `BlockChain_24MCF1R06` (a 34-byte stray pointer file), `ehr-network/chaincode_test_output.txt` (old test dump)
+
+Kept on purpose: `services/clinical-decision-support` (unwired, but it is the only agent code that calls a real model — to be wired in for E1/4c), the lab team's standalone three-machine network files under `orgs/lab/EHR-LABORG-main` and the pharmacy swarm files (teammates' deliverables, not used by the integrated stack), `ai-agent` legacy modules and `dashboard-api/scripts/mock-events.js` (imported by tests).

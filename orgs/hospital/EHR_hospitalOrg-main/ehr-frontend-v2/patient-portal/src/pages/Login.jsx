@@ -35,8 +35,13 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    if (newPass.length < 6) {
-      setError('Password must be at least 6 characters')
+    if (newPass.length < 8) {
+      setError('Password must be at least 8 characters')
+      setLoading(false)
+      return
+    }
+    if (phone.replace(/\D/g, '').length < 7) {
+      setError('Enter the phone number you gave at hospital reception')
       setLoading(false)
       return
     }
@@ -228,10 +233,12 @@ export default function LoginPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Contact Phone
+                  Phone number given at reception
                 </label>
                 <input
                   type="tel"
+                  required
+                  autoComplete="tel"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   placeholder="+91 98765 43210"
