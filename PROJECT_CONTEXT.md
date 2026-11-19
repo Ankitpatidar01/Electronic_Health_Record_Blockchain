@@ -1,86 +1,104 @@
 # PROJECT_CONTEXT — EHR Blockchain
 
-Written 2026-11-19 from a static read of the repository at commit `9b23b5b` (branch `main`, clean tree).
-Nothing in this document was observed on a running system: the shell used for this pass has no Docker,
-so every "works" below means "the code path exists and is wired", not "seen working". Items marked
-**(not traced)** were located but not read line by line.
+Describes the system as it stands on branch `finish/integration-phases` (2026-11-19). The core flows were run on
+a network built from scratch on WSL2; `STATUS.md` lists what was not exercised and what is not real, and
+`BUGS.md` has the audit and fix log. Items marked **(not traced)** were not read line by line.
 
 ## 1. Architecture
 
-One Fabric network, one channel (`ehrchannel`), one main chaincode (`ehr`, ten contracts), Kubo IPFS
-for off-chain content, Express gateways per peer/role, React portals, an nginx hub on port 80.
+One Fabric network, one channel (`ehrchannel`), one chaincode (`ehr`, thirteen contracts), Kubo IPFS for
+off-chain content, Express gateways per peer/role, React portals, an nginx hub on port 80.
 
 | Service (compose name) | Port | Stack | Talks to | Purpose |
 | --- | --- | --- | --- | --- |
-| `nginx` | 80 | nginx | all below | Hub page (`nginx/hub`) and path routing |
-| `h-peer0-api` | 4001 | Express | peer0.hospital, ipfs-service | Receptionist/admin: patients, visits, staff users |
-| `h-peer1-api` | 4002 | Express | peer1.hospital, ipfs-service | Doctor: diagnosis, prescription, forward to nurse/lab, finalize, EHR |
-| `h-peer2-api` | 4003 | Express | peer2.hospital, ipfs-service | Nurse, pharmacist (dispense), medical-records officer |
-| `h-extorg-api` | 4004 | Express | peer0.diagnostic, peer0.provider, ipfs-service | Lab workflow and insurance claims |
-| `h-patient-api` | 4005 | Express + SQLite | peer0.hospital, ipfs-service | Patient login, profile, EHR, visits, consent, OCR, signatures |
-| `h-ipfs-service` | 4006 | Express | Kubo `ipfs.ehr.local:5001` | Pin/fetch JSON and files; guarded by `X-IPFS-Key` |
+| `nginx` | 80 | nginx | all below | Hub page (`nginx/hub`) and path routing (`/api/hospital/peer0|peer1|peer2|extorg|ext|patient/`, `/api/dashboard/`, `/api/pharmacy/`, `/api/lab/`, `/ai-agent/`, `/dashboard/`, `/lab/`) |
+| `h-peer0-api` | 4001 | Express | peer0.hospital, ipfs-service, Gemini | Receptionist/admin: patients, visits, staff users, symptom intake, timeline; publishes the code template at start |
+| `h-peer1-api` | 4002 | Express | peer1.hospital, ipfs-service | Doctor: diagnosis, prescription, forward to nurse/lab, disease code, timeline, finalize, EHR |
+| `h-peer2-api` | 4003 | Express | peer2.hospital, ipfs-service | Nurse, pharmacist (dispense), medical-records officer; login for pharmacy accounts |
+| `h-extorg-api` | 4004 | Express | peer0.diagnostic, peer0.provider, ipfs-service | Lab workflow (worklist, results, attachments, verify/reject) and insurance claims |
+| `h-patient-api` | 4005 | Express + SQLite | peer0.hospital, ipfs-service | Patient sign-up/login, profile, EHR, visits, timeline, consent, OCR, signatures |
+| `h-ipfs-service` | 4006 | Express | Kubo `ipfs.ehr.local:5001` | Pin/fetch; encrypts JSON documents (AES-256-GCM); guarded by `X-IPFS-Key`; reports timing to the dashboard |
 | `h-digilocker-service` | 4007 | Express | peer0.hospital, ipfs-service | DigiLocker vault (sandbox provider by default) |
-| `clinical-ai-agent` | 8000 | FastAPI | local JSON files | "Clinical RAG" + lab-report analysis; runs with `EHR_OFFLINE_MODE=true` |
-| `h-dashboard-api` (profile `dashboard`) | 4010 | Express + WS | all peers, orderer, health URLs | Block collector, event ingest, aggregation, realtime stream |
-| `h-dashboard-portal` (profile `dashboard`) | 5176 | React/Vite | dashboard-api | Observability dashboard |
-| `h-hospital-portal` | 5173 | React/Vite dev server | peer0/1/2/ext APIs via Vite proxy | Staff portal (all hospital and lab roles) |
-| `h-patient-portal` | 5174 | React/Vite dev server | patient-api, digilocker | Patient portal |
-| `p-backend` | 3000 | Express | Fabric (`ehr`), Kubo directly | Pharmacy inventory, billing, employees |
-| `p-frontend` | 5175 | React/Vite | p-backend, peer2-api | Unified pharmacy suite |
-| `l-node-gateway` | 3006→3000 | Express + static UI | peer0.diagnostic (`labresults` chaincode), Kubo, clinical-ai-agent, Gemini | Lab "control deck" and multi-agent pipeline |
+| `clinical-ai-agent` | 8000 | FastAPI | local JSON files | Rule-based lab-report check and Q&A (`EHR_OFFLINE_MODE=true`); needs a staff token |
+| `h-dashboard-api` (profile `dashboard`) | 4010 | Express + WS | peer0.hospital (own read-only identity), health URLs | Block collector, event ingest, analytics, explorer, realtime stream |
+| `h-dashboard-portal` (profile `dashboard`) | 5176 (served at `/dashboard/`) | React/Vite | dashboard-api | Dashboard |
+| `h-hospital-portal` | 5173 | React/Vite dev server | peer0/1/2/ext APIs and AI agent via Vite proxy | Staff portal (all hospital and lab roles) |
+| `h-patient-portal` | 5174 | React/Vite dev server | patient-api via Vite proxy (`/api/patient`), digilocker (`localhost:4007`) | Patient portal |
+| `p-backend` | 3000 | Express | Kubo, local JSON store | Pharmacy inventory, bills, staff list; token and role check on every data route. No Fabric client |
+| `p-frontend` | 5175 | React/Vite | p-backend, peer2-api | Pharmacy portal |
+| `l-node-gateway` | 3006→3000 | Express + static UI | peer0.diagnostic (`labresults` chaincode, not deployed), Kubo, extorg-api (sign-in) | Lab deck; needs a lab staff token |
+| `fhir-deps` | — | one-shot | — | Installs the FHIR module's dependencies into a volume the hospital APIs mount |
 
-Fabric containers (separate compose files under `orgs/hospital/EHR_hospitalOrg-main/ehr-network/docker`):
-orderer (7050), peer0/1/2.hospital (7051/9051/10051), peer0.diagnostic (8051), peer0.provider (11051),
-four CAs (7054–7057), and Kubo as `ipfs.ehr.local` (API 5001, gateway 8090).
+Fabric containers (compose files under `orgs/hospital/EHR_hospitalOrg-main/ehr-network/docker`): orderer (7050),
+peer0/1/2.hospital (7051/9051/10051), peer0.diagnostic (8051), peer0.provider (11051), four CAs (7054–7057),
+and Kubo as `ipfs.ehr.local` (API 5001, gateway 8090).
 
-### How to start (as documented)
+Shared backend code is in `ehr-backend-v3/shared`, mounted into every hospital API at `/shared`:
+`labReport.js` (test catalogue, validation, flags, report hash), `diseaseCodes.js` + `icd10-template.json`,
+`symptomAgent.js`, `intake.js`, `timeline.js`, `patientDirectory.js`, `dashboardEmitter.js`, `fhir.js`, `users.json`.
+
+### How to start
 
 ```
-node scripts/init-env.js        # root .env + secrets
-./setup.sh                      # deps, images
-cd orgs/hospital/EHR_hospitalOrg-main/ehr-network && bash scripts/network-up.sh   # first time only
-bash scripts/deployChaincode.sh --channel ehrchannel --chaincode-name ehr --chaincode-path ../ehr-chaincode-v3 --version <v> --sequence <n>
-./start.sh [--build]
+./setup.sh                  # first time: images and host-side dependencies
+./start.sh                  # everything
+./stop.sh                   # stop, keep data
+./stop.sh --reset --yes     # delete ledger, identities and application data
 ```
 
-`start.sh` refuses to run unless Fabric identities and CA state already exist; it does not create the
-network or deploy chaincode. Linux or WSL2 only.
+`start.sh` creates `.env` if missing (`scripts/init-env.js`), then: if there are no Fabric identities it builds
+the network (`network-up.sh`); if identities exist but the peers are not on the channel it wipes application
+state and rebuilds; otherwise it reuses the ledger. `ehr-network/scripts/ensure-chaincode.sh` hashes the
+chaincode source and deploys or upgrades `ehr` only when it changed. `scripts/setup-dashboard-identity.sh`
+enrols the dashboard's read-only identity. The script ends when all health checks pass. Linux or WSL2 only.
 
 ## 2. Fabric network
 
 - Orgs: `HospitalMSP` (3 peers), `DiagnosticsMSP` (1 peer), `ProviderMSP` (1 peer), `OrdererMSP` (1 Raft orderer).
 - Channel: `ehrchannel`.
 - Chaincode `ehr` (Node, `ehr-chaincode-v3`), endorsement policy `OR('HospitalMSP.peer','DiagnosticsMSP.peer','ProviderMSP.peer')` — any single org endorses.
-- Chaincode `labresults` (`orgs/lab/EHR-LABORG-main/chaincode/lab-results`) is what `l-node-gateway` calls on `ehrchannel`, but no root script deploys it there; its deploy scripts target the lab team's separate three-machine network.
-- Role comes from the `role` attribute in the caller's X.509 certificate (`accessControl.js`).
+- Role comes from the `role` attribute in the caller's X.509 certificate (`lib/accessControl.js`). `role=admin` is scoped by MSP: hospital `admin`, diagnostics `labadmin`, provider `provideradmin`.
+- All timestamps come from the transaction (`getTxTimestamp`), not the peer's clock.
+- The gateways pick the Fabric identity by role, not by person; the username travels as data.
+- Chaincode `labresults` (`orgs/lab/EHR-LABORG-main/chaincode/lab-results`) is what the lab deck calls; it is not deployed on this network.
 
 ### Chaincode functions (`ehr`)
 
 | Contract | Function | Who may call (enforced in chaincode) |
 | --- | --- | --- |
-| PatientContract | RegisterPatient | receptionist, admin |
-| | GetPatient, GetPatientHistory | any staff role; others need a grant |
+| PatientContract | RegisterPatient(patientId, profileCID, profileHash, initialEhrCID) | receptionist, admin. Creates the DID |
+| | UpdatePatientInfo(patientId, profileCID, profileHash), SetPatientEhrCID, ListAllPatients | receptionist, admin |
+| | GetPatient, GetPatientHistory, GetPatientVisits | staff roles; others need a grant |
 | | PatientExists | anyone |
-| | GetPatientVisits | staff / grant on `visits` |
-| | UpdatePatientInfo, SetPatientEhrCID, ListAllPatients | receptionist, admin |
 | VisitContract | OpenVisit, AssignDoctor | receptionist, admin |
 | | AssignNurse | receptionist, doctor, admin |
 | | FinalizeVisit | doctor |
 | | FinalizeRecord | medrecordofficer |
 | | DischargePatient | admin |
-| | UpdateVisitCID, GetVisitCID, GetVisit, GetVisitHistory, GetCIDHistory, ListAllVisits, GetPatientVisitsFull | **(checks not traced)** |
-| ForwardContract | ForwardToNurse, ForwardToLab | doctor |
+| | ListAllVisits | staff roles |
+| | UpdateVisitCID, GetVisitCID, GetVisit, GetVisitHistory, GetCIDHistory, GetPatientVisitsFull | **(checks not traced)** |
+| ForwardContract | ForwardToNurse | doctor |
+| | ForwardToLab(visitId, labRequestId, visitCID) | doctor. Creates the `LABREQ` record |
 | | ForwardToDoctor | nurse |
-| | LabResultsBackToDoctor | labsupervisor, labadmin, admin |
 | ClinicalContract | UpdateDiagnosisNotes, UpdatePrescription | doctor |
 | | RecordVitals, AddCareNote | nurse |
-| | DispenseMedication | pharmacist (visit must be VISIT_FINALIZED) |
+| | DispenseMedication | pharmacist (visit must be finalized) |
 | LabContract | AcknowledgeLabRequest | labreceptionist, labadmin |
-| | SubmitLabResult | labtechnician, radiologist, labadmin |
-| | ApproveLabResult | labsupervisor, labadmin |
+| | SubmitLabResult(…, resultsHash) | labtechnician, radiologist, labadmin |
+| | ApproveLabResult(…, resultsHash) | labsupervisor, labadmin; must not be the person who submitted; hash must match |
+| | RejectLabResult(…, reason) | labsupervisor, labadmin |
+| | ListLabRequests(status) | lab roles and staff who read the queue |
+| | GetLabRequest, GetLabRequestHistory | **(checks not traced)** |
+| DidContract | AppendDocument(patientId, cid, type, ref, note) | staff roles; types SYMPTOM_ANALYSIS, DOCUMENT, DIGILOCKER_DOCUMENT, FHIR_BUNDLE |
+| | GetDID, ResolveDID, ListCIDs, GetCIDEntry | read-access check **(not traced)** |
+| CodeContract | SetTemplate(cid, version, sha256, codeSystem) | admin |
+| | AssignProvisionalCode | receptionist, admin |
+| | UpdateDiseaseCode(patientId, newCode, name, reason, visitId) | doctor; a change needs a reason |
+| | GetTemplate, GetDiseaseCode | **(checks not traced)** |
+| StatsContract | GetStats | admin, observer (counts only) |
 | ClaimsContract | SubmitClaim / AuditClaim / ProcessClaim | billingofficer / claimsauditor / insuranceofficer |
 | EhrContract | InitEHR | receptionist, admin |
-| | UpdateEHRCID | doctor, nurse (with patient grant), admin, patientService **(not traced)** |
+| | UpdateEHRCID | doctor, nurse (with patient grant), admin, patientService |
 | | GetCurrentCID, GetEHRCIDHistory, GetEHRRecord, GetEHRBlockHistory | read-access check **(not traced)** |
 | AccessContract | GrantAccess, RevokeAccess, ApproveAccessRequest, RejectAccessRequest | patientService, admin |
 | | RequestAccess, HasAccess, GetAccessList, GetActiveGrants, LogAccess, GetAccessRequests, GetAuditLog | **(not traced)** |
@@ -93,50 +111,54 @@ network or deploy chaincode. Linux or WSL2 only.
 Visit statuses: OPEN → WITH_DOCTOR ⇄ WITH_NURSE / WITH_LAB → VISIT_FINALIZED → RECORD_FINALIZED →
 CLAIM_SUBMITTED → CLAIM_UNDER_AUDIT → CLAIM_APPROVED / CLAIM_REJECTED → DISCHARGED.
 
+Lab request statuses: REQUESTED → ACKNOWLEDGED → RESULT_SUBMITTED → APPROVED, or REJECTED → RESULT_SUBMITTED again.
+
+Every write to a `VISIT:` or `EHR:` key also appends the new CID to the patient's DID (`lib/did.js`,
+called from `accessControl.putState`), so the timeline is built by the chaincode, not by the APIs.
+
 ## 3. Organisations and roles
 
-Users live in `ehr-backend-v3/shared/users.json` (bcrypt hashes) and must also have an enrolled Fabric identity.
+Staff accounts are in `ehr-backend-v3/shared/users.json` (bcrypt hashes). Demo passwords are in `README.md`.
 
-| Org | Role | Intended work | UI today |
+| Org | Role | Work | UI |
 | --- | --- | --- | --- |
-| Hospital | receptionist | Register patients, open visits, assign doctor/nurse | Hospital portal: Patients, Visits, Open Visit |
-| | admin | Same plus discharge and staff management | Hospital portal: + Staff, Discharge |
-| | doctor | Diagnosis notes, prescription, forward to nurse/lab, finalize visit, edit EHR (with consent) | Hospital portal: My Visits |
+| Hospital | receptionist | Register patients (with symptoms), open visits, assign doctor/nurse | Hospital portal: Patients, Visits, Open Visit |
+| | admin | Same plus discharge and staff management; signs in to the dashboard | Hospital portal: + Staff, Discharge; Dashboard |
+| | doctor | Diagnosis, prescription, forward to nurse/lab, disease code, timeline, finalize, edit EHR (with consent) | Hospital portal: My Visits |
 | | nurse | Vitals, care notes, forward to doctor | Hospital portal: My Visits |
-| | pharmacist | Dispense after visit finalized | Hospital portal: Dispense; pharmacy suite |
+| | pharmacist | Dispense after the visit is finalized | Pharmacy portal; Hospital portal: Dispense |
 | | medrecordofficer | Finalize the record | Hospital portal: Finalize |
-| | inventory, billing, manager | Pharmacy suite roles (log in through peer2-api) | Pharmacy suite |
-| Diagnostics | labreceptionist | Acknowledge a lab request | Hospital portal: Lab Queue |
-| | labtechnician, radiologist | Enter results | Hospital portal: Lab Queue |
-| | labsupervisor | Approve (sign off) results, return to doctor | Hospital portal: Lab Queue |
-| | labadmin | All of the above | Hospital portal: Lab Queue |
-| Provider | billingofficer, claimsauditor, insuranceofficer, provideradmin | Submit, audit, decide claims | **API only (`extorg-api /claims`), no page in any portal** |
-| Patient | patient (SQLite account; on-chain via `patientService` identity) | View profile/EHR/visits, grant and revoke consent, DigiLocker vault, verify signatures | Patient portal |
+| | inventory, billing, manager | Pharmacy stock, bills, staff list and audit (accounts log in through peer2-api) | Pharmacy portal |
+| Diagnostics | labreceptionist | Accept a lab order | Hospital portal: Lab worklist |
+| | labtechnician, radiologist | Enter results | Hospital portal: Lab worklist |
+| | labsupervisor | Verify and sign, or reject with a reason | Hospital portal: Lab worklist |
+| | labadmin | All of the above | Hospital portal: Lab worklist |
+| Provider | billingofficer, claimsauditor, insuranceofficer, provideradmin | Submit, audit, decide claims | **API only (`extorg-api /claims`), no page** |
+| Dashboard | observer (`dashboardobserver`) | Read blocks and counts | Used by dashboard-api only |
+| Patient | patient (SQLite account; on-chain via `patientService`) | Profile, EHR, visits, timeline, consent, DigiLocker, signature checks | Patient portal |
 
 ## 4. Portals and pages
 
-**Hospital portal** (5173; one API base per role):
-`/login`, `/patients` + `/register` (peer0 `/patients`), `/visits`, `/visits/:id`, `/open-visit`, `/discharge`
-(peer0 `/visits…`), `/staff` (peer0 `/auth/users…`), `/my-visits` (doctor: peer1 `/doctor/visits…`; nurse:
-peer2 `/nurse/visits…`), `/dispense` (peer2 `/pharmacist/…`), `/finalize` (peer2 `/records/…`), `/lab-queue`
-(ext `/lab/visits…`, plus `/api/ai-agent/api/v1/agent/analyze-report`).
+**Hospital portal** (5173): `/login`, `/patients` and `/register` (registry and registration with Symptoms; result
+card with DID, provisional code and AI cross-reference), `/visits`, `/visits/:id`, `/open-visit`, `/discharge`,
+`/staff`, `/my-visits` (doctor tabs: Overview, Clinical, Lab Results, Disease Code, Timeline, Patient EHR; nurse
+view), `/dispense`, `/finalize`, `/lab-queue` (lab worklist: role queue, status filters, result entry from the
+test catalogue, attachments, review and sign-off).
 
-**Patient portal** (5174): Login/Register, Health Home (Overview), My Visits, Record Vault / Consent Centre /
-On-Chain Proof (all inside `EHRAccess.jsx`), DigiLocker Vault, Profile. Calls patient-api `/auth`, `/profile`,
-`/ehr`, `/visits`, `/access`, `/ocr`, `/signatures` and digilocker `/status`, `/link…`, `/documents…`, `/vault…`.
-**(per-page call list not traced)**
+**Patient portal** (5174): Login/Sign-up (needs the phone number given at reception), Overview, My Visits (lab
+report shown only after verification), My Timeline (disease code history and every entry under the DID),
+Record Vault / Consent Centre / On-Chain Proof, DigiLocker, Profile.
 
-**Pharmacy suite** (5175): single `App.jsx` with role gate (manager, pharmacist, inventory, billing, patient);
-calls p-backend `/api/inventory`, `/billing`, `/bills…`, `/employees`, `/patient…`, `/grant-access`,
-`/revoke-access` and peer2-api `/pharmacist/visits…`.
+**Pharmacy portal** (5175): sign-in with a pharmacy account; the workspace follows the role on the account.
+Doctor Orders & Dispense (pharmacist), Stock & Inventory, POS Billing, Patient Pharmacy Records, Operations &
+Staff (manager).
 
-**Lab control deck** (`/lab/`, static HTML in `node-gateway/public`): record list, submit record with report
-file, AI analysis, agent run + human approval, integrity check. Calls l-node-gateway `/api/*`.
+**Lab deck** (`/lab/`, static page served by `l-node-gateway`): sign-in form, then record list, report upload,
+AI analysis, agent run with human approval, integrity check. Its ledger calls fail (see section 2).
 
-**Dashboard** (`/dashboard/`): Overview, Network, Transactions, Agents (+ per-agent pages), IPFS, Security,
-Alerts, Logs. Calls dashboard-api `/overview`, `/network`, `/blocks`, `/transactions`, `/transactions/metrics`,
-`/blocks/metrics`, `/agents…`, `/executions…`, `/ipfs`, `/security…`, `/alerts…`, `/logs/events`, and the
-`/stream` WebSocket.
+**Dashboard** (`/dashboard/`): Overview, Network, Agents, Transactions, Analytics, Explorer, Security, IPFS,
+Logs, Alerts. Analytics and Explorer read `/analytics/summary` and `/explorer/...`; the rest read the
+aggregation routes and the `/stream` WebSocket.
 
 **Hub** (`/`): static cards with health probes.
 
@@ -144,83 +166,63 @@ Alerts, Logs. Calls dashboard-api `/overview`, `/network`, `/blocks`, `/transact
 
 | Agent | Where | Trigger | Input | Output | Shown |
 | --- | --- | --- | --- | --- | --- |
-| Clinical agent — query | `services/ai-agent` `POST /api/v1/agent/query` | Dashboard "Clinical Agent" page; lab orchestrator | question + patient id | answer + citations | Dashboard page |
-| Clinical agent — analyze-report | same service, `/agent/analyze-report` | Lab technician clicks AI analysis in Lab Queue | report text | findings, abnormal flags, follow-ups, SHA-256 of the text | Lab Queue; saved into results as `ai*` keys; doctor sees flags |
-| Lab agent | `node-gateway/agents/lab-agent.js` | Lab deck `/api/ai/analyze`, `/api/agents/run` | extracted report text / result data | findings | Lab deck |
-| History agent | `node-gateway/agents/history-agent.js` | orchestrator run | patient id | trend summary of past lab records | Lab deck |
-| Clinical agent (lab side) | `node-gateway/agents/clinical-agent.js` | orchestrator run | lab + history output | recommendation from clinical-ai-agent | Lab deck, after human approval |
-| Governance | `node-gateway/governance/governance.js` | orchestrator run | all agent outputs | allow / block (rule-based, not AI) | Lab deck |
-| VCAP provenance | `node-gateway/provenance/vcap.js` | end of run | hashes | IPFS CID of provenance record | Lab deck |
-| Clinical decision support (LangGraph + Gemini) | `services/clinical-decision-support` | **none — not in compose, not called** | — | — | — |
-| Hospital agent | `hospital-agent/capabilities/clinical.js` | **(not traced; appears unwired)** | — | — | — |
+| Symptom agent (Gemini) | `shared/symptomAgent.js`, run by `shared/intake.js` in peer0-api | Patient registration; opening a visit with a chief complaint | symptoms, age, gender, the code template | likely conditions, suggested ICD-10 codes (template codes only), urgency, suggested tests, summary | Registration result card; doctor's Disease Code tab, labelled "AI cross-reference, not a diagnosis"; stored as a document under the DID |
+| Clinical agent — analyze-report | `services/ai-agent` `/api/v1/agent/analyze-report` | Lab technician asks for a check while entering results | report text | findings, abnormal flags, follow-ups | Lab worklist; saved with the report |
+| Clinical agent — query | same service, `/agent/query` | Hospital portal chat | question + patient id | answer | Hospital portal |
+| Lab agent, History agent, Clinical agent (lab side), Governance, VCAP provenance | `l-node-gateway` (`agents/`, `orchestrator/`, `governance/`, `provenance/`) | Lab deck | report / patient id | findings, trend, allow/block, provenance CID | Lab deck |
+| Clinical decision support (LangGraph + Gemini) | `services/clinical-decision-support` | **none — not in compose** | — | — | — |
 
-Important: `clinical-ai-agent` is built with only `fastapi uvicorn pydantic` and runs in offline mode, so its
-"analysis" is keyword/rule matching over bundled JSON, not a language model. The only real model call in the
-system is Gemini from the lab gateway, and `GEMINI_API_KEY` is not set in `.env`, so that path currently
-falls back to a keyword heuristic.
+The symptom agent is the only part that calls a language model. It tries `GEMINI_MODEL`, then
+`GEMINI_FALLBACK_MODELS` when the API answers 429/500/503 or times out, and records which model answered. With
+no key or no answer it returns status UNAVAILABLE with the reason and no clinical content; registration still
+completes with the template match.
 
-There is no symptom-analysis agent, and nothing runs at patient registration.
+`clinical-ai-agent` is rule and keyword matching over bundled JSON, not a model. The lab deck's clinical step
+calls an endpoint that only `clinical-decision-support` serves, so it reports AI as unavailable.
 
-## 6. Data flow of one record (as coded)
+## 6. Data flow of one record
 
-1. **Registration** — receptionist → peer0-api `POST /patients`: pin EHR JSON to IPFS → `PatientContract:RegisterPatient` (demographics + ehrCID) → `EhrContract:InitEHR` → best-effort FHIR Patient anchor.
-2. **Visit** — `POST /visits`: pin visit JSON → `VisitContract:OpenVisit`; assign doctor/nurse.
-3. **Consultation** — doctor edits fetch the visit JSON by CID, change it, re-pin, and call the matching ClinicalContract function with the new CID (appended to `visit.cidHistory`).
-4. **Lab order** — doctor `PUT /doctor/visits/:id/forward/lab` adds a `labRequests[]` entry (`<visitId>-L<n>`) → `ForwardContract:ForwardToLab`; visit becomes WITH_LAB.
-5. **Lab** — extorg-api: acknowledge → submit results (free-form key/value object) → approve → return to doctor; each step re-pins the visit JSON and records the CID on-chain; submit also anchors a FHIR DiagnosticReport.
-6. **History** — patient-api and peer APIs read `GetVisit`/`GetCIDHistory` and fetch JSON by CID; patient portal shows visits, CID history and signature checks.
+1. **Registration** — receptionist → peer0-api `POST /patients`: profile and EHR documents are encrypted and pinned → `PatientContract:RegisterPatient` stores the profile CID and hash and creates the DID → `EhrContract:InitEHR` → FHIR Patient anchor.
+2. **Intake** — the symptoms are matched against the ICD-10 template and sent to the symptom agent; the analysis document is pinned and appended to the DID (`DidContract:AppendDocument`); `CodeContract:AssignProvisionalCode` records the provisional code with the AI's suggested codes.
+3. **Visit** — `POST /visits`: pin visit document → `VisitContract:OpenVisit`; assign doctor/nurse.
+4. **Consultation** — each doctor or nurse edit fetches the visit document, changes it, re-pins it and calls the matching function with the new CID.
+5. **Disease code** — doctor `PUT /doctor/visits/:id/disease-code` → `CodeContract:UpdateDiseaseCode`; the entry records whether it matched the provisional code and the AI suggestion.
+6. **Lab** — doctor orders (`ForwardToLab` creates `LABREQ:<visitId>-L<n>`) → lab accepts → technician submits a structured report (its SHA-256 goes on the ledger) → supervisor verifies against that hash, or rejects with a reason → visit returns to the doctor.
+7. **Finalize and dispense** — doctor finalizes; pharmacist dispenses through peer2-api (`ClinicalContract:DispenseMedication`).
+8. **Reading back** — the timeline (`shared/timeline.js`) lists the DID's entries and fetches any document by its sequence number; the patient's copy hides lab values that are not yet verified.
+
+Every gateway wraps its contract object so each submit reports its submit and commit times to the dashboard.
 
 ## 7. Where data lives
 
 | Store | Contents |
 | --- | --- |
-| Ledger (`ehr`) | `PATIENT:<id>` — **name, age, gender, blood group, contact, address in plain text**, visitIds, ehrCID. `VISIT:<id>` — status, assigned staff, chief complaint **(not traced whether complaint text is stored)**, current CID, CID history. `EHR:<id>` CID index; `ACCESS:<id>` grants, requests, audit log; FHIR anchors (hashes + CID); DigiLocker anchors (hashes + CID). |
-| IPFS | EHR JSON and visit JSON (diagnosis, vitals, prescriptions, lab results) — **pinned as plain, unencrypted JSON**; uploaded report files; FHIR bundles; DigiLocker documents (AES-256-GCM ciphertext); VCAP provenance records. |
+| Ledger (`ehr`) | `PATIENT:<id>` — DID, profile CID and hash, visit IDs, EHR CID; **no name, age, contact or address**. `DID:` / `DIDIDX:` / `DIDCID:<did>:<seq>` — the identifier and its numbered CID entries. `VISIT:<id>` — status, assigned staff, current CID, CID history. `LABREQ:<id>` — status, who did each step and when, report hash. Disease code record per patient — current code and name **in plain form**, full history. Code template pointer (CID, version, hash). `EHR:<id>` CID index; `ACCESS:<id>` grants, requests, audit log; FHIR anchors (hashes + CID); DigiLocker anchors; claims. |
+| IPFS | Profile, EHR, visit, symptom-analysis and FHIR documents — encrypted JSON (AES-256-GCM, key in `.env`). ICD-10 template. Lab attachments and OCR uploads — **not encrypted**. DigiLocker documents (encrypted by that service). Pharmacy bill documents — **not encrypted**, pinned straight to Kubo. |
 | SQLite (`patient-api/data/patients.db`) | Patient portal accounts. |
-| Files | `shared/users.json` staff accounts; dashboard NDJSON event store; DigiLocker link store; pharmacy `backend/data` JSON store; ai-agent `patient_data/patients.json`. |
+| Files | `shared/users.json` staff accounts; dashboard event store and block checkpoint (volume); dashboard identity (`dashboard-api/credentials`); DigiLocker link store; pharmacy store (`backend/data/pharmacy_store.json`: inventory, bills, staff list, access list — **not on the ledger**); ai-agent `patient_data/patients.json`. |
 
-## 8. Feature status (from code reading; to be confirmed on a live run)
+## 8. Feature status
 
 | Feature | Status | Note |
 | --- | --- | --- |
-| Fabric network bring-up scripts | Unverified | Scripts exist; not run |
-| `start.sh` | **Broken** | Step 5 starts `p-manager p-employee p-inventory p-billing p-patient`, which were removed from compose; with `set -e` the script stops before nginx starts |
-| Patient registration, visits, doctor, nurse, dispense, finalize | Partial | Wired end to end; demographics go on-chain in plain text |
-| Access control in chaincode | Partial | Role checks present on writes; several read functions not yet traced |
-| Chaincode timestamps | Partial | `new Date()` in all older contracts — non-deterministic under any multi-org policy |
-| Lab workflow in hospital portal (order → ack → result → approve → return) | Partial | Works as a flow; results are untyped key/value text, no units, ranges, flags, attachments, print/PDF |
-| Lab AI analysis button in Lab Queue | **Broken in Docker** | Portal proxy for `/api/ai-agent` defaults to `127.0.0.1:8000`; compose never sets `VITE_AI_AGENT_TARGET` |
-| Lab control deck (`l-node-gateway`) | Partial / misleading | Calls `labresults` chaincode that is not deployed by this repo; on any Fabric error it silently serves and stores records in an in-memory sample list; no authentication |
-| History agent | Partial | Contains built-in sample records for `PAT-DEMO-001` |
-| Clinical AI agent | Partial | Rule-based offline mode, no model; endpoints unauthenticated and store patients in a local JSON file |
-| Gemini lab agent | Partial | Real call exists; no key configured → heuristic fallback |
-| clinical-decision-support (LangGraph) | Missing wiring | Not deployed, not called |
-| IPFS pin/fetch | Partial | Works via ipfs-service; EHR/visit content not encrypted; retrieval gated only by the service key |
-| Pharmacy suite | Partial / misleading | Backend calls functions that do not exist in `ehr` chaincode, then silently uses a local JSON store; backend has no auth; frontend hard-codes `pharmacist/pharmpw` |
-| Insurance claims | Partial | Chaincode + API exist; no UI for any Provider role |
-| Patient portal (visits, EHR, consent, signatures, OCR) | Unverified | Wired; not exercised |
-| DigiLocker vault | Partial | Sandbox mode; needs chaincode upgrade on the channel |
-| FHIR anchoring | Unverified | Best-effort at registration and lab submit |
-| Dashboard | Partial | Block collector, health polling and agent events exist; no patient/record counts, no submit→commit latency, no explorer detail view, no IPFS timing, no AI-vs-doctor match rate |
-| nginx hub | Partial | `/hospital/` and `/patient/` paths break asset loading (known) |
-| One DID per patient, CID list per DID, timeline (4a) | **Missing** | No DID concept anywhere; CIDs are per visit and per EHR |
-| ICD-10 template on IPFS, provisional and confirmed codes, code history (4b) | **Missing** | |
-| Symptom analysis agent at registration (4c) | **Missing** | Registration form has no symptoms field |
-| Submit/commit timestamps per transaction (4d) | **Missing** | |
-
-## 9. Changes since this document was first written (2026-11-19)
-
-Sections 1–8 describe the system as first read. These are the differences now:
-
-- **Chaincode `ehr`** has 14 contracts. New: `DidContract` (one DID per patient, numbered CID entries), `CodeContract` (code template pointer, provisional and doctor codes with history), `StatsContract` (counts for the dashboard). `LabContract` was rewritten around a `LABREQ:<id>` record with a state machine. `PatientContract` stores a profile CID and hash instead of demographics. All timestamps come from the transaction.
-- **Shared backend code** (`ehr-backend-v3/shared`): `labReport.js`, `diseaseCodes.js` + `icd10-template.json`, `symptomAgent.js`, `intake.js`, `timeline.js`, `patientDirectory.js`, `dashboardEmitter.js`.
-- **IPFS service** encrypts JSON documents (AES-256-GCM, key in `.env`).
-- **Dashboard** has a read-only Fabric identity (`dashboardobserver`), an analytics API (`/analytics/summary`, `/explorer/...`) and two new pages.
-- **Pharmacy**: one backend with token and role checks; no Fabric client; local store for inventory and bills.
-- **Lab deck and clinical AI agent** require a staff token.
-- **Patient portal** reaches its API through `/api/patient` on its own origin.
-- **Scripts**: `start.sh` (build or reuse network, `ensure-chaincode.sh`, dashboard identity), `stop.sh --reset`, `scripts/reset-app-state.sh`, `scripts/setup-dashboard-identity.sh`.
-- Removed: five old pharmacy frontends, `hospital-agent`, lab demo scripts, pharmacy wallet scripts.
-
-Data flow of one record now: reception registers → profile and EHR documents encrypted to IPFS → `RegisterPatient` stores CIDs, creates the DID → symptom intake pins an analysis document, appends it to the DID, sets the provisional code → each later step (visit, consultation, prescription, lab, dispense) pins a new document and the chaincode appends its CID to the DID.
-
+| Network build, chaincode deploy and upgrade from `./start.sh` | Working | Run from scratch |
+| Reset (`./stop.sh --reset`) | Working | Needs `sudo` for Fabric's root-owned files |
+| Registration, visits, doctor, finalize, dispense | Working | |
+| One DID per patient and timeline | Working | Doctor and patient views |
+| Disease code template, provisional code, doctor confirm/change with history | Working | |
+| Symptom agent | Working | Depends on Google answering; fell back to a lighter model on the test day |
+| Lab workflow and structured report | Working | Print dialog not opened in testing |
+| FHIR anchoring | Working | |
+| Demographics off the ledger; JSON on IPFS encrypted | Working | Binary uploads not encrypted |
+| Patient portal | Working | DigiLocker page checked by hand only |
+| Pharmacy sign-in, role checks, dispense | Working | |
+| Pharmacy inventory and bills | Partial | Real records, but in the pharmacy's own store, not on the ledger |
+| Dashboard analytics and explorer | Working | Charts not seen drawn in testing |
+| Lab deck | Partial | Sign-in works; ledger actions fail (chaincode not deployed) |
+| Clinical AI agent (report check, chat) | Partial | Rule-based, not a model |
+| clinical-decision-support | Missing wiring | Not deployed, not called |
+| Nurse, records-officer, discharge screens; insurance claim API | Unverified | Unchanged code, not exercised in the last pass |
+| Insurance / provider screens | Missing | API only |
+| Staff creation from the admin page | Broken in Docker | No enrolment tool in the container |
+| Per-patient staff access, per-user Fabric identities, multi-org endorsement | Missing | See `STATUS.md` |
