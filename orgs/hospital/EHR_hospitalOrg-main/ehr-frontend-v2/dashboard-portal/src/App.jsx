@@ -43,7 +43,7 @@ function Login({ onLogin }) {
       <form onSubmit={submit} className="premium-card w-full max-w-md p-8 space-y-5">
         <div>
           <div className="inline-block p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-cyan-400 mb-3">
-            <img src="/logo.svg" alt="CareGrid NITW" className="h-8 w-8 object-contain" />
+            <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="CareGrid NITW" className="h-8 w-8 object-contain" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard sign in</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Use your hospital account. Access is determined by your assigned role.</p>
