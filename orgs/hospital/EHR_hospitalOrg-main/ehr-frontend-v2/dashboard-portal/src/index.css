@@ -54,8 +54,15 @@ html[data-theme="dark"], html.dark, body.dark {
   --chart-tooltip: #111827;
 }
 
+html {
+  font-size: 17px;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
+  font-size: 0.95rem !important;
+  line-height: 1.55;
   background-color: var(--bg-primary) !important;
   color: var(--text-primary) !important;
   font-family: 'Inter', system-ui, sans-serif !important;
@@ -427,9 +434,9 @@ html.dark .dashboard-topbar {
   gap: 8px;
   white-space: nowrap;
   border-radius: 999px;
-  padding: 8px 14px;
+  padding: 8px 15px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 650;
   transition: all 0.2s ease;
   border: 1px solid transparent;
@@ -474,9 +481,9 @@ html.dark .dashboard-nav-link.is-active {
   border: 1px solid #e2e8f0;
   border-radius: 999px;
   background: #ffffff;
-  padding: 8px 13px;
+  padding: 8px 14px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
   transition: all 0.18s ease;
   cursor: pointer;
@@ -489,9 +496,9 @@ html.dark .dashboard-nav-link.is-active {
   border: 1px solid #e2e8f0;
   border-radius: 999px;
   background: #ffffff;
-  padding: 8px 13px;
+  padding: 8px 14px;
   color: #475569;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -600,7 +607,7 @@ html.dark .overview-hero {
 .eyebrow {
   margin: 0 0 9px;
   color: #64748b;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 750;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -615,7 +622,7 @@ html.dark .eyebrow {
   max-width: 460px;
   margin: 13px 0 0;
   color: #64748b;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.65;
 }
 
@@ -630,7 +637,7 @@ html.dark .hero-subtitle {
   gap: 10px;
   margin-top: 24px;
   color: #475569;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 650;
 }
 
@@ -769,9 +776,9 @@ html.dark .hero-alert-icon {
   box-shadow: 0 0 14px rgba(245, 158, 11, 0.2) !important;
 }
 
-.hero-alert-card p { margin: 0; color: #64748b; font-size: 11px; font-weight: 600; }
-.hero-alert-card strong { display: block; margin: 3px 0; color: #0f172a; font-size: 22px; font-weight: 750; }
-.hero-alert-card small { color: #94a3b8; font-size: 10px; }
+.hero-alert-card p { margin: 0; color: #64748b; font-size: 12px; font-weight: 600; }
+.hero-alert-card strong { display: block; margin: 3px 0; color: #0f172a; font-size: 23px; font-weight: 750; }
+.hero-alert-card small { color: #94a3b8; font-size: 11px; }
 
 html[data-theme="dark"] .hero-alert-card strong,
 html.dark .hero-alert-card strong {
@@ -792,7 +799,7 @@ html.dark .hero-alert-card strong {
 .section-heading h2 {
   margin: 0;
   color: #0f172a;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 750;
   letter-spacing: -0.03em;
 }
@@ -804,7 +811,7 @@ html.dark .section-heading h2 {
 
 .data-caption {
   color: #94a3b8;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .metric-grid {
@@ -888,14 +895,14 @@ html.dark .overview-metric:hover {
 
 .metric-source {
   color: #94a3b8;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 600;
 }
 
 .metric-label {
   margin: 15px 0 7px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 650;
 }
 
@@ -926,7 +933,7 @@ html.dark .metric-value-row strong {
   background: #f1f5f9;
   padding: 5px 9px;
   color: #475569;
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -944,7 +951,7 @@ html.dark .metric-status {
   border-top: 1px solid #f1f5f9;
   padding-top: 12px;
   color: #94a3b8;
-  font-size: 10px;
+  font-size: 11.5px;
 }
 
 html[data-theme="dark"] .metric-bottom,
@@ -1143,7 +1150,7 @@ html.dark .overview-metric.tone-rose {
   align-items: center;
   gap: 9px;
   color: #64748b;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 650;
 }
 
@@ -1160,7 +1167,7 @@ html.dark .block-window-control {
   background: #ffffff;
   padding: 8px 28px 8px 12px;
   color: #1e293b;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -1183,7 +1190,7 @@ html.dark .block-window-control select {
 .block-analytics-heading h2 {
   margin: 0;
   color: #0f172a;
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 750;
   letter-spacing: -0.03em;
 }
@@ -1294,7 +1301,7 @@ html[data-theme="dark"] .block-stat-icon.daily {
 
 .block-stat-label {
   color: #64748b;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 650;
 }
 
@@ -1356,7 +1363,7 @@ html.dark .block-chart-card {
 .block-chart-title h3 {
   margin: 0;
   color: #0f172a;
-  font-size: 15px;
+  font-size: 16.5px;
   font-weight: 750;
 }
 
@@ -1369,7 +1376,7 @@ html.dark .block-chart-title h3 {
   display: flex;
   gap: 14px;
   color: #64748b;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .chart-legend span {
@@ -1487,7 +1494,7 @@ html.dark .block-item.is-latest {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 750;
   color: #0f172a;
 }
@@ -1498,7 +1505,7 @@ html.dark .block-number-tag {
 }
 
 .block-latest-badge {
-  font-size: 8px;
+  font-size: 9.5px;
   font-weight: 800;
   letter-spacing: 0.05em;
   padding: 2px 5px;
@@ -1516,7 +1523,7 @@ html.dark .block-latest-badge {
 
 .block-hash-preview {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 11.5px;
   color: #64748b;
   background: #f8fafc;
   padding: 3px 6px;
@@ -1536,7 +1543,7 @@ html.dark .block-hash-preview {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 11.5px;
   color: #94a3b8;
 }
 

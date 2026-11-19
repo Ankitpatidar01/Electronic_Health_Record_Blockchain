@@ -30,27 +30,27 @@ export function Layout({ user, onLogout }) {
             <div className="flex items-center gap-3">
               <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="CareGrid NITW" className="h-8 w-8 object-contain" />
               <div>
-                <div className="font-bold tracking-tight text-slate-900 dark:text-white">
+                <div className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
                   CareGrid <span className="text-blue-600 dark:text-cyan-400">Observatory</span>
                 </div>
-                <div className="text-[10px] font-semibold uppercase tracking-[.18em] text-slate-400">
+                <div className="text-[11px] font-semibold uppercase tracking-[.18em] text-slate-400">
                   NIT Warangal Health Center · Live Telemetry
                 </div>
               </div>
             </div>
 
             {/* Live Stream Status Badge (Center) */}
-            <div className="hidden sm:flex items-center gap-3 text-xs bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 px-3.5 py-1.5 rounded-full">
+            <div className="hidden sm:flex items-center gap-3 text-[13px] bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 px-3.5 py-1.5 rounded-full">
               <span className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
                 <span className={`h-2 w-2 rounded-full ${isConnected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse' : 'bg-amber-500'}`} />
                 {isConnected ? 'Live Stream Active' : 'Connecting Stream'}
               </span>
               <span className="text-slate-300 dark:text-slate-600">|</span>
-              <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+              <span className="text-slate-500 dark:text-slate-400 text-xs">
                 Latest block <b className="font-semibold text-slate-800 dark:text-cyan-400 font-mono">#{lastBlock ?? '—'}</b>
               </span>
               <span className="text-slate-300 dark:text-slate-600">|</span>
-              <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+              <span className="text-slate-500 dark:text-slate-400 text-xs">
                 <b className="font-semibold text-slate-800 dark:text-slate-200">{events.length}</b> events
               </span>
             </div>
@@ -58,10 +58,10 @@ export function Layout({ user, onLogout }) {
             {/* User Controls & Logout */}
             <div className="dashboard-user flex items-center gap-3">
               <div className="hidden text-right sm:block">
-                <div className="max-w-36 truncate text-xs font-semibold text-slate-800 dark:text-slate-200">
+                <div className="max-w-36 truncate text-[13px] font-semibold text-slate-800 dark:text-slate-200">
                   {user?.username || user?.userId}
                 </div>
-                <div className="text-[10px] capitalize text-slate-500 dark:text-slate-400">
+                <div className="text-[11px] capitalize text-slate-500 dark:text-slate-400">
                   {user?.role}
                 </div>
               </div>
@@ -82,7 +82,7 @@ export function Layout({ user, onLogout }) {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) => `dashboard-nav-link whitespace-nowrap !px-3.5 !py-1.5 !text-xs !font-semibold rounded-full transition-all ${
+                className={({ isActive }) => `dashboard-nav-link whitespace-nowrap !px-4 !py-1.5 !text-[13px] !font-semibold rounded-full transition-all ${
                   isActive
                     ? '!bg-blue-600 !text-white shadow-xs shadow-blue-500/20 dark:!bg-cyan-500 dark:!text-slate-950 dark:shadow-cyan-500/30 font-bold'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
