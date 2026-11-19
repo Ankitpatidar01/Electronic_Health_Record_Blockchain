@@ -398,7 +398,7 @@ services:
       - "3000:3000"
     environment:
       - IPFS_API=http://ipfs.ehr.local:5001/api/v0
-      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}
+      - "JWT_SECRET=${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}"
     networks:
       - default
       - ehr_network
@@ -436,6 +436,8 @@ services:
       <<: *dashboard-emitter-env
       DASHBOARD_EVENT_ORG: DiagnosticsMSP
       CLINICAL_AI_AGENT_URL: http://clinical-ai-agent:8000
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}"
+      EXTORG_API_URL: http://h-extorg-api:4004
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       IPFS_API_URL: http://ipfs.ehr.local:5001
       IPFS_GATEWAY_URL: http://ipfs.ehr.local:8080

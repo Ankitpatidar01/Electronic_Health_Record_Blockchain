@@ -86,6 +86,11 @@ const integrityChecker = createIntegrityChecker({
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(WEB_ROOT));
 
+// Everything under /api needs a lab staff token, except health/meta and sign-in.
+const staffAuth = require('./staff-auth');
+app.post('/api/auth/login', staffAuth.login);
+app.use(staffAuth.requireLabStaff);
+
 function selectedPeer(req) {
   const peer = req.query.peer || req.headers['x-gateway-peer'];
   return typeof peer === 'string' && peer.trim().length > 0 ? peer.trim() : undefined;

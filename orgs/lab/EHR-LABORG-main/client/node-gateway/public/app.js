@@ -103,6 +103,53 @@ function normalizeToArray(result) {
   return [];
 }
 
+const LAB_SESSION_KEY = 'caregrid_lab_session';
+
+function labSession() {
+  try {
+    return JSON.parse(sessionStorage.getItem(LAB_SESSION_KEY)) || null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+// Sign-in form shown when there is no valid lab staff session.
+function showLabLogin(message) {
+  if (document.getElementById('labLoginOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'labLoginOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(8,12,20,0.88);display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <form id="labLoginForm" style="background:#fff;color:#111;padding:1.5rem;border-radius:12px;width:min(92vw,340px);display:flex;flex-direction:column;gap:0.7rem;font-family:inherit;">
+      <strong style="font-size:1.05rem;">Lab staff sign-in</strong>
+      <span style="font-size:0.8rem;color:#555;">Use your diagnostics account.</span>
+      <input name="username" placeholder="Username" autocomplete="username" required style="padding:0.55rem;border:1px solid #bbb;border-radius:8px;" />
+      <input name="password" type="password" placeholder="Password" autocomplete="current-password" required style="padding:0.55rem;border:1px solid #bbb;border-radius:8px;" />
+      <span id="labLoginError" style="font-size:0.8rem;color:#c62828;min-height:1em;">${escapeHtml(message || '')}</span>
+      <button type="submit" style="padding:0.6rem;border:0;border-radius:8px;background:#0f766e;color:#fff;font-weight:700;cursor:pointer;">Sign in</button>
+    </form>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const errorBox = overlay.querySelector('#labLoginError');
+    errorBox.textContent = '';
+    try {
+      const response = await fetch('./api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: form.username.value.trim(), password: form.password.value }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'Sign-in failed');
+      sessionStorage.setItem(LAB_SESSION_KEY, JSON.stringify(payload));
+      window.location.reload();
+    } catch (error) {
+      errorBox.textContent = error.message;
+    }
+  });
+}
+
 async function apiRequest(path, options = {}) {
   const isFormData = options.body instanceof FormData;
   const headers = { ...(options.headers || {}) };
@@ -111,12 +158,21 @@ async function apiRequest(path, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
+  const session = labSession();
+  if (session && session.token) headers.Authorization = `Bearer ${session.token}`;
+
   const response = await fetch(withPeer(path), {
-    headers,
     ...options,
+    headers,
   });
 
   const payload = await response.json().catch(() => ({}));
+
+  if (response.status === 401) {
+    sessionStorage.removeItem(LAB_SESSION_KEY);
+    showLabLogin(session ? 'Your session has ended. Sign in again.' : '');
+    throw new Error(payload.error || 'Sign in required');
+  }
 
   if (!response.ok) {
     throw new Error(payload.error || 'Request failed');
