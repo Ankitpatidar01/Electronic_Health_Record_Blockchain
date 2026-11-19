@@ -2,14 +2,17 @@
 # Stop services while preserving Fabric identities, ledger data, and volumes.
 #
 #   ./stop.sh           stop everything, keep all data
+#   ./stop.sh --reset --yes   same, without the confirmation prompt
 #   ./stop.sh --reset   remove containers, volumes, ledger, channel artifacts and
 #                       identities, so the next ./start.sh builds a new network
 set -euo pipefail
 
 RESET_ALL=false
+ASSUME_YES=false
 for arg in "$@"; do
   case "$arg" in
     --reset) RESET_ALL=true ;;
+    --yes|-y) ASSUME_YES=true ;;
     *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
 done
@@ -37,8 +40,12 @@ node "${ROOT_DIR}/scripts/init-env.js" >/dev/null 2>&1 || true
 
 if [[ "${RESET_ALL}" == true ]]; then
   echo -e "\n  ${YELLOW}--reset: this deletes the ledger, all identities and every application volume.${RESET}"
-  read -r -p "  Type RESET to continue: " answer
-  [[ "${answer}" == "RESET" ]] || { echo "  Cancelled."; exit 1; }
+  if [[ "${ASSUME_YES}" != true ]]; then
+    read -r -p "  Type RESET to continue: " answer || answer=""
+    # Some terminals add a carriage return or spaces; accept any letter case.
+    answer="$(printf '%s' "${answer}" | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]')"
+    [[ "${answer}" == "RESET" ]] || { echo "  Cancelled (got '${answer}')."; exit 1; }
+  fi
   bash "${ROOT_DIR}/scripts/reset-app-state.sh"
   ( cd "${FABRIC_DIR}" && bash scripts/network-down.sh )
   rm -rf "${FABRIC_DIR}/.generated"
