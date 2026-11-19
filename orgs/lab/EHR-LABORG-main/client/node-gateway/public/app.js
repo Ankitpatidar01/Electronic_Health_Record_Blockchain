@@ -120,11 +120,20 @@ function showLabLogin(message) {
   overlay.id = 'labLoginOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(8,12,20,0.88);display:flex;align-items:center;justify-content:center;';
   overlay.innerHTML = `
-    <form id="labLoginForm" style="background:#fff;color:#111;padding:1.5rem;border-radius:12px;width:min(92vw,340px);display:flex;flex-direction:column;gap:0.7rem;font-family:inherit;">
+    <form id="labLoginForm" style="background:#fff;color:#111;padding:1.5rem;border-radius:12px;width:min(92vw,360px);display:flex;flex-direction:column;gap:0.7rem;font-family:inherit;">
       <strong style="font-size:1.05rem;">Lab staff sign-in</strong>
-      <span style="font-size:0.8rem;color:#555;">Use your diagnostics account.</span>
-      <input name="username" placeholder="Username" autocomplete="username" required style="padding:0.55rem;border:1px solid #bbb;border-radius:8px;" />
-      <input name="password" type="password" placeholder="Password" autocomplete="current-password" required style="padding:0.55rem;border:1px solid #bbb;border-radius:8px;" />
+      <span style="font-size:0.8rem;color:#555;">Use your authorized Diagnostics staff account.</span>
+      <input name="username" placeholder="Username (e.g. labtechnician)" autocomplete="username" required style="padding:0.55rem;border:1px solid #bbb;border-radius:8px;" />
+      <input name="password" type="password" placeholder="Password (e.g. recpw)" autocomplete="current-password" required style="padding:0.55rem;border:1px solid #bbb;border-radius:8px;" />
+      <div style="font-size:0.72rem;color:#64748b;background:#f8fafc;border:1px solid #e2e8f0;padding:0.5rem 0.65rem;border-radius:8px;display:flex;flex-direction:column;gap:0.3rem;">
+        <span style="font-weight:700;color:#334155;">Quick Demo Identities (Click to fill):</span>
+        <button type="button" style="text-align:left;background:none;border:none;padding:0;cursor:pointer;color:#0f766e;font-size:0.72rem;" onclick="document.querySelector('#labLoginForm [name=username]').value='labtechnician';document.querySelector('#labLoginForm [name=password]').value='recpw';">
+          • <strong>labtechnician</strong> / <code style="color:#0f766e;">recpw</code> (Diagnostic Tech)
+        </button>
+        <button type="button" style="text-align:left;background:none;border:none;padding:0;cursor:pointer;color:#0f766e;font-size:0.72rem;" onclick="document.querySelector('#labLoginForm [name=username]').value='labsupervisor';document.querySelector('#labLoginForm [name=password]').value='recpw';">
+          • <strong>labsupervisor</strong> / <code style="color:#0f766e;">recpw</code> (Quality Supervisor)
+        </button>
+      </div>
       <span id="labLoginError" style="font-size:0.8rem;color:#c62828;min-height:1em;">${escapeHtml(message || '')}</span>
       <button type="submit" style="padding:0.6rem;border:0;border-radius:8px;background:#0f766e;color:#fff;font-weight:700;cursor:pointer;">Sign in</button>
     </form>`;
