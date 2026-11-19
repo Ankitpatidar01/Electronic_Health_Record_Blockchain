@@ -9,6 +9,7 @@ import { VisitsListPage, VisitDetailPage } from './pages/Visits'
 import { EHRPage, AccessPage, SignaturesPage } from './pages/EHRAccess'
 import Profile from './pages/Profile'
 import DigiLockerVault from './pages/DigiLocker'
+import TimelinePage from './pages/Timeline'
 import './index.css'
 import './design-system/observatory-theme.css'
 
@@ -41,6 +42,9 @@ function AppRoutes() {
       } />
       <Route path="/signatures" element={
         <ProtectedRoute><Layout><SignaturesPage /></Layout></ProtectedRoute>
+      } />
+      <Route path="/timeline" element={
+        <ProtectedRoute><Layout><TimelinePage /></Layout></ProtectedRoute>
       } />
       <Route path="/digilocker" element={
         <ProtectedRoute><Layout><DigiLockerVault /></Layout></ProtectedRoute>

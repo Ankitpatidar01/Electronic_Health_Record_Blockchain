@@ -237,8 +237,9 @@ function InfoTile({ icon: Icon, label, value, truncate }) {
 function RegisterModal({ open, onClose, api }) {
   const [form, setForm] = useState({
     patientId: '', name: '', age: '', gender: 'Male',
-    bloodGroup: 'O+', contact: '', address: ''
+    bloodGroup: 'O+', contact: '', address: '', symptoms: ''
   })
+  const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError]   = useState('')
   const [success, setSuccess] = useState('')
@@ -250,12 +251,15 @@ function RegisterModal({ open, onClose, api }) {
     setLoading(true)
     setError('')
     setSuccess('')
+    setResult(null)
     try {
-      await api().post('/patients', { ...form, age: parseInt(form.age) })
-      setSuccess(`Patient ${form.patientId} registered successfully!`)
-      setForm({ patientId: '', name: '', age: '', gender: 'Male', bloodGroup: 'O+', contact: '', address: '' })
+      const res = await api().post('/patients', { ...form, age: parseInt(form.age) }, { timeout: 120000 })
+      setSuccess(`Patient ${form.patientId} registered.`)
+      setResult(res.data.data)
+      setForm({ patientId: '', name: '', age: '', gender: 'Male', bloodGroup: 'O+', contact: '', address: '', symptoms: '' })
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed')
+      const data = err.response?.data
+      setError(data?.error || (data?.errors || []).map(x => x.msg).join('; ') || (err.response ? 'Registration failed' : 'The registration service is not reachable. Try again.'))
     } finally {
       setLoading(false)
     }
@@ -287,8 +291,34 @@ function RegisterModal({ open, onClose, api }) {
         </div>
         <Input label="Contact *" value={form.contact} onChange={e => update('contact', e.target.value)} placeholder="9876543210" required />
         <Input label="Address *" value={form.address} onChange={e => update('address', e.target.value)} placeholder="123 Main Street, City" required />
+        <div className="flex flex-col gap-1">
+          <label htmlFor="reg-symptoms" className="text-sm font-medium text-slate-700 dark:text-slate-300">Symptoms *</label>
+          <textarea id="reg-symptoms" rows={3} required minLength={3} maxLength={1000} value={form.symptoms}
+            onChange={e => update('symptoms', e.target.value)}
+            placeholder="In the patient's words, e.g. high fever for 3 days with body ache and rash"
+            className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <p className="text-xs text-slate-500">Used to assign a provisional disease code and to prepare an AI cross-reference for the doctor.</p>
+        </div>
+        {loading && <p className="text-xs text-slate-500" role="status">Registering on the ledger and analysing symptoms. This can take up to a minute.</p>}
         {error   && <Alert type="error">{error}</Alert>}
         {success && <Alert type="success">{success}</Alert>}
+        {result && (
+          <div className="rounded-xl border border-slate-200 p-3 text-sm space-y-1.5">
+            <p><span className="text-slate-500">DID:</span> <span className="font-mono break-all">{result.did}</span></p>
+            {result.intake && (
+              <>
+                <p><span className="text-slate-500">Provisional code:</span> <span className="font-mono font-semibold">{result.intake.provisional.code}</span> {result.intake.provisional.name}
+                  {!result.intake.provisional.matched && <span className="text-slate-500"> (no specific match in the template)</span>}</p>
+                {result.intake.aiAnalysis.status === 'OK' ? (
+                  <p><span className="text-slate-500">AI urgency estimate:</span> {result.intake.aiAnalysis.urgency || 'not stated'} <span className="text-slate-500">— for the doctor; not a diagnosis</span></p>
+                ) : (
+                  <p className="text-amber-700">AI analysis unavailable: {result.intake.aiAnalysis.reason}. The provisional code was still recorded.</p>
+                )}
+              </>
+            )}
+            {result.intakeError && <p className="text-red-600">The patient is registered, but the symptom analysis could not be recorded: {result.intakeError}</p>}
+          </div>
+        )}
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="submit" loading={loading}>Register Patient</Button>

@@ -33,8 +33,12 @@ class PatientContract extends Contract {
     const existing = await getState(ctx, patientKey(patientId));
     if (existing) throw new Error(`Patient already exists: ${patientId}`);
 
+    // Exactly one DID per patient, created with the patient record.
+    const didRecord = await require('./did').ensureDid(ctx, patientId);
+
     const patient = {
       patientId,
+      did:          didRecord.did,
       name,
       age:          parseInt(age, 10),
       gender,

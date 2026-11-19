@@ -7,6 +7,8 @@ const { peerContext }  = require('../middleware/peerContext');
 const { wrap, parseResult } = require('../middleware/errorHandler');
 const { fetchByCID, pinJSON } = require('../fabric/ipfsClient');
 const lab = require('../../../shared/labReport');
+const codes = require('../../../shared/diseaseCodes');
+const timeline = require('../../../shared/timeline');
 const logger = require('../config/logger');
 
 const asDoctor = [authenticate, requireRole('doctor'), peerContext];
@@ -233,6 +235,85 @@ router.get('/visits/:id/lab/:reqId/attachments/:cid', ...asDoctor, wrap(async (r
     return res.status(404).json({ success: false, error: 'Attachment not found on this lab request' });
   }
   return lab.sendAttachment(res, await fetchByCID(req.params.cid));
+}));
+
+// ── Disease code (ICD-10) ─────────────────────────────────────
+// GET  /doctor/codes?q=            search the published template
+// GET  /doctor/visits/:id/disease-code   current code, full history, AI cross-reference
+// PUT  /doctor/visits/:id/disease-code   confirm (same code) or change (reason required)
+const ipfs = { fetchByCID, pinJSON };
+
+router.get('/codes', ...asDoctor, wrap(async (req, res) => {
+  const template = await codes.loadTemplate(req.contract, ipfs);
+  return res.json({
+    success: true,
+    data: {
+      template: { cid: template.cid, version: template.version, codeSystem: template.codeSystem },
+      codes: codes.searchCodes(template.document, req.query.q),
+    },
+  });
+}));
+
+router.get('/visits/:id/disease-code', ...asDoctor, wrap(async (req, res) => {
+  const { onChain } = await getVisitWithContent(req.contract, req.params.id);
+  const record = parseResult(await req.contract.evaluateTransaction('CodeContract:GetDiseaseCode', onChain.patientId));
+
+  // The analysis that belongs to this visit if there is one, otherwise the latest.
+  const provisional = (record.history || []).filter(h => h.action === 'PROVISIONAL' && h.analysisCid);
+  const entry = provisional.filter(h => h.visitId === req.params.id).pop() || provisional[provisional.length - 1];
+  let analysis = null;
+  let analysisError = null;
+  if (entry) {
+    try {
+      const doc = await fetchByCID(entry.analysisCid);
+      analysis = {
+        cid: entry.analysisCid, symptoms: doc.symptoms, recordedAt: doc.recordedAt,
+        templateMatch: doc.templateMatch, aiAnalysis: doc.aiAnalysis,
+      };
+    } catch (err) {
+      analysisError = 'The stored analysis could not be loaded from IPFS';
+      logger.error('Analysis fetch failed', { cid: entry.analysisCid, error: err.message });
+    }
+  }
+  return res.json({ success: true, data: { patientId: onChain.patientId, ...record, analysis, analysisError } });
+}));
+
+router.put('/visits/:id/disease-code', ...asDoctor,
+  [
+    param('id').trim().notEmpty(),
+    body('code').trim().notEmpty().withMessage('code is required'),
+    body('reason').optional().isString().isLength({ max: 500 }),
+  ],
+  wrap(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ success: false, error: errors.array().map(e => e.msg).join('; ') });
+
+    const { onChain } = await getVisitWithContent(req.contract, req.params.id);
+    const template = await codes.loadTemplate(req.contract, ipfs);
+    const chosen = codes.findCode(template.document, req.body.code);
+    if (!chosen) {
+      return res.status(400).json({ success: false, error: `Code ${req.body.code} is not in the published template (version ${template.version})` });
+    }
+    const result = await req.contract.submitTransaction(
+      'CodeContract:UpdateDiseaseCode',
+      onChain.patientId, chosen.code, chosen.name, String(req.body.reason || '').trim(), req.params.id
+    );
+    logger.info('Disease code updated', { visitId: req.params.id, code: chosen.code, userId: req.user.userId });
+    return res.json({ success: true, data: parseResult(result) });
+  })
+);
+
+// ── Patient timeline (DID → CIDs → documents) ────────────────
+router.get('/visits/:id/timeline', ...asDoctor, wrap(async (req, res) => {
+  const { onChain } = await getVisitWithContent(req.contract, req.params.id);
+  return res.json({ success: true, data: await timeline.getTimeline(req.contract, onChain.patientId) });
+}));
+
+router.get('/visits/:id/timeline/:seq', ...asDoctor, [param('seq').isInt({ min: 1 })], wrap(async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, error: 'Entry number must be a positive integer' });
+  const { onChain } = await getVisitWithContent(req.contract, req.params.id);
+  return res.json({ success: true, data: await timeline.getTimelineDocument(req.contract, fetchByCID, onChain.patientId, req.params.seq) });
 }));
 
 // ── PUT /doctor/visits/:id/finalize — FinalizeVisit ──────────

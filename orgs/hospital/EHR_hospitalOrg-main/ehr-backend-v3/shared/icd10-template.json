@@ -1,0 +1,587 @@
+{
+ "_type": "DISEASE_CODE_TEMPLATE",
+ "codeSystem": "ICD-10",
+ "source": "WHO ICD-10 codes and titles; symptom keywords curated for this project",
+ "version": "1.0.0",
+ "fallbackCode": "R69",
+ "note": "Maps reported symptoms to a provisional ICD-10 code. Chapter XVIII symptom codes (R..) are used only when no specific condition matches. The provisional code is not a diagnosis; a doctor confirms or changes it.",
+ "codes": [
+  {
+   "code": "A01.0",
+   "name": "Typhoid fever",
+   "keywords": [
+    "typhoid",
+    "prolonged fever",
+    "step ladder fever",
+    "rose spots"
+   ]
+  },
+  {
+   "code": "A09",
+   "name": "Infectious gastroenteritis and colitis, unspecified",
+   "keywords": [
+    "diarrhoea",
+    "diarrhea",
+    "loose stools",
+    "loose motion",
+    "food poisoning",
+    "gastroenteritis",
+    "stomach infection"
+   ]
+  },
+  {
+   "code": "A16.2",
+   "name": "Tuberculosis of lung, without mention of bacteriological or histological confirmation",
+   "keywords": [
+    "tuberculosis",
+    "cough for weeks",
+    "blood in sputum",
+    "night sweats",
+    "chronic cough with weight loss"
+   ]
+  },
+  {
+   "code": "A90",
+   "name": "Dengue fever",
+   "keywords": [
+    "dengue",
+    "fever with rash",
+    "pain behind eyes",
+    "retro-orbital pain",
+    "fever with body ache and rash",
+    "low platelet"
+   ]
+  },
+  {
+   "code": "B34.9",
+   "name": "Viral infection, unspecified",
+   "keywords": [
+    "viral fever",
+    "viral infection",
+    "viral illness"
+   ]
+  },
+  {
+   "code": "B35.9",
+   "name": "Dermatophytosis, unspecified",
+   "keywords": [
+    "ringworm",
+    "fungal skin infection",
+    "itchy ring rash",
+    "tinea"
+   ]
+  },
+  {
+   "code": "B54",
+   "name": "Unspecified malaria",
+   "keywords": [
+    "malaria",
+    "fever with chills",
+    "chills and rigors",
+    "shivering fever",
+    "fever every alternate day"
+   ]
+  },
+  {
+   "code": "D50.9",
+   "name": "Iron deficiency anaemia, unspecified",
+   "keywords": [
+    "iron deficiency",
+    "pale skin",
+    "pallor",
+    "anaemia",
+    "anemia",
+    "tiredness and pallor"
+   ]
+  },
+  {
+   "code": "E03.9",
+   "name": "Hypothyroidism, unspecified",
+   "keywords": [
+    "hypothyroid",
+    "weight gain and cold intolerance",
+    "cold intolerance",
+    "underactive thyroid"
+   ]
+  },
+  {
+   "code": "E05.9",
+   "name": "Thyrotoxicosis, unspecified",
+   "keywords": [
+    "hyperthyroid",
+    "weight loss with palpitations",
+    "heat intolerance",
+    "overactive thyroid"
+   ]
+  },
+  {
+   "code": "E10.9",
+   "name": "Type 1 diabetes mellitus without complications",
+   "keywords": [
+    "type 1 diabetes",
+    "insulin dependent diabetes"
+   ]
+  },
+  {
+   "code": "E11.9",
+   "name": "Type 2 diabetes mellitus without complications",
+   "keywords": [
+    "diabetes",
+    "high blood sugar",
+    "excessive thirst",
+    "frequent urination and thirst",
+    "polyuria"
+   ]
+  },
+  {
+   "code": "E66.9",
+   "name": "Obesity, unspecified",
+   "keywords": [
+    "obesity",
+    "overweight"
+   ]
+  },
+  {
+   "code": "F32.9",
+   "name": "Depressive episode, unspecified",
+   "keywords": [
+    "depression",
+    "low mood",
+    "loss of interest",
+    "feeling hopeless"
+   ]
+  },
+  {
+   "code": "F41.1",
+   "name": "Generalized anxiety disorder",
+   "keywords": [
+    "anxiety",
+    "constant worry",
+    "panic",
+    "restlessness and worry"
+   ]
+  },
+  {
+   "code": "G43.9",
+   "name": "Migraine, unspecified",
+   "keywords": [
+    "migraine",
+    "one sided headache",
+    "throbbing headache",
+    "headache with nausea and light sensitivity",
+    "photophobia"
+   ]
+  },
+  {
+   "code": "G44.2",
+   "name": "Tension-type headache",
+   "keywords": [
+    "tension headache",
+    "band like headache",
+    "stress headache"
+   ]
+  },
+  {
+   "code": "H10.9",
+   "name": "Conjunctivitis, unspecified",
+   "keywords": [
+    "red eye",
+    "pink eye",
+    "conjunctivitis",
+    "eye discharge",
+    "itchy watery eyes"
+   ]
+  },
+  {
+   "code": "H66.9",
+   "name": "Otitis media, unspecified",
+   "keywords": [
+    "ear pain",
+    "earache",
+    "ear discharge",
+    "ear infection"
+   ]
+  },
+  {
+   "code": "I10",
+   "name": "Essential (primary) hypertension",
+   "keywords": [
+    "high blood pressure",
+    "hypertension",
+    "raised bp"
+   ]
+  },
+  {
+   "code": "I20.9",
+   "name": "Angina pectoris, unspecified",
+   "keywords": [
+    "angina",
+    "chest pain on exertion",
+    "chest tightness on walking"
+   ]
+  },
+  {
+   "code": "I21.9",
+   "name": "Acute myocardial infarction, unspecified",
+   "keywords": [
+    "heart attack",
+    "crushing chest pain",
+    "chest pain radiating to arm",
+    "chest pain with sweating",
+    "chest pain radiating to jaw"
+   ]
+  },
+  {
+   "code": "I50.9",
+   "name": "Heart failure, unspecified",
+   "keywords": [
+    "heart failure",
+    "swollen legs and breathlessness",
+    "breathless on lying down",
+    "orthopnoea"
+   ]
+  },
+  {
+   "code": "I64",
+   "name": "Stroke, not specified as haemorrhage or infarction",
+   "keywords": [
+    "stroke",
+    "sudden weakness one side",
+    "facial droop",
+    "slurred speech",
+    "sudden loss of speech"
+   ]
+  },
+  {
+   "code": "J00",
+   "name": "Acute nasopharyngitis (common cold)",
+   "keywords": [
+    "common cold",
+    "runny nose",
+    "sneezing",
+    "blocked nose",
+    "nasal congestion"
+   ]
+  },
+  {
+   "code": "J02.9",
+   "name": "Acute pharyngitis, unspecified",
+   "keywords": [
+    "sore throat",
+    "throat pain",
+    "painful swallowing",
+    "pharyngitis"
+   ]
+  },
+  {
+   "code": "J03.9",
+   "name": "Acute tonsillitis, unspecified",
+   "keywords": [
+    "tonsillitis",
+    "swollen tonsils",
+    "tonsil pain"
+   ]
+  },
+  {
+   "code": "J06.9",
+   "name": "Acute upper respiratory infection, unspecified",
+   "keywords": [
+    "upper respiratory infection",
+    "cold and cough",
+    "cough and cold",
+    "cough with sore throat",
+    "fever with cough and cold"
+   ]
+  },
+  {
+   "code": "J11.1",
+   "name": "Influenza with other respiratory manifestations, virus not identified",
+   "keywords": [
+    "influenza",
+    "flu",
+    "fever with body ache and cough",
+    "high fever with body pain"
+   ]
+  },
+  {
+   "code": "J18.9",
+   "name": "Pneumonia, unspecified",
+   "keywords": [
+    "pneumonia",
+    "cough with fever and breathlessness",
+    "productive cough with fever",
+    "chest infection"
+   ]
+  },
+  {
+   "code": "J20.9",
+   "name": "Acute bronchitis, unspecified",
+   "keywords": [
+    "bronchitis",
+    "cough with phlegm",
+    "chesty cough",
+    "productive cough"
+   ]
+  },
+  {
+   "code": "J45.9",
+   "name": "Asthma, unspecified",
+   "keywords": [
+    "asthma",
+    "wheezing",
+    "wheeze",
+    "breathlessness at night",
+    "tight chest with wheeze"
+   ]
+  },
+  {
+   "code": "K21.9",
+   "name": "Gastro-oesophageal reflux disease without oesophagitis",
+   "keywords": [
+    "acid reflux",
+    "heartburn",
+    "acidity",
+    "burning in chest after food",
+    "gerd",
+    "sour taste in mouth"
+   ]
+  },
+  {
+   "code": "K29.7",
+   "name": "Gastritis, unspecified",
+   "keywords": [
+    "gastritis",
+    "burning stomach pain",
+    "upper abdominal pain",
+    "epigastric pain"
+   ]
+  },
+  {
+   "code": "K30",
+   "name": "Functional dyspepsia",
+   "keywords": [
+    "indigestion",
+    "dyspepsia",
+    "bloating after meals",
+    "fullness after eating"
+   ]
+  },
+  {
+   "code": "K35.8",
+   "name": "Acute appendicitis, other and unspecified",
+   "keywords": [
+    "appendicitis",
+    "right lower abdominal pain",
+    "pain right lower abdomen",
+    "pain shifting to right lower abdomen"
+   ]
+  },
+  {
+   "code": "K59.0",
+   "name": "Constipation",
+   "keywords": [
+    "constipation",
+    "hard stools",
+    "difficulty passing stool"
+   ]
+  },
+  {
+   "code": "K80.2",
+   "name": "Calculus of gallbladder without cholecystitis",
+   "keywords": [
+    "gallstones",
+    "gall stone",
+    "right upper abdominal pain after fatty food"
+   ]
+  },
+  {
+   "code": "L20.9",
+   "name": "Atopic dermatitis, unspecified",
+   "keywords": [
+    "eczema",
+    "atopic dermatitis",
+    "dry itchy skin",
+    "itchy rash in skin folds"
+   ]
+  },
+  {
+   "code": "L50.9",
+   "name": "Urticaria, unspecified",
+   "keywords": [
+    "hives",
+    "urticaria",
+    "itchy wheals",
+    "raised itchy rash"
+   ]
+  },
+  {
+   "code": "M19.9",
+   "name": "Arthrosis, unspecified",
+   "keywords": [
+    "osteoarthritis",
+    "knee pain on walking",
+    "joint stiffness in morning",
+    "arthritis"
+   ]
+  },
+  {
+   "code": "M25.5",
+   "name": "Pain in joint",
+   "keywords": [
+    "joint pain",
+    "knee pain",
+    "shoulder pain",
+    "painful joints"
+   ]
+  },
+  {
+   "code": "M54.5",
+   "name": "Low back pain",
+   "keywords": [
+    "low back pain",
+    "lower back pain",
+    "backache",
+    "back pain"
+   ]
+  },
+  {
+   "code": "N18.9",
+   "name": "Chronic kidney disease, unspecified",
+   "keywords": [
+    "chronic kidney disease",
+    "kidney failure",
+    "reduced urine with swelling"
+   ]
+  },
+  {
+   "code": "N20.0",
+   "name": "Calculus of kidney",
+   "keywords": [
+    "kidney stone",
+    "flank pain",
+    "loin to groin pain",
+    "blood in urine with pain"
+   ]
+  },
+  {
+   "code": "N39.0",
+   "name": "Urinary tract infection, site not specified",
+   "keywords": [
+    "burning urination",
+    "burning micturition",
+    "urinary tract infection",
+    "uti",
+    "painful urination",
+    "frequent urination with burning"
+   ]
+  },
+  {
+   "code": "T78.4",
+   "name": "Allergy, unspecified",
+   "keywords": [
+    "allergy",
+    "allergic reaction",
+    "itching after food",
+    "swelling after medicine"
+   ]
+  },
+  {
+   "code": "U07.1",
+   "name": "COVID-19, virus identified",
+   "keywords": [
+    "covid",
+    "coronavirus",
+    "loss of smell",
+    "loss of taste"
+   ]
+  },
+  {
+   "code": "R05",
+   "name": "Cough",
+   "keywords": [
+    "cough",
+    "dry cough"
+   ]
+  },
+  {
+   "code": "R06.0",
+   "name": "Dyspnoea",
+   "keywords": [
+    "breathlessness",
+    "shortness of breath",
+    "difficulty breathing",
+    "breathing difficulty"
+   ]
+  },
+  {
+   "code": "R07.4",
+   "name": "Chest pain, unspecified",
+   "keywords": [
+    "chest pain",
+    "chest discomfort"
+   ]
+  },
+  {
+   "code": "R10.4",
+   "name": "Other and unspecified abdominal pain",
+   "keywords": [
+    "abdominal pain",
+    "stomach pain",
+    "stomach ache",
+    "tummy pain"
+   ]
+  },
+  {
+   "code": "R11",
+   "name": "Nausea and vomiting",
+   "keywords": [
+    "vomiting",
+    "nausea",
+    "throwing up"
+   ]
+  },
+  {
+   "code": "R42",
+   "name": "Dizziness and giddiness",
+   "keywords": [
+    "dizziness",
+    "giddiness",
+    "vertigo",
+    "light headed"
+   ]
+  },
+  {
+   "code": "R50.9",
+   "name": "Fever, unspecified",
+   "keywords": [
+    "fever",
+    "high temperature",
+    "pyrexia"
+   ]
+  },
+  {
+   "code": "R51",
+   "name": "Headache",
+   "keywords": [
+    "headache",
+    "head pain"
+   ]
+  },
+  {
+   "code": "R53",
+   "name": "Malaise and fatigue",
+   "keywords": [
+    "fatigue",
+    "tiredness",
+    "weakness",
+    "malaise",
+    "lethargy"
+   ]
+  },
+  {
+   "code": "R69",
+   "name": "Unknown and unspecified causes of morbidity",
+   "keywords": []
+  }
+ ]
+}

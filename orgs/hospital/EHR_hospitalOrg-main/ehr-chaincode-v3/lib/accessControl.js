@@ -185,6 +185,11 @@ async function getState(ctx, key) {
 
 async function putState(ctx, key, obj) {
   obj.updatedAt = now(ctx);
+  // Every new CID on a visit or EHR record is appended to the patient's DID in
+  // this same transaction.
+  if (key.startsWith('VISIT:') || key.startsWith(`${EHR_PREFIX}:`)) {
+    await require('./did').syncFromRecord(ctx, obj, key.startsWith(`${EHR_PREFIX}:`));
+  }
   await ctx.stub.putState(key, Buffer.from(JSON.stringify(obj)));
   return obj;
 }

@@ -7,6 +7,8 @@ const { peerContext }  = require('../middleware/peerContext');
 const { wrap, parseResult } = require('../middleware/errorHandler');
 const ipfsClient = require('../fabric/ipfsClient');
 const { anchorFHIRRecord } = require('../../../shared/fhir-anchor');
+const { runIntake } = require('../../../shared/intake');
+const timeline = require('../../../shared/timeline');
 const logger = require('../config/logger');
 
 const canManage = [authenticate, requireRole('receptionist', 'admin'), peerContext];
@@ -32,12 +34,15 @@ router.post('/',
     body('bloodGroup').trim().notEmpty(),
     body('contact').trim().notEmpty(),
     body('address').trim().notEmpty(),
+    body('symptoms').optional({ checkFalsy: true }).isString().isLength({ min: 3, max: 1000 })
+      .withMessage('Symptoms must be between 3 and 1000 characters'),
   ],
   wrap(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
 
     const { patientId, name, age, gender, bloodGroup, contact, address } = req.body;
+    const symptoms = String(req.body.symptoms || '').trim();
     logger.info('RegisterPatient', { patientId, userId: req.user.userId });
 
     // Step 1 — pin empty EHR to IPFS first (so we have the CID ready)
@@ -71,10 +76,48 @@ router.post('/',
       logger.error('FHIR anchor failed (non-fatal)', { patientId, error: err.message });
     }
 
-    logger.info('RegisterPatient complete', { patientId, ehrCID });
-    return res.status(201).json({ success: true, data: { ...patient, ehrCID, fhirAnchor } });
+    // Step 5 — symptoms: provisional disease code from the template, AI
+    // cross-reference, both recorded against the patient's DID. The patient is
+    // already registered at this point, so a failure here is returned to the
+    // caller as intakeError rather than undoing the registration.
+    let intake = null;
+    let intakeError = null;
+    if (symptoms) {
+      try {
+        intake = await runIntake(req.contract, ipfsClient, {
+          patientId, symptoms, age: Number(age), gender, recordedBy: req.user.userId,
+        });
+        logger.info('Intake recorded', {
+          patientId, code: intake.provisional.code, ai: intake.aiAnalysis.status, analysisCid: intake.analysisCid,
+        });
+      } catch (err) {
+        intakeError = err.message;
+        logger.error('Intake failed', { patientId, error: err.message });
+      }
+    }
+
+    logger.info('RegisterPatient complete', { patientId, ehrCID, did: patient.did });
+    return res.status(201).json({ success: true, data: { ...patient, ehrCID, fhirAnchor, intake, intakeError } });
   })
 );
+
+// ── GET /patients/:id/timeline — the patient's DID and every CID on it ──
+router.get('/:id/timeline', ...canRead, [param('id').trim().notEmpty()], wrap(async (req, res) => {
+  return res.json({ success: true, data: await timeline.getTimeline(req.contract, req.params.id) });
+}));
+
+// ── GET /patients/:id/timeline/:seq — the document behind one entry ──
+router.get('/:id/timeline/:seq', ...canRead, [param('id').trim().notEmpty(), param('seq').isInt({ min: 1 })], wrap(async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, error: 'Entry number must be a positive integer' });
+  return res.json({ success: true, data: await timeline.getTimelineDocument(req.contract, ipfsClient.fetchByCID, req.params.id, req.params.seq) });
+}));
+
+// ── GET /patients/:id/disease-code — current code and full history ──
+router.get('/:id/disease-code', ...canRead, [param('id').trim().notEmpty()], wrap(async (req, res) => {
+  const result = await req.contract.evaluateTransaction('CodeContract:GetDiseaseCode', req.params.id);
+  return res.json({ success: true, data: parseResult(result) });
+}));
 
 // ── GET /patients/:id — GetPatient ───────────────────────────
 router.get('/:id',

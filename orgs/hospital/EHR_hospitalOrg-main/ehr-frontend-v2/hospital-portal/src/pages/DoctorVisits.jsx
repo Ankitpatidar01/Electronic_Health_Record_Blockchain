@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { Card, Button, Input, Modal, Alert, StatusBadge, Spinner, EmptyState, Badge } from '../components/ui'
 import LabReport, { LabStatusPill } from '../components/LabReport'
+import DiseaseCodePanel from '../components/DiseaseCodePanel'
+import PatientTimeline from '../components/PatientTimeline'
 import { Stethoscope, Search, FileText, Pill, FlaskConical, CheckCircle, ChevronDown, ChevronUp, Plus, X, ChevronRight, ArrowLeft } from 'lucide-react'
 
 export default function DoctorVisitsPage() {
@@ -163,6 +165,8 @@ export default function DoctorVisitsPage() {
               { id: 'overview', label: 'Overview' },
               { id: 'clinical', label: 'Clinical' },
               { id: 'labs',     label: 'Lab Results' },
+              { id: 'code',     label: 'Disease Code' },
+              { id: 'timeline', label: 'Timeline' },
               { id: 'ehr',      label: 'Patient EHR' },
             ].map(t => (
               <button key={t.id}
@@ -274,6 +278,16 @@ export default function DoctorVisitsPage() {
               ) : (
                 <EmptyState icon={FlaskConical} title="No lab requests" desc="Order lab tests from the actions above" />
               )}
+            </Card>
+          )}
+
+          {tab === 'code' && <DiseaseCodePanel key={visit.visitId} api={api} visitId={visit.visitId} />}
+
+          {tab === 'timeline' && (
+            <Card className="p-5">
+              <PatientTimeline key={visit.visitId}
+                loadTimeline={async () => (await api().get(`/doctor/visits/${visit.visitId}/timeline`)).data.data}
+                loadDocument={async (seq) => (await api().get(`/doctor/visits/${visit.visitId}/timeline/${seq}`)).data.data} />
             </Card>
           )}
 

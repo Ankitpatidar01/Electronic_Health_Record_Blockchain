@@ -10,6 +10,9 @@ x-hospital-api-env: &hospital-api-env
   FABRIC_CHAINCODE: ${FABRIC_CHAINCODE:-ehr}
   IPFS_SERVICE_URL: http://h-ipfs-service:4006
   IPFS_SERVICE_KEY: "${IPFS_SERVICE_KEY:?IPFS_SERVICE_KEY is not set. Run: node scripts/init-env.js}"
+  # Symptom analysis agent (runs in peer0-api at registration / visit opening).
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
 
 x-dashboard-emitter-env: &dashboard-emitter-env
   DASHBOARD_EVENT_API_URL: http://h-dashboard-api:4010

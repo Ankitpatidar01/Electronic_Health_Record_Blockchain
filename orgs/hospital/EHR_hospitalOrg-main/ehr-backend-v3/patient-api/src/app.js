@@ -56,7 +56,8 @@ app.use('/ehr',     ehrRoutes);      // EHR template (IPFS content)
 app.use('/visits',  visitRoutes);    // visit history + clinical detail
 app.use('/access',     accessRoutes);     // grant/revoke/list access
 app.use('/ocr',        ocrRoutes);        // OCR document processing
-app.use('/signatures', signatureRoutes); // cryptographic tx audit + aggregate hash
+app.use('/signatures', signatureRoutes);
+app.use('/timeline',   require('./routes/timeline')); // DID, CID timeline, disease-code history // cryptographic tx audit + aggregate hash
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) =>

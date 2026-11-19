@@ -7,6 +7,7 @@ const { peerContext }  = require('../middleware/peerContext');
 const { wrap, parseResult } = require('../middleware/errorHandler');
 const { initVisit, fetchByCID, pinJSON } = require('../fabric/ipfsClient');
 const { anchorFHIRRecord } = require('../../../shared/fhir-anchor');
+const { runIntake } = require('../../../shared/intake');
 const logger = require('../config/logger');
 
 const canManage    = [authenticate, requireRole('receptionist', 'admin'), peerContext];
@@ -72,7 +73,22 @@ router.post('/',
       logger.error('FHIR anchor failed (non-fatal)', { visitId, error: err.message });
     }
 
-    return res.status(201).json({ success: true, data: { ...parseResult(result), fhirAnchor } });
+    // Step 5 — the complaint is matched and analysed like symptoms at registration.
+    let intake = null;
+    let intakeError = null;
+    if (chiefComplaint.trim().length >= 3) {
+      try {
+        intake = await runIntake(req.contract, { pinJSON, fetchByCID }, {
+          patientId, symptoms: chiefComplaint.trim(), age: patient.age, gender: patient.gender,
+          visitId, recordedBy: req.user.userId,
+        });
+      } catch (err) {
+        intakeError = err.message;
+        logger.error('Intake failed', { visitId, error: err.message });
+      }
+    }
+
+    return res.status(201).json({ success: true, data: { ...parseResult(result), fhirAnchor, intake, intakeError } });
   })
 );
 

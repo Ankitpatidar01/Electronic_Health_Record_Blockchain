@@ -13,6 +13,8 @@ const logger         = require('./config/logger');
 const gateway        = require('./fabric/gatewayManager');
 const { PEER_MAP, _base } = require('./fabric/peerRouter');
 const { errorHandler } = require('./middleware/errorHandler');
+const ipfsClient      = require('./fabric/ipfsClient');
+const { publishTemplate } = require('../../shared/diseaseCodes');
 
 const authRoutes    = require('./routes/auth');
 const patientRoutes = require('./routes/patients');
@@ -52,6 +54,19 @@ async function start() {
   });
 
   await gateway.init();
+
+  // Publish the disease-code template (IPFS + ledger) as the hospital admin.
+  // Retried in the background: the chaincode may still be starting.
+  const publish = async (attempt = 1) => {
+    try {
+      await publishTemplate(gateway.getContract('admin'), ipfsClient, logger);
+    } catch (err) {
+      logger.warn('Disease-code template not published yet', { attempt, error: err.message });
+      if (attempt < 20) setTimeout(() => publish(attempt + 1), 30_000).unref();
+      else logger.error('Giving up publishing the disease-code template; registration intake will report an error');
+    }
+  };
+  publish();
 
   const server = app.listen(PORT, () => {
     logger.info(`peer0-api listening on :${PORT}`);

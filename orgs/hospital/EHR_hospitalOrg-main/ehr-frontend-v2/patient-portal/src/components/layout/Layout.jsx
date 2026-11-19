@@ -8,8 +8,7 @@ import {
   Fingerprint,
   FolderLock,
   User,
-  LogOut,
-} from 'lucide-react'
+  LogOut, History, } from 'lucide-react'
 import ThemeToggle from '../ThemeToggle'
 import { BASE } from '../../utils/api'
 import { useServiceHealth, HEALTH_PILL } from '../../hooks/useServiceHealth'
@@ -17,6 +16,7 @@ import { useServiceHealth, HEALTH_PILL } from '../../hooks/useServiceHealth'
 const NAV_ITEMS = [
   { to: '/overview', icon: Heart, label: 'Health Home', short: 'Home' },
   { to: '/visits', icon: Calendar, label: 'My Visits', short: 'Visits' },
+  { to: '/timeline', icon: History, label: 'My Timeline', short: 'Timeline' },
   { to: '/ehr', icon: FileText, label: 'Record Vault', short: 'Records' },
   { to: '/digilocker', icon: FolderLock, label: 'DigiLocker Vault', short: 'Locker' },
   { to: '/access', icon: ShieldCheck, label: 'Consent Centre', short: 'Consent' },
