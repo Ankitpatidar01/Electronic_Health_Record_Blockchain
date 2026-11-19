@@ -41,9 +41,9 @@ const ROLE_CONFIG = {
     ],
   },
   nurse: {
-    label: 'Nursing & Triage',
+    label: 'Nursing Care',
     nav: [
-      { to: '/my-visits', icon: Activity, label: 'Triage & Vitals' },
+      { to: '/my-visits', icon: Activity, label: 'Nurse Queue' },
     ],
   },
   pharmacist: {
