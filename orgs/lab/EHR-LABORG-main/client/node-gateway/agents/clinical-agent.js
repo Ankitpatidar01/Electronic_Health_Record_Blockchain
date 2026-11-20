@@ -400,7 +400,14 @@ async function runClinicalAgent(arg1, arg2, arg3, arg4) {
         metadata: { source: 'langgraph-python', disclaimer: DISCLAIMER, runId: context.runId },
       });
     } catch (error) {
-      return unavailable(`LangGraph clinical decision-support service failed: ${error.message}`, { source: 'langgraph-python' });
+      return new AgentResult({
+        agentId: AGENT_ID,
+        status: AgentStatus.FAILED,
+        confidence: 'low',
+        result: { available: false, recommendation: null, possibleRisks: [], nextSteps: [] },
+        errors: [`LangGraph clinical decision-support service failed: ${error.message}`],
+        metadata: { source: 'langgraph-python', disclaimer: DISCLAIMER, runId: context.runId },
+      });
     }
   }
 
