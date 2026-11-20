@@ -252,6 +252,30 @@ services:
       - ehr_network
     command: /bin/sh -c "if [ -f package-lock.json ]; then npm ci; else npm install --no-package-lock; fi && npm start"
     restart: unless-stopped
+  clinical-decision-support:
+    image: ehr-clinical-decision-support:local
+    build:
+      context: ./services/clinical-decision-support
+    working_dir: /app
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8001
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}"
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+    expose:
+      - "8001"
+    networks:
+      - default
+      - ehr_network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    restart: unless-stopped
+
   clinical-ai-agent:
     image: ehr-clinical-ai-agent:local
     build:
@@ -425,6 +449,9 @@ services:
   # ──────────────────────────────────────────────────────────
   l-node-gateway:
     image: ghcr.io/devbyhimans/ehr-l-node-gateway:latest
+    depends_on:
+      clinical-decision-support:
+        condition: service_healthy
     build:
       context: ./orgs/lab/EHR-LABORG-main/client/node-gateway
     working_dir: /app
@@ -437,7 +464,7 @@ services:
     environment:
       <<: *dashboard-emitter-env
       DASHBOARD_EVENT_ORG: DiagnosticsMSP
-      CLINICAL_AI_AGENT_URL: http://clinical-ai-agent:8000
+      PYTHON_CLINICAL_API_URL: http://clinical-decision-support:8001
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}"
       EXTORG_API_URL: http://h-extorg-api:4004
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
