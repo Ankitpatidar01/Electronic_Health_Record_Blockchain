@@ -688,9 +688,9 @@ app.get('/api/agents/run/:runId', (req, res, next) => {
 
 app.post('/api/agents/run/:runId/approve', async (req, res, next) => {
   try {
-    const approverRoles = new Set(['labsupervisor', 'labadmin']);
-    if (!req.user || !approverRoles.has(req.user.role)) {
-      res.status(403).json({ error: 'Only a lab supervisor or lab administrator can approve this workflow.' });
+    const { canApproveWorkflow } = require('./staff-auth');
+    if (!req.user || !canApproveWorkflow(req.user.role)) {
+      res.status(403).json({ error: 'Only a doctor, lab supervisor, or lab administrator can approve this workflow.' });
       return;
     }
     const reviewedBy = String(req.user.userId || '').trim();
