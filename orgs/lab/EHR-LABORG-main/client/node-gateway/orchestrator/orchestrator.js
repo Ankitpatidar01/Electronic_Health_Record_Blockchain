@@ -51,10 +51,10 @@ async function callHistoryAgent(context) {
   return mod.runHistoryAgent(context);
 }
 
-async function callClinicalAgent(context, labResult, historyResult) {
+async function callClinicalAgent(context, labResult, historyResult, options = {}) {
   const mod = loadModule('../agents/clinical-agent');
   if (!mod || typeof mod.runClinicalAgent !== 'function') return unavailableResult('clinical-agent', 'The clinical decision-support agent');
-  return mod.runClinicalAgent(context, labResult, historyResult);
+  return mod.runClinicalAgent(context, labResult, historyResult, options);
 }
 
 async function callGovernance(context, allResults) {
@@ -92,7 +92,7 @@ function traceAgent(runId, agentId, result) {
  * @param {Object} payload - { runId, patientId, resultId, testCode, resultData }
  * @returns {Promise<ExecutionState>}
  */
-async function runWorkflow(payload) {
+async function runWorkflow(payload, options = {}) {
   const runId = payload.runId || `run-${Date.now()}`;
   const patientId = payload.patientId || 'patient-1001';
 
@@ -129,7 +129,7 @@ async function runWorkflow(payload) {
       previousResults: state.agentResults,
       metadata: payload
     });
-    const clinicalResult = await callClinicalAgent(clinicalContext, labResult, historyResult);
+    const clinicalResult = await callClinicalAgent(clinicalContext, labResult, historyResult, { authToken: options.authToken });
     state.recordAgentResult(clinicalResult);
     traceAgent(runId, 'clinical-agent', clinicalResult);
 
