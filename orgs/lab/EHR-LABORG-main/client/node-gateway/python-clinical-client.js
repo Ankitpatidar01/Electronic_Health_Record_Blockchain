@@ -62,10 +62,14 @@ async function runPythonClinicalReview({
     const responseText = await response.text();
 
     if (!response.ok) {
-      throw new Error(
+      const apiError = new Error(
         `Python clinical API returned HTTP ${response.status}: ` +
         responseText.slice(0, 1000)
       );
+      apiError.status = response.status === 401 || response.status === 403
+        ? response.status
+        : (response.status >= 500 ? 503 : 502);
+      throw apiError;
     }
 
     let result;
@@ -126,7 +130,9 @@ async function runPythonClinicalReview({
     };
   } catch (error) {
     if (error.name === 'AbortError') {
-      throw new Error('Python clinical API timed out after 60 seconds.');
+      const timeoutError = new Error('Python clinical API timed out after 60 seconds.');
+      timeoutError.status = 503;
+      throw timeoutError;
     }
     throw error;
   } finally {
