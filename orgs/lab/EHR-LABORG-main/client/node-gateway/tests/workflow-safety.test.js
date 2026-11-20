@@ -73,6 +73,26 @@ test('VCAP record holds hashes only and is pinned for a real CID', async () => {
   const cid = await buildAndAnchorVCAP(state, { addJsonToIpfs: async () => ({ cid: 'bafkreirealcid' }), anchorFn: async () => ({ txId: 'tx-vcap-test-001' }) });
   assert.equal(cid, 'bafkreirealcid');
   assert.equal(state.vcapTxId, 'tx-vcap-test-001');
+  assert.equal(state.vcapAnchorMode, 'FABRIC');
+  assert.ok(state.vcapAnchoredAt);
+
+  const mockState = new ExecutionState('run-mock', 'P002', {});
+  const mockCid = await buildAndAnchorVCAP(mockState, {
+    mock: true,
+    addJsonToIpfs: async () => ({ cid: 'bafkreimockcid' }),
+  });
+  assert.equal(mockCid, 'bafkreimockcid');
+  assert.equal(mockState.vcapAnchorMode, 'MOCK');
+  assert.equal(mockState.vcapTxId, null);
+  assert.equal(mockState.vcapAnchoredAt, null);
+
+  await assert.rejects(
+    buildAndAnchorVCAP(new ExecutionState('run-no-tx', 'P003', {}), {
+      addJsonToIpfs: async () => ({ cid: 'bafkreinoid' }),
+      anchorFn: async () => ({ result: 'submitted-without-txid' }),
+    }),
+    /without returning a transaction ID/
+  );
   await assert.rejects(buildAndAnchorVCAP(state, { addJsonToIpfs: async () => { throw new Error('ipfs down'); } }), /could not be stored/);
 });
 
