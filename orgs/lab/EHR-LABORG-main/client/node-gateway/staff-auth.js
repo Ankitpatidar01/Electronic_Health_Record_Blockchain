@@ -4,8 +4,8 @@
  * Staff sign-in for the lab deck.
  *
  * The deck has no user store of its own. Sign-in is forwarded to the
- * diagnostics gateway (extorg-api), which owns the lab accounts, and the JWT it
- * returns is verified here with the shared JWT_SECRET on every /api call.
+ * diagnostics gateway (extorg-api), which owns the staff accounts. JWTs are
+ * verified here with the shared JWT_SECRET on every /api call.
  */
 
 const crypto = require('crypto');
@@ -14,12 +14,13 @@ const LAB_ROLES = ['labreceptionist', 'labtechnician', 'radiologist', 'labsuperv
 const WORKFLOW_APPROVER_ROLES = ['doctor', 'labsupervisor', 'labadmin'];
 
 function isWorkflowApprovalRequest(req) {
-  return req.method === 'POST' && new RegExp('^/api/agents/run/[^/]+/approve$').test(req.path);
+  return req.method === 'POST' && /^\/api\/agents\/run\/[^/]+\/approve$/.test(req.path);
 }
 
 function canApproveWorkflow(role) {
   return WORKFLOW_APPROVER_ROLES.includes(role);
 }
+
 const PUBLIC_PATHS = new Set(['/api/health', '/api/meta', '/api/ipfs/health', '/api/auth/login']);
 
 function b64urlDecode(value) {
@@ -36,8 +37,10 @@ function verifyToken(token, secret) {
   const given = b64urlDecode(parts[2]);
   if (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) throw new Error('Invalid token');
   const payload = JSON.parse(b64urlDecode(parts[1]).toString('utf8'));
-  if (!Number.isFinite(Number(payload.exp))) throw new Error('Token expiry is required');
-  if (Date.now() / 1000 >= Number(payload.exp)) throw new Error('Token expired');
+  if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)) {
+    throw new Error('Invalid token expiry');
+  }
+  if (Date.now() / 1000 >= payload.exp) throw new Error('Token expired');
   if (typeof payload.userId !== 'string' || !payload.userId.trim()) throw new Error('Token user identity is required');
   if (typeof payload.role !== 'string' || !payload.role.trim()) throw new Error('Token role is required');
   return payload;
@@ -46,7 +49,7 @@ function verifyToken(token, secret) {
 function requireLabStaff(req, res, next) {
   if (!req.path.startsWith('/api/') || PUBLIC_PATHS.has(req.path)) return next();
   const header = req.headers.authorization || '';
-  if (!header.startsWith('Bearer ')) return res.status(401).json({ error: 'Sign in with a lab staff account' });
+  if (!header.startsWith('Bearer ')) return res.status(401).json({ error: 'Sign in with a staff account' });
   try {
     const user = verifyToken(header.slice(7), process.env.JWT_SECRET);
     const approvalOnlyAccess = isWorkflowApprovalRequest(req) && user.role === 'doctor';
@@ -80,8 +83,10 @@ async function login(req, res) {
     return res.status(upstream.status === 200 ? 401 : upstream.status).json({ error: body.error || 'Invalid credentials' });
   }
   const user = body.data && body.data.user;
-  if (!user || !LAB_ROLES.includes(user.role)) {
-    return res.status(403).json({ error: 'This account is not a lab staff account' });
+  // Doctors may sign in so they can approve a workflow. requireLabStaff still
+  // restricts doctor tokens to the single workflow-approval endpoint.
+  if (!user || (!LAB_ROLES.includes(user.role) && !canApproveWorkflow(user.role))) {
+    return res.status(403).json({ error: 'This account is not authorized for lab workflows' });
   }
   return res.json({ token: body.data.token, user });
 }
