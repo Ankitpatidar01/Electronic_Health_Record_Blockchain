@@ -35,14 +35,13 @@ def verify_token(token: str, secret: str) -> dict:
     exp = payload.get("exp")
     if exp is None:
         raise ValueError("Token expiry is required")
-    try:
-        expiry = float(exp)
-        if not math.isfinite(expiry):
-            raise ValueError("Invalid token expiry")
-        if time.time() >= expiry:
-            raise ValueError("Token expired")
-    except (TypeError, ValueError) as exc:
-        raise ValueError("Invalid token expiry") from exc
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)):
+        raise ValueError("Invalid token expiry")
+    expiry = float(exp)
+    if not math.isfinite(expiry):
+        raise ValueError("Invalid token expiry")
+    if time.time() >= expiry:
+        raise ValueError("Token expired")
     if not isinstance(payload.get("userId"), str) or not payload["userId"].strip():
         raise ValueError("Token user identity is required")
     if not isinstance(payload.get("role"), str) or not payload["role"].strip():
