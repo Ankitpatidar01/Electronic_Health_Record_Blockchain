@@ -3,6 +3,7 @@ import base64
 import hashlib
 import hmac
 import json
+import math
 import os
 import time
 from typing import Optional
@@ -35,7 +36,10 @@ def verify_token(token: str, secret: str) -> dict:
     if exp is None:
         raise ValueError("Token expiry is required")
     try:
-        if time.time() >= float(exp):
+        expiry = float(exp)
+        if not math.isfinite(expiry):
+            raise ValueError("Invalid token expiry")
+        if time.time() >= expiry:
             raise ValueError("Token expired")
     except (TypeError, ValueError) as exc:
         raise ValueError("Invalid token expiry") from exc
