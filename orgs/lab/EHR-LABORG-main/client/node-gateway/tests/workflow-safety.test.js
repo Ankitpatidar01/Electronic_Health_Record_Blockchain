@@ -70,8 +70,9 @@ test('VCAP record holds hashes only and is pinned for a real CID', async () => {
   assert.ok(!text.includes('P001') && !text.includes('doctor1') && !text.includes('Hemoglobin'));
   assert.match(record.recordHash, /^[a-f0-9]{64}$/);
 
-  const cid = await buildAndAnchorVCAP(state, { addJsonToIpfs: async () => ({ cid: 'bafkreirealcid' }) });
+  const cid = await buildAndAnchorVCAP(state, { addJsonToIpfs: async () => ({ cid: 'bafkreirealcid' }), anchorFn: async () => ({ txId: 'tx-vcap-test-001' }) });
   assert.equal(cid, 'bafkreirealcid');
+  assert.equal(state.vcapTxId, 'tx-vcap-test-001');
   await assert.rejects(buildAndAnchorVCAP(state, { addJsonToIpfs: async () => { throw new Error('ipfs down'); } }), /could not be stored/);
 });
 
