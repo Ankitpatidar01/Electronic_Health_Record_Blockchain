@@ -131,13 +131,16 @@ async function buildAndAnchorVCAP(executionState, options = {}) {
       runId: executionState.runId,
       recordHash: record.recordHash,
     });
-    executionState.vcapTxId = anchorResult.txId || null;
-    executionState.vcapAnchoredAt = new Date().toISOString();
+    executionState.vcapTxId = anchorResult.mock ? null : anchorResult.txId;
+    executionState.vcapAnchorMode = anchorResult.mock ? 'MOCK' : 'FABRIC';
+    executionState.vcapAnchoredAt = anchorResult.mock ? null : new Date().toISOString();
 
+    const eventName = anchorResult.mock ? 'VCAP_MOCKED' : 'VCAP_ANCHORED';
+    const eventStatus = anchorResult.mock ? 'MOCKED' : 'ANCHORED';
     if (telemetry && typeof telemetry.emit === 'function') {
-      telemetry.emit('VCAP_ANCHORED', {
+      telemetry.emit(eventName, {
         agentId: 'governance-agent',
-        status: 'ANCHORED',
+        status: eventStatus,
         recordHash: record.recordHash,
         txId: anchorResult.txId || undefined,
         durationMs: Date.now() - started,
@@ -145,7 +148,7 @@ async function buildAndAnchorVCAP(executionState, options = {}) {
     }
 
     if (telemetry && typeof telemetry.traceStage === 'function') {
-      telemetry.traceStage('governance-agent', 'VCAP_ANCHORED', 'DONE', {
+      telemetry.traceStage('governance-agent', eventName, 'DONE', {
         recordHash: record.recordHash,
         cid,
         txId: anchorResult.txId || undefined,
@@ -273,11 +276,11 @@ async function anchorVCAP(cid, anchorFn, { mock = false, ...metadata } = {}) {
   if (typeof anchorFn !== 'function') throw new Error('Fabric VCAP anchor function is unavailable');
 
   const result = await anchorFn(cid, metadata);
-  return {
-    cid,
-    txId: result && (result.txId || result.transactionId || result.txid) || null,
-    result,
-  };
+  const txId = result && (result.txId || result.transactionId || result.txid);
+  if (!txId || !String(txId).trim()) {
+    throw new Error('Fabric anchor completed without returning a transaction ID');
+  }
+  return { cid, txId: String(txId), result, mock: false };
 }
 
 module.exports = {
