@@ -515,6 +515,7 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
           patientId: req.body.patientId,
           patientHistory,
           reportText: extractedReportText,
+          authToken: req.headers.authorization,
         });
       } catch (_err) {
         ai = await runAgenticClinicalAnalysis({
@@ -660,7 +661,7 @@ app.get('/api/records/:resultId/resolve-data', async (req, res, next) => {
 
 app.post('/api/agents/run', async (req, res, next) => {
   try {
-    const state = await runWorkflow(req.body);
+    const state = await runWorkflow(req.body, { authToken: req.headers.authorization });
     res.status(202).json(state.toJSON());
   } catch (error) {
     next(error);
@@ -686,11 +687,21 @@ app.get('/api/agents/run/:runId', (req, res, next) => {
 
 app.post('/api/agents/run/:runId/approve', async (req, res, next) => {
   try {
-    const state = await approveWorkflowRun(
-      req.params.runId,
-      req.body
-    );
-
+    const approverRoles = new Set(['labsupervisor', 'labadmin']);
+    if (!req.user || !approverRoles.has(req.user.role)) {
+      res.status(403).json({ error: 'Only a lab supervisor or lab administrator can approve this workflow.' });
+      return;
+    }
+    const reviewedBy = String(req.user.userId || '').trim();
+    if (!reviewedBy) {
+      res.status(403).json({ error: 'Authenticated reviewer identity is missing.' });
+      return;
+    }
+    const state = await approveWorkflowRun(req.params.runId, {
+      ...req.body,
+      reviewedBy,
+      reviewerRole: req.user.role,
+    });
     res.json(state.toJSON());
   } catch (error) {
     next(error);
