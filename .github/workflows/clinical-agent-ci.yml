@@ -1,0 +1,43 @@
+name: Clinical Agent CI
+
+on:
+  pull_request:
+    paths:
+      - "orgs/lab/EHR-LABORG-main/client/node-gateway/**"
+      - "services/clinical-decision-support/**"
+      - ".github/workflows/clinical-agent-ci.yml"
+  push:
+    branches:
+      - "fix/clinical-flow-latest-2026-11-20"
+
+jobs:
+  node-gateway-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: orgs/lab/EHR-LABORG-main/client/node-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm test
+
+  clinical-auth-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/clinical-decision-support
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip pytest
+      - run: pytest -q test_auth.py
+
+  clinical-service-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t ehr-clinical-decision-support:ci ./services/clinical-decision-support
