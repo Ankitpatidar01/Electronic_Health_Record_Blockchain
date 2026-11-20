@@ -23,6 +23,7 @@ class ExecutionState {
     this.updatedAt = new Date().toISOString();
     this.vcapCid = null;
     this.vcapTxId = null;
+    this.vcapAnchorMode = null;
     this.vcapAnchoredAt = null;
     this.humanApproval = null;
   }
@@ -114,6 +115,7 @@ class ExecutionState {
       status: this.status,
       vcapCid: this.vcapCid,
       vcapTxId: this.vcapTxId,
+      vcapAnchorMode: this.vcapAnchorMode,
       vcapAnchoredAt: this.vcapAnchoredAt,
       humanApproval: this.humanApproval,
       createdAt: this.createdAt,
