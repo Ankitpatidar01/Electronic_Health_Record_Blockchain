@@ -359,11 +359,14 @@ async function runClinicalAgent(arg1, arg2, arg3, arg4) {
   }
 
   const url = options.url !== undefined ? options.url : serviceUrl();
+  const doFetch = options.fetchImpl || globalThis.fetch;
   const reportText = buildReportText(labResult, historyResult);
 
-  // The orchestrator passes the signed-in staff token. Use the LangGraph
-  // service only on this authenticated path; never forward a patient token
-  // or fabricate a successful remote result when the service is unavailable.
+  if (options.url === '' || (!url && (options.fetchImpl || options.strict))) {
+    return unavailable('Clinical decision-support service is not configured (set PYTHON_CLINICAL_API_URL).');
+  }
+
+  // Production path: signed-in staff workflows use the LangGraph service.
   if (options.authToken) {
     const rawLab = labResult && typeof labResult === 'object' && 'result' in labResult
       ? labResult.result : (labResult || {});
@@ -398,6 +401,65 @@ async function runClinicalAgent(arg1, arg2, arg3, arg4) {
       });
     } catch (error) {
       return unavailable(`LangGraph clinical decision-support service failed: ${error.message}`, { source: 'langgraph-python' });
+    }
+  }
+
+  // Explicit fetch injection remains supported for isolated adapter tests and
+  // legacy callers. It is not used by the authenticated production workflow.
+  if (url && (options.fetchImpl || options.url !== undefined || process.env.CLINICAL_AI_AGENT_URL)) {
+    if (reportText.length < 10) return unavailable('No lab findings were available to analyse.');
+    let attempt = 0;
+    for (;;) {
+      try {
+        const res = await doFetch(`${url}/api/v1/agent/analyze-report`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            patient_id: String(context.patientId),
+            report_text: reportText,
+            report_type: (context.metadata && context.metadata.testCode) || 'General Lab Report',
+          }),
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!res.ok) {
+          const error = new Error(`Clinical AI agent responded ${res.status}`);
+          error.retryable = res.status >= 500;
+          throw error;
+        }
+        const body = await res.json();
+        const followups = Array.isArray(body.suggested_followups) ? body.suggested_followups : [];
+        const abnormal = Array.isArray(body.abnormalities_flagged) ? body.abnormalities_flagged : [];
+        const rawLab = labResult && typeof labResult === 'object' && 'result' in labResult ? labResult.result : labResult;
+        const rawHistory = historyResult && typeof historyResult === 'object' && 'result' in historyResult ? historyResult.result : historyResult;
+        const localAnalysis = runLocalDiseaseTools(rawLab, rawHistory);
+        return new AgentResult({
+          agentId: AGENT_ID,
+          status: AgentStatus.SUCCESS,
+          confidence: abnormal.length ? 'medium' : 'high',
+          result: {
+            available: true,
+            recommendation: followups.length ? followups.join(' ') : 'No follow-up was suggested for these findings.',
+            possibleRisks: abnormal.length ? abnormal : localAnalysis.possibleRisks,
+            nextSteps: followups.length ? followups : localAnalysis.nextSteps,
+            findings: Array.isArray(body.findings) ? body.findings : localAnalysis.findings,
+            diseaseSpecificAnalysis: localAnalysis.diseaseAnalyses,
+            toolsExecuted: localAnalysis.toolsExecuted,
+            provenanceHash: body.provenance_hash || null,
+          },
+          metadata: { source: 'clinical-ai-agent-legacy-test-adapter', disclaimer: DISCLAIMER, runId: context.runId },
+        });
+      } catch (error) {
+        const transient = error.retryable !== false && (error.retryable === true || error.name === 'TimeoutError' || error.name === 'TypeError');
+        if (transient && attempt < 2) {
+          attempt += 1;
+          await new Promise(resolve => setTimeout(resolve, options.retryDelayMs !== undefined ? options.retryDelayMs : 400 * attempt));
+          continue;
+        }
+        if (options.fetchImpl || options.strict) {
+          return unavailable(`Clinical decision-support service is unavailable: ${error.message}`, { attempts: attempt + 1 });
+        }
+        break;
+      }
     }
   }
 
