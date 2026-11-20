@@ -208,6 +208,21 @@ async function updateLabResult(resultIdOrRecord, dataOrOptions, options = {}) {
   return unwrap(await gw.updateLabResult(record, opts));
 }
 
+async function appendVCAPDocument(patientId, cid, metadata = {}) {
+  if (!patientId || !cid) throw new Error('patientId and cid are required for VCAP anchoring');
+  const gw = getGateway();
+  if (typeof gw.appendDocumentToPatientDid !== 'function') {
+    throw new Error('Fabric gateway does not expose DID document anchoring');
+  }
+  return gw.appendDocumentToPatientDid(patientId, cid, {
+    type: 'DOCUMENT',
+    ref: `vcap:${String(metadata.runId || 'unknown').slice(0, 100)}`,
+    note: `VCAP SHA-256: ${String(metadata.recordHash || '').slice(0, 64)}`,
+    chaincodeName: process.env.LAB_EHR_CHAINCODE || 'ehr',
+    peerName: process.env.LAB_PEER_ENDPOINT ? process.env.LAB_PEER_ENDPOINT.split(':')[0] : undefined,
+  });
+}
+
 module.exports = {
   getPatientHistory,
   getLabResult,
@@ -215,5 +230,6 @@ module.exports = {
   submitLabResult,
   storeAISummary,
   addToIPFS,
-  updateLabResult
+  updateLabResult,
+  appendVCAPDocument
 };
