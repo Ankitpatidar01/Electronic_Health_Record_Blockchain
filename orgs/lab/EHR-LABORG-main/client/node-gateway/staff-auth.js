@@ -14,7 +14,7 @@ const LAB_ROLES = ['labreceptionist', 'labtechnician', 'radiologist', 'labsuperv
 const WORKFLOW_APPROVER_ROLES = ['doctor', 'labsupervisor', 'labadmin'];
 
 function isWorkflowApprovalRequest(req) {
-  return req.method === 'POST' && /^\\/api\\/agents\\/run\\/[^/]+\\/approve$/.test(req.path);
+  return req.method === 'POST' && new RegExp('^/api/agents/run/[^/]+/approve$').test(req.path);
 }
 
 function canApproveWorkflow(role) {
