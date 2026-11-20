@@ -36,7 +36,10 @@ function verifyToken(token, secret) {
   const given = b64urlDecode(parts[2]);
   if (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) throw new Error('Invalid token');
   const payload = JSON.parse(b64urlDecode(parts[1]).toString('utf8'));
-  if (payload.exp && Date.now() / 1000 >= payload.exp) throw new Error('Token expired');
+  if (!Number.isFinite(Number(payload.exp))) throw new Error('Token expiry is required');
+  if (Date.now() / 1000 >= Number(payload.exp)) throw new Error('Token expired');
+  if (typeof payload.userId !== 'string' || !payload.userId.trim()) throw new Error('Token user identity is required');
+  if (typeof payload.role !== 'string' || !payload.role.trim()) throw new Error('Token role is required');
   return payload;
 }
 
