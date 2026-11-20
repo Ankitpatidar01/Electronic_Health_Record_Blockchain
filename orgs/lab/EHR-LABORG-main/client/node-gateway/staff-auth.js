@@ -11,6 +11,15 @@
 const crypto = require('crypto');
 
 const LAB_ROLES = ['labreceptionist', 'labtechnician', 'radiologist', 'labsupervisor', 'labadmin'];
+const WORKFLOW_APPROVER_ROLES = ['doctor', 'labsupervisor', 'labadmin'];
+
+function isWorkflowApprovalRequest(req) {
+  return req.method === 'POST' && /^\\/api\\/agents\\/run\\/[^/]+\\/approve$/.test(req.path);
+}
+
+function canApproveWorkflow(role) {
+  return WORKFLOW_APPROVER_ROLES.includes(role);
+}
 const PUBLIC_PATHS = new Set(['/api/health', '/api/meta', '/api/ipfs/health', '/api/auth/login']);
 
 function b64urlDecode(value) {
@@ -37,7 +46,8 @@ function requireLabStaff(req, res, next) {
   if (!header.startsWith('Bearer ')) return res.status(401).json({ error: 'Sign in with a lab staff account' });
   try {
     const user = verifyToken(header.slice(7), process.env.JWT_SECRET);
-    if (!LAB_ROLES.includes(user.role)) {
+    const approvalOnlyAccess = isWorkflowApprovalRequest(req) && user.role === 'doctor';
+    if (!LAB_ROLES.includes(user.role) && !approvalOnlyAccess) {
       return res.status(403).json({ error: `Role '${user.role}' cannot use the lab deck` });
     }
     req.user = user;
@@ -73,4 +83,4 @@ async function login(req, res) {
   return res.json({ token: body.data.token, user });
 }
 
-module.exports = { requireLabStaff, login, verifyToken, LAB_ROLES };
+module.exports = { requireLabStaff, login, verifyToken, LAB_ROLES, WORKFLOW_APPROVER_ROLES, isWorkflowApprovalRequest, canApproveWorkflow };
