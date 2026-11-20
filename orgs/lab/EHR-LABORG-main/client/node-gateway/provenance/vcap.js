@@ -76,6 +76,7 @@ function buildVCAPRecord(state) {
     humanReview: approval
       ? {
           decision: approval.decision,
+          reviewerRole: approval.reviewerRole || 'unknown',
           reviewerRef: approval.reviewedBy ? sha256(`reviewer:${approval.reviewedBy}`) : undefined,
           timestamp: approval.timestamp,
         }
