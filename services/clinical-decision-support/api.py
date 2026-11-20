@@ -1,7 +1,8 @@
 import traceback
 from typing import Any, Optional, Dict, List
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from auth import require_staff
 from pydantic import BaseModel, Field
 
 from graph import build_graph
@@ -40,7 +41,7 @@ def health_check():
     }
 
 
-@app.post("/api/clinical-review")
+@app.post("/api/clinical-review", dependencies=[Depends(require_staff)])
 def generate_clinical_review(request: ClinicalReviewRequest):
     """
     Executes the multi-agent clinical decision support pipeline:
