@@ -22,6 +22,8 @@ class ExecutionState {
     this.createdAt = new Date().toISOString();
     this.updatedAt = new Date().toISOString();
     this.vcapCid = null;
+    this.vcapTxId = null;
+    this.vcapAnchoredAt = null;
     this.humanApproval = null;
   }
 
@@ -110,6 +112,8 @@ class ExecutionState {
       errors: this.errors,
       status: this.status,
       vcapCid: this.vcapCid,
+      vcapTxId: this.vcapTxId,
+      vcapAnchoredAt: this.vcapAnchoredAt,
       humanApproval: this.humanApproval,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
