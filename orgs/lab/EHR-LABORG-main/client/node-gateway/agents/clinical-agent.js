@@ -382,10 +382,14 @@ async function runClinicalAgent(arg1, arg2, arg3, arg4) {
         runId: context.runId,
       });
       const result = clinical.clinicalResult || {};
+      const confidenceScore = Number(result.confidence);
+      const confidence = Number.isFinite(confidenceScore)
+        ? (confidenceScore >= 0.8 ? 'high' : (confidenceScore >= 0.5 ? 'medium' : 'low'))
+        : 'low';
       return new AgentResult({
         agentId: AGENT_ID,
         status: AgentStatus.SUCCESS,
-        confidence: result.confidence || 'unvalidated',
+        confidence,
         result: {
           available: true,
           recommendation: clinical.clinicalDecisionSupport.recommendation,
@@ -396,6 +400,7 @@ async function runClinicalAgent(arg1, arg2, arg3, arg4) {
           toolsExecuted: result.toolsExecuted || [],
           overallSeverity: result.overallSeverity || 'UNASSESSED',
           reviewStatus: clinical.reviewStatus,
+          confidenceScore: Number.isFinite(confidenceScore) ? confidenceScore : null,
         },
         metadata: { source: 'langgraph-python', disclaimer: DISCLAIMER, runId: context.runId },
       });
