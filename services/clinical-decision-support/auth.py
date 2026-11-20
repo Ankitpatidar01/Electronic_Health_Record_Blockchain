@@ -31,8 +31,18 @@ def verify_token(token: str, secret: str) -> dict:
     if not hmac.compare_digest(expected, _decode(parts[2])):
         raise ValueError("Invalid token")
     payload = json.loads(_decode(parts[1]))
-    if payload.get("exp") and time.time() >= float(payload["exp"]):
-        raise ValueError("Token expired")
+    exp = payload.get("exp")
+    if exp is None:
+        raise ValueError("Token expiry is required")
+    try:
+        if time.time() >= float(exp):
+            raise ValueError("Token expired")
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Invalid token expiry") from exc
+    if not isinstance(payload.get("userId"), str) or not payload["userId"].strip():
+        raise ValueError("Token user identity is required")
+    if not isinstance(payload.get("role"), str) or not payload["role"].strip():
+        raise ValueError("Token role is required")
     return payload
 
 
