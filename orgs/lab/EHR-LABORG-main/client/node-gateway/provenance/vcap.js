@@ -161,14 +161,14 @@ async function buildAndAnchorVCAP(executionState, options = {}) {
       telemetry.emit('VCAP_VERIFICATION_FAILED', {
         agentId: 'governance-agent',
         status: 'FAILED',
-        errorCode: 'VCAP_IPFS_STORE_FAILED',
+        errorCode: 'VCAP_PERSISTENCE_FAILED',
         durationMs: Date.now() - started,
       }, { source: 'lab-gateway', severity: 'WARNING' });
     }
 
     if (telemetry && typeof telemetry.traceStage === 'function') {
       telemetry.traceStage('governance-agent', 'VCAP_ANCHORED', 'FAILED', {
-        errorCode: 'VCAP_IPFS_STORE_FAILED',
+        errorCode: 'VCAP_PERSISTENCE_FAILED',
       });
     }
 
