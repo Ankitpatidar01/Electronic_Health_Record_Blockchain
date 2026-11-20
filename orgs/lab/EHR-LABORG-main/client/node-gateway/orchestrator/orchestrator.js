@@ -133,6 +133,12 @@ async function runWorkflow(payload, options = {}) {
     state.recordAgentResult(clinicalResult);
     traceAgent(runId, 'clinical-agent', clinicalResult);
 
+    // A failed clinical review must never proceed to governance or provenance.
+    if (!clinicalResult || clinicalResult.status === AgentStatus.FAILED) {
+      state.fail('Clinical decision-support failed; governance and VCAP were not executed.');
+      return state;
+    }
+
     // 4. STEP 4: GOVERNANCE & SAFETY CHECK
     state.updateAgentStart('governance-agent');
     const governanceContext = new AgentContext({
