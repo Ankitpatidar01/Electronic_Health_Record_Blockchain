@@ -2,7 +2,7 @@
 
 const PYTHON_API_URL =
   (process.env.PYTHON_CLINICAL_API_URL ||
-    'http://127.0.0.1:8000').replace(/\/+$/, '');
+    'http://127.0.0.1:8001').replace(/\/+$/, '');
 
 async function runPythonClinicalReview({
   resultData,
@@ -10,6 +10,8 @@ async function runPythonClinicalReview({
   patientHistory = [],
   historyResult,
   reportText = '',
+  authToken,
+  runId,
 }) {
   if (!patientId || !String(patientId).trim()) {
     throw new Error('patientId is required for Python clinical review.');
@@ -43,12 +45,16 @@ async function runPythonClinicalReview({
       `${PYTHON_API_URL}/api/clinical-review`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: authToken.startsWith('Bearer ') ? authToken : `Bearer ${authToken}` } : {}),
+        },
         signal: controller.signal,
         body: JSON.stringify({
           patient_id: String(patientId),
           lab_result: resultData || {},
           history_result: normalizedHistory,
+          run_id: runId,
         }),
       }
     );
