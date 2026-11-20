@@ -368,8 +368,13 @@ async function runClinicalAgent(arg1, arg2, arg3, arg4) {
 
   // Production path: signed-in staff workflows use the LangGraph service.
   if (options.authToken) {
-    const rawLab = labResult && typeof labResult === 'object' && 'result' in labResult
+    const agentLab = labResult && typeof labResult === 'object' && 'result' in labResult
       ? labResult.result : (labResult || {});
+    const suppliedLab = context.metadata && (context.metadata.resultData || context.metadata.lab_result);
+    const rawLab = {
+      ...(suppliedLab && typeof suppliedLab === 'object' ? suppliedLab : {}),
+      ...(agentLab && typeof agentLab === 'object' ? agentLab : {}),
+    };
     const rawHistory = historyResult && typeof historyResult === 'object' && 'result' in historyResult
       ? historyResult.result : (historyResult || {});
     try {
