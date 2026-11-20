@@ -465,6 +465,7 @@ services:
       <<: *dashboard-emitter-env
       DASHBOARD_EVENT_ORG: DiagnosticsMSP
       PYTHON_CLINICAL_API_URL: http://clinical-decision-support:8001
+      CLINICAL_AI_FALLBACK_ENABLED: ${CLINICAL_AI_FALLBACK_ENABLED:-false}
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is not set. Run: node scripts/init-env.js}"
       EXTORG_API_URL: http://h-extorg-api:4004
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
