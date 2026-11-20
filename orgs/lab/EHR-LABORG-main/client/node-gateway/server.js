@@ -163,8 +163,11 @@ function normalizeError(error) {
   }
 
   const message = (error && error.message ? error.message : String(error)).trim();
+  if (error && Number.isInteger(error.status) && error.status >= 400 && error.status <= 599) {
+    return { status: error.status, message };
+  }
 
-  if (/ipfs api|econnrefused|failed to fetch/i.test(message)) {
+  if (/ipfs api|econnrefused|failed to fetch|python clinical api|timed out/i.test(message)) {
     return { status: 503, message };
   }
 
