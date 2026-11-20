@@ -73,6 +73,7 @@ class ExecutionState {
       reviewedBy: approvalDetails.reviewedBy || 'DOCTOR',
       decision: approvalDetails.decision || 'APPROVED', // 'APPROVED' | 'REJECTED'
       comments: approvalDetails.comments || '',
+      reviewerRole: approvalDetails.reviewerRole || 'unknown',
       timestamp: new Date().toISOString()
     };
     this.updatedAt = new Date().toISOString();
