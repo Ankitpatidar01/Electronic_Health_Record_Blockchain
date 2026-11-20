@@ -300,6 +300,7 @@ app.post('/api/ai/analyze', async (req, res, next) => {
         patientId: req.body.patientId,
         patientHistory,
         reportText: req.body.reportText,
+        authToken: req.headers.authorization,
       });
     } catch (_err) {
       ai = await runAgenticClinicalAnalysis({
