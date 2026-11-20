@@ -201,7 +201,7 @@ function parseResult(text) {
   }
 }
 
-async function withContract(peerName, callback) {
+async function withContract(peerName, callback, chaincodeName = CHAINCODE_NAME) {
   const selectedPeer = resolvePeerName(peerName);
   const connectionProfile = loadConnectionProfile();
   const client = newGrpcConnection(selectedPeer, connectionProfile);
@@ -223,7 +223,7 @@ async function withContract(peerName, callback) {
 
   try {
     const network = gateway.getNetwork(CHANNEL_NAME);
-    const contract = network.getContract(CHAINCODE_NAME);
+    const contract = network.getContract(chaincodeName);
     return await callback(contract, selectedPeer);
   } finally {
     gateway.close();
@@ -301,6 +301,21 @@ async function updateLabStatus(resultId, status, options = {}) {
   return submitTransaction(options.peerName, 'UpdateLabStatus', [resultId, status]);
 }
 
+async function appendDocumentToPatientDid(patientId, cid, options = {}) {
+  if (!patientId || !cid) throw new Error('patientId and cid are required');
+  const type = options.type || 'DOCUMENT';
+  const ref = String(options.ref || '').slice(0, 120);
+  const note = String(options.note || '').slice(0, 200);
+  const chaincodeName = options.chaincodeName || process.env.LAB_EHR_CHAINCODE || 'ehr';
+
+  return withContract(options.peerName, async (contract, selectedPeer) => {
+    const transaction = contract.createTransaction('DidContract:AppendDocument');
+    const txId = transaction.getTransactionId();
+    const response = await transaction.submit(String(patientId), String(cid), String(type), ref, note);
+    return { peer: selectedPeer, txId, result: parseResult(decodeResult(response)) };
+  }, chaincodeName);
+}
+
 async function updateLabResult(record, options = {}) {
   const { resultId, patientId, testCode, collectedAt, status, resultData } = record || {};
   if (!resultId) {
@@ -326,4 +341,5 @@ module.exports = {
   readLabResult,
   updateLabResult,
   updateLabStatus,
+  appendDocumentToPatientDid,
 };
