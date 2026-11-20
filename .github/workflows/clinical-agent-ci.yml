@@ -21,9 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
-          cache-dependency-path: orgs/lab/EHR-LABORG-main/client/node-gateway/package-lock.json
-      - run: npm ci --no-audit --no-fund
+      - run: npm install --no-audit --no-fund
       - run: npm test
 
   clinical-service-tests:
@@ -36,8 +34,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
-          cache-dependency-path: services/clinical-decision-support/requirements.txt
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements.txt
       - run: python -m pytest -q
@@ -46,9 +42,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./services/clinical-decision-support
-          push: false
-          tags: ehr-clinical-decision-support:ci
+      - run: docker build -t ehr-clinical-decision-support:ci ./services/clinical-decision-support
