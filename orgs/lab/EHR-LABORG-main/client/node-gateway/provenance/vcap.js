@@ -167,7 +167,7 @@ async function buildAndAnchorVCAP(executionState, options = {}) {
     }
 
     if (telemetry && typeof telemetry.traceStage === 'function') {
-      telemetry.traceStage('governance-agent', 'VCAP_ANCHORED', 'FAILED', {
+      telemetry.traceStage('governance-agent', 'VCAP_PERSISTENCE', 'FAILED', {
         errorCode: 'VCAP_PERSISTENCE_FAILED',
       });
     }
