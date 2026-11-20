@@ -302,7 +302,8 @@ app.post('/api/ai/analyze', async (req, res, next) => {
         reportText: req.body.reportText,
         authToken: req.headers.authorization,
       });
-    } catch (_err) {
+    } catch (clinicalError) {
+      if (process.env.CLINICAL_AI_FALLBACK_ENABLED !== 'true') throw clinicalError;
       ai = await runAgenticClinicalAnalysis({
         resultData: req.body.resultData,
         testCode: req.body.testCode,
@@ -518,7 +519,8 @@ app.post('/api/records/ipfs', uploadReportFile.single('reportFile'), async (req,
           reportText: extractedReportText,
           authToken: req.headers.authorization,
         });
-      } catch (_err) {
+      } catch (clinicalError) {
+        if (process.env.CLINICAL_AI_FALLBACK_ENABLED !== 'true') throw clinicalError;
         ai = await runAgenticClinicalAnalysis({
           resultData: resultDataForAi,
           testCode: req.body.testCode,
