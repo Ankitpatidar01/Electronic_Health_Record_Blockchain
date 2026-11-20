@@ -20,6 +20,9 @@ try {
   telemetry = { emit: () => {}, traceStage: () => {} };
 }
 
+let fabricTool = null;
+try { fabricTool = require('../tools/fabric-tools'); } catch (_err) { fabricTool = null; }
+
 let ipfsTool = null;
 try {
   ipfsTool = require('../tools/ipfs-tools');
@@ -119,11 +122,23 @@ async function buildAndAnchorVCAP(executionState, options = {}) {
       throw new Error('IPFS storage did not return a CID');
     }
 
+    const anchorFn = options.anchorFn || (fabricTool && fabricTool.appendVCAPDocument
+      ? (storedCid, metadata) => fabricTool.appendVCAPDocument(executionState.patientId, storedCid, metadata)
+      : null);
+    const anchorResult = await anchorVCAP(cid, anchorFn, {
+      mock: isMock,
+      runId: executionState.runId,
+      recordHash: record.recordHash,
+    });
+    executionState.vcapTxId = anchorResult.txId || null;
+    executionState.vcapAnchoredAt = new Date().toISOString();
+
     if (telemetry && typeof telemetry.emit === 'function') {
       telemetry.emit('VCAP_ANCHORED', {
         agentId: 'governance-agent',
         status: 'ANCHORED',
         recordHash: record.recordHash,
+        txId: anchorResult.txId || undefined,
         durationMs: Date.now() - started,
       }, { source: 'lab-gateway' });
     }
@@ -132,6 +147,7 @@ async function buildAndAnchorVCAP(executionState, options = {}) {
       telemetry.traceStage('governance-agent', 'VCAP_ANCHORED', 'DONE', {
         recordHash: record.recordHash,
         cid,
+        txId: anchorResult.txId || undefined,
       });
     }
 
@@ -152,7 +168,7 @@ async function buildAndAnchorVCAP(executionState, options = {}) {
       });
     }
 
-    throw new Error(`Provenance record could not be stored on IPFS: ${error.message}`);
+    throw new Error(`Provenance record could not be stored on IPFS or anchored on Fabric: ${error.message}`);
   }
 }
 
@@ -250,12 +266,12 @@ async function buildAndStoreVCAP(input = {}, options = {}) {
  * @param {Function} anchorFn
  * @param {{ mock?: boolean }} [options]
  */
-async function anchorVCAP(cid, anchorFn, { mock = false } = {}) {
+async function anchorVCAP(cid, anchorFn, { mock = false, ...metadata } = {}) {
   if (!cid) throw new Error('cid is required');
-  if (typeof anchorFn !== 'function') throw new Error('anchorFn is required');
-  if (mock) return { cid, txId: 'mock-vcap-tx-001' };
+  if (mock) return { cid, txId: 'mock-vcap-tx-001', mock: true };
+  if (typeof anchorFn !== 'function') throw new Error('Fabric VCAP anchor function is unavailable');
 
-  const result = await anchorFn(cid);
+  const result = await anchorFn(cid, metadata);
   return {
     cid,
     txId: result && (result.txId || result.transactionId || result.txid) || null,
